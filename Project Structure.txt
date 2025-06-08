@@ -1,0 +1,67 @@
+Change-Management-Platform-Web-Portal/
+├── .env.development                   # Environment variables for local development
+├── .env.production                    # Environment variables for production (GitHub Pages)
+├── package.json                       # NPM configuration and dependency list
+├── package-lock.json                  # Exact dependency versions (commit to source control)
+├── tsconfig.json                      # TypeScript configuration
+├── tailwind.config.js                 # Tailwind CSS configuration
+├── postcss.config.js                  # PostCSS configuration (used by Tailwind)
+├── README.md                          # Project documentation
+├── public/                            
+│   ├── index.html                     # HTML template with <div id="root"></div>
+│   ├── manifest.json                  # PWA manifest settings
+│   ├── favicon.ico                    # Favicon
+│   └── assets/                        # Static assets used in the app
+│       ├── images/                    # Images (logos, backgrounds, etc.)
+│       └── fonts/                     # Web fonts
+└── src/                               # Application source code
+    ├── index.tsx                      # App entry point that renders <App /> into #root
+    ├── App.tsx                        # Main component that includes routing and global layout
+    ├── authConfig.ts                  # MSAL configuration (clientId, authority, redirectUri)
+    ├── setupTests.ts                  # Test setup file (for Jest, if using Create React App)
+    ├── react-app-env.d.ts             # TypeScript types for Create React App
+    ├── services/                      # Modules for API calls and authentication helpers
+    │   ├── api.ts                     # Generic API service for HTTP calls (using Axios, etc.)
+    │   └── authService.ts             # Helper functions wrapping MSAL authentication or token refresh
+    ├── hooks/                         # Custom React hooks
+    │   ├── useAuth.ts                 # Hook for accessing authentication logic and state
+    │   └── useRoles.ts                # Hook to manage or check user roles/permissions
+    ├── store/                         # (Optional) Redux or Redux Toolkit store for global state management
+    │   ├── store.ts                   # Store configuration and setup
+    │   └── slices/                    # Organized “slices” for different parts of the state
+    │       ├── authSlice.ts           # Authentication state and actions
+    │       └── roleSlice.ts           # Role-based access or security state and actions
+    ├── pages/                         # Full-page components (routed views)
+    │   ├── LandingPage.tsx            # Main dashboard/landing page (post-login)
+    │   ├── LoginPage.tsx              # Login page with MSAL logic and UI
+    │   ├── Dashboard.tsx              # Detailed dashboard (could be a version of LandingPage)
+    │   ├── ChangeItems.tsx            # Page to list and manage change records
+    │   ├── RoleManagement.tsx         # Administration page for managing roles and permissions
+    │   ├── ReportPage.tsx             # Page to generate/export reports
+    │   ├── ExtractionMonitoring.tsx   # Standalone page for monitoring extraction processes
+    │   └── NotFoundPage.tsx           # 404 page for unmatched routes
+    ├── components/                    # Reusable UI components and widgets
+    │   ├── common/                    
+    │   │   ├── Header.tsx             # Global header (brand logo, user info, etc.)
+    │   │   ├── Footer.tsx             # Global footer
+    │   │   ├── NavigationMenu.tsx     # Top or side navigation bar/menu
+    │   │   ├── Sidebar.tsx            # Left-side menu for dashboard/navigation
+    │   │   └── LoadingSpinner.tsx     # Reusable loading indicator
+    │   ├── auth/                      
+    │   │   ├── AuthenticatedRedirect.tsx  # Component to show post-login message and auto-redirect after delay
+    │   │   ├── PrivateRoute.tsx           # Wrapper for routes that require a logged-in user
+    │   │   └── RoleBasedRoute.tsx         # Component to restrict access based on user roles/permissions
+    │   ├── dashboard/                 
+    │   │   ├── StatsCard.tsx          # Widget for displaying statistics in the dashboard
+    │   │   ├── RecentChanges.tsx      # List of recent changes or updates
+    │   │   └── GraphWidget.tsx        # Graph or chart component to visualize data
+    │   └── forms/                     
+    │       ├── ChangeForm.tsx         # Form for adding/updating change records
+    │       └── ReportForm.tsx         # Form to specify report criteria and options
+    ├── utils/                         # Utility functions and constants
+    │   ├── constants.ts               # Constants (e.g., API endpoints, role names, etc.)
+    │   ├── helpers.ts                 # Reusable helper functions (e.g., date formatting)
+    │   └── validators.ts              # Functions for form/field validations
+    └── routes/                        # (Optional) Centralized route definitions
+        ├── PublicRoutes.tsx           # Routes accessible without authentication
+        └── PrivateRoutes.tsx          # Routes that require login (with optional role restrictions)

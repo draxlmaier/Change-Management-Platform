@@ -1,0 +1,51 @@
+/* 1) Basic reset for footer */
+.logos {
+  position: relative;
+  white-space: nowrap;
+}
+
+/* 2) Fade overlays at each end */
+.logos::before,
+.logos::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 200px;              /* width of the fade area */
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+.logos::before {
+  left: 0;
+  background: linear-gradient(to left, rgba(255,255,255,0), white);
+}
+.logos::after {
+  right: 0;
+  background: linear-gradient(to right, rgba(255,255,255,0), white);
+}
+
+/* 3) Slide animation */
+@keyframes slide-logos {
+  from   { transform: translateX(0); }
+  to     { transform: translateX(-100%); }
+}
+
+/* 4) Both slide containers use that animation */
+.logos-slide {
+  display: inline-block;
+  animation: slide-logos 30s linear infinite;
+}
+
+/* 5) Pause on hover */
+.logos:hover .logos-slide {
+  animation-play-state: paused;
+}
+
+/* 6) Hide any scrollbar (if needed) */
+.logos {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.logos::-webkit-scrollbar {
+  display: none;             /* Chrome/Safari */
+}
