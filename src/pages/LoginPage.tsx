@@ -8,6 +8,7 @@ import {
 } from "@azure/msal-react";
 import { useNavigate } from "react-router-dom";
 
+
 const LoginPage: React.FC = () => {
   const { instance } = useMsal();
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ const LoginPage: React.FC = () => {
           <p className="text-green-700 font-semibold">
             You are successfully logged in!
           </p>
-          <p>Redirecting to landing page in {countdown}…</p>
+          <p>Redirecting to home page in {countdown}…</p>
         </AuthenticatedTemplate>
 
         <UnauthenticatedTemplate>
@@ -70,7 +71,7 @@ const LoginPage: React.FC = () => {
           </p>
           {/* your custom button image */}
           <img
-            src="/sign in with microsoft.jpg"
+            src= "../assets/images/sign in with microsoft.jpg"
             alt="Sign in with Microsoft"
             onClick={handleLogin}
             className="mx-auto cursor-pointer select-none"
