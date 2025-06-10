@@ -19,7 +19,7 @@ interface Props {
   onUploadComplete: () => void;
 }
 
-const scopes = ["Sites.ReadWrite.All", "Files.ReadWrite.All"];
+const scopes = ["Sites.ReadWrite.All"];
 
 const SharePointUploader: React.FC<Props> = ({
   data,
