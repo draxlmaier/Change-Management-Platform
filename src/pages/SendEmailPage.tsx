@@ -1,11 +1,10 @@
-// src/pages/SendEmailPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
 import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
 import { graphTokenRequest } from "../authConfig";
 import harnessBg from "../assets/images/harness-bg.png";
+import { msalInstance } from "../auth/msalInstance";
 
 interface IProject {
   id: string;
@@ -28,135 +27,214 @@ interface ListsConfig {
 interface QuestionState {
   id: string;
   description: string;
-  receiverEmail: string;
+  action: string;
   responsibleEmail: string;
+  responsibleRole: string;
   triggerOn: string;
   triggerChoice: string;
   sendIntervalValue: number;
   sendIntervalUnit: string;
   lastSent?: string;
   responseReceived?: boolean;
+  conversationId?: string;
+  internetMessageId?: string;
 }
+
+const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 min
 
 const SendEmailPage: React.FC = () => {
   const { projectKey, itemId } = useParams<{ projectKey: string; itemId: string }>();
   const navigate = useNavigate();
-  const { instance } = useMsal();
 
   const [questions, setQuestions] = useState<QuestionState[]>([]);
-  const [processNumber, setProcessNumber] = useState("");
+  const [processnumber, setProcessNumber] = useState("");
   const [carline, setCarline] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [project, setProject] = useState<IProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // For displaying the project logo
-  const [project, setProject] = useState<IProject | null>(null);
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
-      setLoading(true);
       try {
+        setLoading(true);
+
         const raw = localStorage.getItem("cmConfigLists");
-        if (!raw) {
-          setError("Configuration missing");
-          setLoading(false);
-          return;
-        }
+        if (!raw) throw new Error("Configuration missing");
         const config: ListsConfig = JSON.parse(raw);
 
-        // find the matching project
         const foundProject = config.projects.find((p) => p.id === projectKey);
-        if (!foundProject) {
-          setError(`No project found for key "${projectKey}"`);
-          setLoading(false);
-          return;
-        }
+        if (!foundProject) throw new Error(`No project found for key "${projectKey}"`);
         setProject(foundProject);
 
-        const listId = foundProject.mapping.implementation;
-        if (!listId) {
-          setError("No implementation list assigned");
-          setLoading(false);
-          return;
-        }
+        const token = await getAccessToken(msalInstance, graphTokenRequest.scopes);
+        if (!token) throw new Error("No Graph token acquired");
 
-        const token = await getAccessToken(instance, graphTokenRequest.scopes);
-        if (!token) throw new Error("No Graph token");
+        const profile = await axios.get("https://graph.microsoft.com/v1.0/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (mounted) setUserEmail(profile.data.mail || profile.data.userPrincipalName);
 
-        // Load item to get ProcessNumber / Carline
         const itemResp = await axios.get(
-          `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${listId}/items/${itemId}?expand=fields`,
+          `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${foundProject.mapping.implementation}/items/${itemId}?expand=fields`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        const f = itemResp.data.fields;
-        setProcessNumber(f["Process_x0020_number_x0020__x002"] || "");
-        setCarline(f["Carline_x0020__x002d__x0020_Proc"] || "");
+        const fields = itemResp.data.fields;
+        if (mounted) {
+          setProcessNumber(fields["Processnumber"] || "");
+          setCarline(fields["Carline"] || "");
+        }
 
-        // Load questions
         const qsResp = await axios.get(
           `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${config.questionsListId}/items?$top=5000&expand=fields`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        const qsData: QuestionState[] = qsResp.data.value
-          .map((item: any) => ({
+
+        const qsData: QuestionState[] = qsResp.data.value.map((item: any) => {
+          const f = item.fields;
+          return {
             id: item.id,
-            description: item.fields["field_0"],
-            receiverEmail: item.fields["field_3"] || "",
-            responsibleEmail: item.fields["field_4"] || "",
-            triggerOn: item.fields["field_2"] || "Oui",
+            description: f["field_0"] || "",
+            action: f["field_7"] || "",
+            responsibleEmail: f["field_4"] || "",
+            responsibleRole: f["field_8"] || "",
+            triggerOn: f["field_2"] || "Oui",
             triggerChoice: "",
-            sendIntervalValue: item.fields["field_6"] || 3,
-            sendIntervalUnit: item.fields["field_7"] || "Days",
-            lastSent: item.fields["field_8"],
-            responseReceived: item.fields["field_9"],
-          }))
-          .sort((a: QuestionState, b: QuestionState) =>
-            a.description.localeCompare(b.description)
-          );
-        setQuestions(qsData);
-      } catch (e: any) {
-        console.error(e);
-        setError(e.message || "Load failed");
+            sendIntervalValue: f["field_5"] ?? 3,
+            sendIntervalUnit: f["field_6"] || "Days",
+            lastSent: f["lastSent"] || "",
+            responseReceived: f["responseReceived"] || false,
+          };
+        });
+
+        if (mounted) setQuestions(qsData);
+      } catch (err: any) {
+        if (mounted) setError(err.message);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     })();
-  }, [instance, projectKey, itemId]);
 
-  const patchField = async (id: string, name: string, val: any) => {
-    const raw = localStorage.getItem("cmConfigLists");
-    if (!raw) return;
-    const config: ListsConfig = JSON.parse(raw);
-    const token = await getAccessToken(instance, graphTokenRequest.scopes);
-    if (!token) return;
+    return () => { mounted = false; };
+  }, [projectKey, itemId]);
 
-    await axios.patch(
-      `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${config.questionsListId}/items/${id}/fields`,
-      { [name]: val },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+  // Polling logic to check SharePoint for updates
+  useEffect(() => {
+    const pollResponses = async () => {
+      try {
+        const raw = localStorage.getItem("cmConfigLists");
+        if (!raw || !project) return;
+        const config: ListsConfig = JSON.parse(raw);
+        const token = await getAccessToken(msalInstance, graphTokenRequest.scopes);
+
+        const updatedQsResp = await axios.get(
+          `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${config.questionsListId}/items?$top=5000&expand=fields`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const updatedData: QuestionState[] = updatedQsResp.data.value.map((item: any) => {
+          const f = item.fields;
+          return {
+            id: item.id,
+            description: f["field_0"] || "",
+            action: f["field_7"] || "",
+            responsibleEmail: f["field_4"] || "",
+            responsibleRole: f["field_8"] || "",
+            triggerOn: f["field_2"] || "Oui",
+            triggerChoice: "",
+            sendIntervalValue: f["field_5"] ?? 3,
+            sendIntervalUnit: f["field_6"] || "Days",
+            lastSent: f["lastSent"] || "",
+            responseReceived: f["responseReceived"] || false,
+          };
+        });
+
+        setQuestions((prev) =>
+          prev.map((q) => {
+            const updated = updatedData.find((u) => u.id === q.id);
+            return updated ? { ...q, responseReceived: updated.responseReceived } : q;
+          })
+        );
+      } catch (err) {
+        console.error("Polling failed:", err);
+      }
+    };
+
+    pollTimerRef.current = setInterval(pollResponses, POLL_INTERVAL_MS);
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [project]);
+
+  const patchField = async (questionId: string, key: string, val: any) => {
+    try {
+      const raw = localStorage.getItem("cmConfigLists");
+      if (!raw) return;
+      const config: ListsConfig = JSON.parse(raw);
+      const token = await getAccessToken(msalInstance, graphTokenRequest.scopes);
+      await axios.patch(
+        `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${config.questionsListId}/items/${questionId}/fields`,
+        { [key]: val },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error("Patch field error:", err);
+    }
   };
 
   const sendMail = async (q: QuestionState) => {
-    const token = await getAccessToken(instance, graphTokenRequest.scopes);
-    if (!token) return;
-
-    // Send mail
-    await axios.post(
+  try {
+    const token = await getAccessToken(msalInstance, graphTokenRequest.scopes);
+    const response = await axios.post(
       "https://graph.microsoft.com/v1.0/me/sendMail",
       {
         message: {
-          subject: `Update – ${processNumber}`,
-          body: { contentType: "text", content: q.description },
-          toRecipients: [{ emailAddress: { address: q.receiverEmail } }],
+          subject: `Update – ${processnumber}`,
+          body: {
+            contentType: "text",
+            content: `Hello,\n\n${q.description}\nCarline: ${carline}\n\nRegards,\n${userEmail}`,
+          },
+          toRecipients: [{ emailAddress: { address: q.responsibleEmail } }],
         },
+        saveToSentItems: true,
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // Update "field_8" with last sent time
-    await patchField(q.id, "field_8", new Date().toISOString());
-  };
+    // Extract Message ID from response headers (Graph returns nothing, so we fetch sent items)
+    const sentResponse = await axios.get(
+      "https://graph.microsoft.com/v1.0/me/mailFolders/SentItems/messages?$top=1&$orderby=sentDateTime desc",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const message = sentResponse.data.value[0];
+    const conversationId = message.conversationId;
+    const internetMessageId = message.internetMessageId;
+
+    const now = new Date().toISOString();
+    await patchField(q.id, "lastSent", now);
+    await patchField(q.id, "responseReceived", false);
+    await patchField(q.id, "conversationId", conversationId);
+    await patchField(q.id, "internetMessageId", internetMessageId);
+
+    setQuestions((curr) =>
+      curr.map((x) =>
+        x.id === q.id
+          ? {
+              ...x,
+              lastSent: now,
+              responseReceived: false,
+            }
+          : x
+      )
+    );
+  } catch (err: any) {
+    alert(`Send mail failed: ${err.message}`);
+  }
+};
 
   if (loading) return <div className="p-8">Loading…</div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
@@ -166,124 +244,79 @@ const SendEmailPage: React.FC = () => {
       className="relative w-full min-h-screen bg-cover bg-center"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
-      <div className="absolute inset-0 bg-black/30 z-10 pointer-events-none" />
+      <div className="absolute inset-0 z-10 pointer-events-none" />
+      <button
+        onClick={() => navigate(`/details/${projectKey}/implementation/${itemId}`)}
+        className="px-3 py-2 bg-white/20 rounded text-white"
+      >
+        ← Back
+      </button>
 
-      {/* Fixed header */}
-      <div className="absolute top-4 left-4 right-4 flex justify-between z-30 px-4">
-        <button
-          onClick={() => navigate(`/details/${projectKey}/implementation/${itemId}`)}
-          className="px-3 py-2 bg-white/20 rounded text-white"
-        >
-          ← Back
-        </button>
-      </div>
-
-      {/* Content panel */}
       <div className="relative z-20 w-full p-8 space-y-6 text-white">
-        {/* Show project logo if present */}
-        {project?.logo && (
-          <img
-            src={project.logo}
-            alt={`${project.displayName} logo`}
-            className="h-16 w-auto mb-4"
-          />
-        )}
         <h1 className="text-2xl font-bold">Automatic Mail</h1>
-        <p>
-          <strong>Process Number:</strong> {processNumber}
-        </p>
-        <p>
-          <strong>Carline:</strong> {carline}
-        </p>
+        <p>Process Number: {processnumber}</p>
+        <p>Carline: {carline}</p>
+        <p>Logged in as: {userEmail}</p>
 
-        {/* Headers */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_4fr_2fr_2fr_1fr_1fr_1fr] gap-4 px-4 py-2 text-white font-semibold">
-          <div>Trigger</div>
-          <div>Description</div>
-          <div>Receiver</div>
-          <div>Responsible</div>
+        <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr_2fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-4 px-4 py-2 font-semibold">
+          <div>Question</div>
+          <div>Action</div>
+          <div>Responsable Email</div>
+          <div>Responsible's Role</div>
+          <div>Response</div>
           <div>Interval</div>
+          <div>Unit</div>
           <div>Last Sent</div>
-          <div>Response?</div>
+          <div>Response Received</div>
+          <div>Edit</div>
         </div>
 
-        {/* Questions */}
-        <div className="space-y-4">
-          {questions.map((q) => (
-            <div
-              key={q.id}
-              className="grid grid-cols-1 md:grid-cols-[1fr_4fr_2fr_2fr_1fr_1fr_1fr] gap-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md p-4 text-white"
-            >
-              {/* Trigger */}
-              <div className="flex items-center space-x-2">
-                {["Oui", "Non"].map((opt) => (
-                  <label key={opt} className="flex items-center space-x-1">
-                    <input
-                      type="radio"
-                      name={`trigger-${q.id}`}
-                      value={opt}
-                      checked={q.triggerChoice === opt}
-                      onChange={async () => {
-                        setQuestions((curr) =>
-                          curr.map((x) => (x.id === q.id ? { ...x, triggerChoice: opt } : x))
-                        );
-                        if (opt === q.triggerOn) await sendMail(q);
-                      }}
-                    />
-                    <span>{opt}</span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Description */}
-              <div className="font-semibold">{q.description}</div>
-
-              {/* Receiver Email */}
-              <div>{q.receiverEmail}</div>
-
-              {/* Responsible Email */}
-              <div>{q.responsibleEmail}</div>
-
-              {/* Interval */}
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  min={1}
-                  value={q.sendIntervalValue}
-                  onChange={async (e) => {
-                    const v = +e.target.value;
-                    setQuestions((curr) =>
-                      curr.map((x) => (x.id === q.id ? { ...x, sendIntervalValue: v } : x))
-                    );
-                    await patchField(q.id, "field_6", v);
-                  }}
-                  className="w-16 bg-white bg-opacity-80 rounded px-2 py-1 text-black"
-                />
-                <select
-                  value={q.sendIntervalUnit}
-                  onChange={async (e) => {
-                    const u = e.target.value;
-                    setQuestions((curr) =>
-                      curr.map((x) => (x.id === q.id ? { ...x, sendIntervalUnit: u } : x))
-                    );
-                    await patchField(q.id, "field_7", u);
-                  }}
-                  className="bg-white bg-opacity-80 rounded px-2 py-1 text-black"
-                >
-                  <option>Seconds</option>
-                  <option>Minutes</option>
-                  <option>Days</option>
-                </select>
-              </div>
-
-              {/* Last Sent */}
-              <div className="text-center">{q.lastSent || "-"}</div>
-
-              {/* Response Received */}
-              <div className="text-center">{q.responseReceived ? "Yes" : "No"}</div>
+        {questions.map((q) => (
+          <div
+            key={q.id}
+            className="grid grid-cols-1 md:grid-cols-[3fr_2fr_2fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md p-4"
+          >
+            <div>{q.description}</div>
+            <div>{q.action}</div>
+            <div>{q.responsibleEmail}</div>
+            <div>{q.responsibleRole}</div>
+            <div>
+              {["Oui", "Non"].map((opt) => (
+                <label key={opt} className="flex items-center space-x-1">
+                  <input
+                    type="radio"
+                    name={`trigger-${q.id}`}
+                    value={opt}
+                    checked={q.triggerChoice === opt}
+                    onChange={async () => {
+                      setQuestions((curr) =>
+                        curr.map((item) =>
+                          item.id === q.id ? { ...item, triggerChoice: opt } : item
+                        )
+                      );
+                      if (opt === q.triggerOn) await sendMail(q);
+                    }}
+                  />
+                  <span>{opt}</span>
+                </label>
+              ))}
             </div>
-          ))}
-        </div>
+            <div>{q.sendIntervalValue}</div>
+            <div>{q.sendIntervalUnit}</div>
+            <div>{q.lastSent || "-"}</div>
+            <div>{q.responseReceived ? "Yes" : "No"}</div>
+            <div>
+              <button
+                onClick={() =>
+                  navigate(`/send-email/${projectKey}/implementation/${itemId}/edit-question/${q.id}`)
+                }
+                className="px-3 py-1 bg-yellow-500 text-white rounded"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

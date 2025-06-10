@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { AVAILABLE_PROJECTS } from "../../constants/projects";
 
 interface IProject {
-  id: string;               
-  displayName: string;      
-  logo?: string;            
+  id: string;
+  displayName: string;
+  logo?: string;
   mapping: {
-    feasibility: string;    
-    implementation: string; 
+    feasibility: string;
+    implementation: string;
   };
 }
 
 export default function DashboardLayout(): React.ReactElement {
   const [projects, setProjects] = useState<{ key: string; label: string; icon: React.ReactNode }[]>([]);
+
+  const draxLogo = require("../../assets/images/draxlmaeir slogan.png");
 
   useEffect(() => {
     const rawConfig = localStorage.getItem("cmConfigLists");
@@ -20,22 +23,31 @@ export default function DashboardLayout(): React.ReactElement {
       try {
         const config = JSON.parse(rawConfig);
         if (Array.isArray(config.projects)) {
-          // Filter projects with both feasibility and implementation mappings
-          const validProjects = config.projects.filter((project: IProject) => 
+          const validProjects = config.projects.filter((project: IProject) =>
             project.mapping.feasibility && project.mapping.implementation
           );
 
-          // Map projects to the format used in the component
-          const mappedProjects = validProjects.map((project: IProject) => ({
-            key: project.id.toLowerCase(), // Ensure the key is lowercase
-            label: project.displayName,
-            icon: project.logo ? 
-              <img 
-                src={project.logo} 
-                alt={project.displayName} 
-                className="h-16 w-auto"
-              /> : null
-          }));
+          const mappedProjects = validProjects.map((project: IProject) => {
+            const resolvedLogo =
+              AVAILABLE_PROJECTS.find(p => p.id.toLowerCase() === project.id.toLowerCase())?.logo ||
+              AVAILABLE_PROJECTS.find(p => p.id === "other")?.logo;
+
+            return {
+              key: project.id.toLowerCase(),
+              label: project.displayName,
+              icon: resolvedLogo ? (
+                <img src={resolvedLogo} alt={project.displayName} className="h-16 w-auto" />
+              ) : null,
+            };
+          });
+
+          if (mappedProjects.length > 0) {
+            mappedProjects.push({
+              key: "draxlmaeir",
+              label: "Draxlmaeir",
+              icon: <img src={draxLogo} alt="Draxlmaeir" className="h-16 w-auto" />,
+            });
+          }
 
           setProjects(mappedProjects);
         }
@@ -54,28 +66,18 @@ export default function DashboardLayout(): React.ReactElement {
     <div className="flex h-screen">
       <aside className="w-56 bg-[#0095B6] text-gray-100 p-4 flex flex-col">
         <NavLink to="/dashboard" end className={({ isActive }) => linkClass(isActive)}>
-          <img src="/assets/images/dashboard home.png" alt="Home" className="h-16 w-auto"/>
+          <img src={require("../../assets/images/dashboard.png")} alt="Home" className="h-16 w-auto" />
         </NavLink>
-        
+
         {projects.map(({ key, label, icon }) => (
           <NavLink
             key={key}
-            to={`/dashboard/${key}`} // Use the lowercase key for routing
+            to={`/dashboard/${key}`}
             className={({ isActive }) => linkClass(isActive)}
           >
             <span className="h-24 w-auto">{icon}</span>
-            {label}
           </NavLink>
         ))}
-
-        <div className="mt-auto">
-          <NavLink
-            to="/dashboard/report"
-            className={({ isActive }) => linkClass(isActive)}
-          >
-            <img src="/assets/images/report icon.png" alt="Report" className="h-16 w-auto"/>
-          </NavLink>
-        </div>
       </aside>
 
       <main className="flex-1 overflow-auto bg-gray-50">

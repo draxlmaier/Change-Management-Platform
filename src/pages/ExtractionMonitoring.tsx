@@ -1,10 +1,10 @@
 // src/pages/ExtractionMonitoring.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMsal } from '@azure/msal-react';
 import axios from 'axios';
 import { getAccessToken } from '../auth/getToken';
 import harnessBg from '../assets/images/harness-bg.png';
+import { msalInstance } from "../auth/msalInstance";
 
 interface LogItem {
   id: string;
@@ -13,7 +13,6 @@ interface LogItem {
 
 const ExtractionMonitoring: React.FC = () => {
    const navigate = useNavigate();
-  const { instance } = useMsal();
 
   const [items, setItems] = useState<LogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +34,10 @@ const ExtractionMonitoring: React.FC = () => {
       const { siteId } = JSON.parse(raw);
       const listId = '5f55603b-dabe-4440-966f-d14453ccbe0f';
 
-      const token = await getAccessToken(instance, [
+      const token = await getAccessToken(msalInstance, [
         'https://graph.microsoft.com/Sites.Read.All',
       ]);
+
       if (!token) throw new Error('Authentication failed');
 
       const resp = await axios.get(

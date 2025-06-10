@@ -1,11 +1,12 @@
 // src/pages/DetailsFeasibility.tsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
 import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
+import { msalInstance } from "../auth/msalInstance";
 
 import harnessBg from "../assets/images/harness-bg.png";
+import { PROJECT_LOGO_MAP } from "../constants/projects";
 
 interface IProject {
   id: string;
@@ -32,7 +33,6 @@ interface ChangeItem {
 const DetailsFeasibility: React.FC = () => {
   const { projectKey, itemId } = useParams<{ projectKey: string; itemId: string }>();
   const navigate = useNavigate();
-  const { instance } = useMsal();
 
   const [item, setItem] = useState<ChangeItem | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,18 +62,25 @@ const DetailsFeasibility: React.FC = () => {
         setError(`No project found for key "${projectKey}"`);
         return;
       }
-      setProject(foundProject); // store in state to access foundProject.logo
+        const patchedProject = {
+        ...foundProject,
+        logo: PROJECT_LOGO_MAP[foundProject.id.toLowerCase()] || PROJECT_LOGO_MAP["other"],
+      };
+      setProject(patchedProject);
 
       // Grab feasibility list ID
-      const listId = foundProject.mapping?.feasibility;
+      const listId = foundProject.mapping?.implementation;
       if (!listId) {
         setError("Feasibility list not configured");
         return;
       }
+      const account = msalInstance.getActiveAccount();
+      if (!account) {
+        setError("No signed-in user. Please log in.");
+        return;
+      }
+      const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Read.All"]);
 
-      const token = await getAccessToken(instance, [
-        "https://graph.microsoft.com/Sites.Read.All",
-      ]);
       if (!token) {
         setError("Authentication failed");
         return;
@@ -89,7 +96,7 @@ const DetailsFeasibility: React.FC = () => {
         setError(e.response?.data?.error?.message || e.message);
       }
     })();
-  }, [instance, projectKey, itemId]);
+  }, [ projectKey, itemId]);
 
   if (error) {
     return <div className="p-8 text-red-600">{error}</div>;
@@ -99,7 +106,7 @@ const DetailsFeasibility: React.FC = () => {
   const f = item.fields;
 
   const renderGrid = (fields: Array<[string, string]>) => (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+    <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-2 text-lg items-center">
       {fields.map(([label, key]) => {
         const val = f[key];
         const isEmpty = val === undefined || val === null || val === "";
@@ -119,11 +126,11 @@ const DetailsFeasibility: React.FC = () => {
 
         return (
           <React.Fragment key={key}>
-            <div className="text-white font-medium">{label}</div>
-            <div
-              className={`p-2 rounded border ${
-                isEmpty ? "border-red-600" : "border-transparent"
-              } ${bgColor} ${!bgColor ? "text-white" : ""}`}
+            <div className="text-white font-semibold">{label}</div>
+            <div 
+            className={`p-2 text-white rounded border ${
+              val ? "border-transparent" : "border-red-600"
+            }`}
             >
               {isEmpty ? "—" : val}
             </div>
@@ -184,18 +191,19 @@ const DetailsFeasibility: React.FC = () => {
       </button>
 
       <div className="relative z-20 max-w-4xl mx-auto p-8 space-y-8 text-white">
-        {/* NEW: Show the project logo if present */}
-        {project?.logo && (
-          <img
-            src={project.logo}
-            alt={`${project.displayName} logo`}
-            className="h-16 w-auto mb-4"
-          />
-        )}
-
-        <h1 className="text-3xl font-bold capitalize">
-          {project?.displayName} Implementation Details
-        </h1>
+        {/* Centered Logo + Title */}
+        <div className="flex flex-col items-center text-center mb-8">
+          {project?.logo && (
+            <img
+              src={project.logo}
+              alt={`${project.displayName} logo`}
+              className="h-16 w-auto mb-4"
+            />
+          )}
+          <h1 className="text-3xl font-bold capitalize">
+            {project?.displayName} Feasability Details
+          </h1>
+        </div>
 
         <section className="bg-white/20 backdrop-blur-sm rounded-2xl shadow-md p-6">
           <h2 className="text-2xl font-semibold text-white mb-4">General</h2>
@@ -215,7 +223,9 @@ const DetailsFeasibility: React.FC = () => {
         <div className="flex space-x-4">
           <button
             onClick={() => navigate(`/update/${projectKey}/feasibility/${itemId}`)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-md hover:bg-blue-700 transition"
+           className="flex items-center space-x-2
+                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
+                     rounded-2xl shadow-md text-white text-sm transition"
           >
             Update
           </button>
@@ -227,10 +237,13 @@ const DetailsFeasibility: React.FC = () => {
               const cfg: SavedConfig = JSON.parse(raw);
               const proj = cfg.projects.find((p) => p.id === projectKey);
               if (!proj || !proj.mapping?.feasibility) return;
+              const account = msalInstance.getActiveAccount();
+              if (!account) {
+                setError("No signed-in user. Please log in.");
+                return;
+              }
+              const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
 
-              const token = await getAccessToken(instance, [
-                "https://graph.microsoft.com/Sites.Manage.All",
-              ]);
               if (!token) return;
 
               try {
@@ -245,7 +258,9 @@ const DetailsFeasibility: React.FC = () => {
                 );
               }
             }}
-            className="px-6 py-3 bg-red-600 text-white rounded-2xl shadow-md hover:bg-red-700 transition"
+            className="flex items-center space-x-2
+                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
+                     rounded-2xl shadow-md text-white text-sm transition"
           >
             Delete
           </button>

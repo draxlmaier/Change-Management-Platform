@@ -1,20 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-// Adjust file paths for your images:
 import harnessBg from "../assets/images/harness-bg.png";
-
-// The two phase buttons
 import feasibilityBtn from "../assets/images/implementation.png";
 import implementationBtn from "../assets/images/feasability2.png";
+import { IProject, updateProjectMappingsFromSites } from "./projectMapping";
+import { PROJECT_LOGO_MAP } from "../constants/projects";
 
-interface IProject {
-  id: string;
-  displayName: string;
-  logo?: string;    
-}
 
-// Match the localStorage key used by your Config page
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const PhaseSelectionPage: React.FC = () => {
@@ -23,28 +16,37 @@ const PhaseSelectionPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!projectKey) return;
+    const refreshAndLoad = async () => {
+      await updateProjectMappingsFromSites();
 
-    const raw = localStorage.getItem(LISTS_CONFIG_KEY);
-    if (raw) {
-      try {
-        const config = JSON.parse(raw);
-        if (Array.isArray(config.projects)) {
-          // find the project whose key matches the route
-          const found = config.projects.find(
-            (p: IProject) => p.id === projectKey
-          );
-          if (found) {
-            setProject(found);
+      const raw = localStorage.getItem(LISTS_CONFIG_KEY);
+      if (raw) {
+        try {
+          const config = JSON.parse(raw);
+          if (Array.isArray(config.projects)) {
+            const found = config.projects.find(
+              (p: IProject) => p.id === projectKey
+            );
+            if (found) {
+            const patched = {
+              ...found,
+              logo: PROJECT_LOGO_MAP[found.id.toLowerCase()] || PROJECT_LOGO_MAP["other"],
+            };
+            setProject(patched);
           }
+
+          }
+        } catch (err) {
+          console.error("Error parsing config from localStorage:", err);
         }
-      } catch (err) {
-        console.error("Error parsing config from localStorage:", err);
       }
+    };
+
+    if (projectKey) {
+      refreshAndLoad();
     }
   }, [projectKey]);
 
-  // If no matching project or param is missing, show fallback
   if (!projectKey || !project) {
     return (
       <div
@@ -53,11 +55,13 @@ const PhaseSelectionPage: React.FC = () => {
       >
         <button
           onClick={() => navigate("/project-selection")}
-          className="mb-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+          className="flex items-center space-x-2
+                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
+                     rounded-2xl shadow-md text-white text-sm transition"
         >
-          ← Back to Projects
+          ← Back
         </button>
-        <p className="text-2xl">
+        <p className="text-2xl mt-6">
           Unable to find that project. Please select a valid project.
         </p>
       </div>
@@ -81,7 +85,6 @@ const PhaseSelectionPage: React.FC = () => {
 
       {/* content */}
       <div className="flex flex-col items-center justify-center text-center space-y-10 px-4">
-        {/* Optional: the project's logo */}
         {project.logo && (
           <img
             src={project.logo}
@@ -94,25 +97,10 @@ const PhaseSelectionPage: React.FC = () => {
           Choose Phase for <span className="uppercase">{project.displayName}</span>
         </h1>
 
-        {/* Two clickable "phase" boxes */}
         <div className="flex flex-col sm:flex-row gap-6 items-center">
-          {[
-            {
-              src: implementationBtn,
-              alt: "Implementation",
-              label: "Feasibility",
-              route: `/changes/${project.id}/implementation`,
-            },
-            {
-              src: feasibilityBtn,
-              alt: "Feasibility",
-              label: "Implementation",
-              route: `/changes/${project.id}/feasibility`,
-            },
-          ].map((btn, i) => (
+          {project.mapping.feasibility && (
             <div
-              key={i} // fix "unique key" warning by using i or something else unique
-              onClick={() => navigate(btn.route)}
+              onClick={() => navigate(`/changes/${project.id}/implementation`)}
               className="
                 flex flex-col items-center justify-center
                 w-56 sm:w-80
@@ -125,12 +113,30 @@ const PhaseSelectionPage: React.FC = () => {
                 transition-transform
               "
             >
-              <img src={btn.src} alt={btn.alt} className="h-24 sm:h-32 mb-6" />
-              <span className="text-white text-lg font-semibold">
-                {btn.label}
-              </span>
+              <img src={implementationBtn} alt="Feasibility" className="h-24 sm:h-32 mb-6" />
+              <span className="text-white text-lg font-semibold">Feasibility</span>
             </div>
-          ))}
+          )}
+
+          {project.mapping.implementation && (
+            <div
+              onClick={() => navigate(`/changes/${project.id}/feasibility`)}
+              className="
+                flex flex-col items-center justify-center
+                w-56 sm:w-80
+                p-10
+                bg-[#1cb3d2]/30 
+                backdrop-blur-md
+                rounded-2xl
+                cursor-pointer
+                hover:scale-105
+                transition-transform
+              "
+            >
+              <img src={feasibilityBtn} alt="Implementation" className="h-24 sm:h-32 mb-6" />
+              <span className="text-white text-lg font-semibold">Implementation</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

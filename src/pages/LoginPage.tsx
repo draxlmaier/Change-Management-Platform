@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
   // Redirect when countdown hits zero
   useEffect(() => {
     if (loggedIn && countdown <= 0) {
-      navigate("/landing");
+      navigate("/tool-selection");
     }
   }, [loggedIn, countdown, navigate]);
 

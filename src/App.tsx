@@ -20,18 +20,26 @@ import KPIInputPage              from "./pages/KPIInputPage";
 
 import DashboardHome   from "./pages/DashboardHome";
 import DashboardPage   from "./pages/DashboardPage";
-import ReportPage      from "./pages/ReportPage";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 
 import ChangeItemsFeasibilityExtra from "./pages/ChangeItemsFeasibilityExtra";
 import ChangeItemsImplementationExtra from "./pages/ChangeItemsImplementationExtra";
+import AddQuestionPage from "./pages/AddQuestionPage";
+import EditQuestionPage from "./pages/EditQuestionPage";
+import ScrapFollowingSection from "./pages/ScrapFollowingSection";
+import FollowCostKPIEditor from "./pages/FollowCostKPIEditor";
+import MonthlyKPIEditor from "./pages/MonthlyKPIEditor";
+
+import ToolSelectionPage from "./pages/ToolSelectionPage";
+import SharePointUploaderPage from "./pages/SharePointUploaderPage"; // assuming this exists
 
 const App: React.FC = () => (
   <Routes>
     {/* Auth & Landing */}
-    <Route path="/" element={<LoginPage />} />
-    <Route path="/landing" element={<LandingPage />} />
-
+    <Route index element={<LoginPage />} />
+    <Route path="landing" element={<LandingPage />} />
+    <Route path="/tool-selection" element={<ToolSelectionPage />} />
+    <Route path="/data-extraction" element={<SharePointUploaderPage />} />
     {/* Configuration */}
     <Route path="/config" element={<ConfigPage />} />
 
@@ -46,6 +54,8 @@ const App: React.FC = () => (
     <Route path="/update/:projectKey/feasibility/:itemId" element={<UpdateFeasibility />} />
     <Route path="/send-email/:projectKey/:phase/:itemId" element={<SendEmailPage />} />
 
+    <Route path="/send-email/:projectKey/:phase/:itemId/add-question" element={<AddQuestionPage />} />
+    <Route path="/send-email/:projectKey/:phase/:itemId/edit-question/:questionId" element={<EditQuestionPage />} />
     {/* NEW routes for extra phases */}
     <Route path="/changes/:projectKey/feasibility-extra" element={<ChangeItemsFeasibilityExtra />} />
     <Route path="/changes/:projectKey/implementation-extra" element={<ChangeItemsImplementationExtra />} />
@@ -57,10 +67,12 @@ const App: React.FC = () => (
     <Route path="/dashboard/*" element={<DashboardLayout />}>  
       <Route index element={<DashboardHome />} />
       <Route path=":project" element={<DashboardPage />} />
-      <Route path="report" element={<ReportPage />} />
     </Route>
     {/* …other routes */}
     <Route path="/kpis" element={<KPIInputPage/>} />
+    <Route path="/monthly-editor" element={<MonthlyKPIEditor/>}/>
+    <Route path="/follow-cost-editor" element={<FollowCostKPIEditor/>}/>
+    <Route path="/scrap-following" element={<ScrapFollowingSection/>}/>
 
     {/* 404 */}
     <Route path="*" element={<NotFoundPage />} />

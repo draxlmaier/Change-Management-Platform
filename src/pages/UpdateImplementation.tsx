@@ -1,11 +1,11 @@
 // src/pages/UpdateImplementation.tsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
 import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
 
 import harnessBg from "../assets/images/harness-bg.png";
+import { msalInstance } from "../auth/msalInstance";
 
 // Helper to calc business days between two YYYY‑MM‑DD dates
 const calculateWorkingDays = (start: string, end: string) => {
@@ -46,7 +46,6 @@ interface ListsConfig {
 export default function UpdateImplementation() {
   const { projectKey, itemId } = useParams<{ projectKey: string; itemId: string }>();
   const navigate = useNavigate();
-  const { instance } = useMsal();
 
   const [fields, setFields] = useState<Record<string, any>>({});
   const [readOnlyCols, setReadOnlyCols] = useState<string[]>([]);
@@ -75,15 +74,12 @@ export default function UpdateImplementation() {
         }
         setProject(foundProject);
 
-        const listId = foundProject.mapping.implementation;
+        const listId = foundProject.mapping.feasibility;
         if (!listId) {
           setLoadError("No implementation list assigned");
           return;
         }
-
-        const token = await getAccessToken(instance, [
-          "https://graph.microsoft.com/Sites.Read.All",
-        ]);
+        const token = await getAccessToken(msalInstance,["https://graph.microsoft.com/Sites.Read.All"]);
         if (!token) throw new Error("No token");
 
         const { data: item } = await axios.get<{ fields: any }>(
@@ -108,7 +104,7 @@ export default function UpdateImplementation() {
         setLoadError(e.response?.data?.error?.message || e.message || "Save failed");
       }
     })();
-  }, [instance, projectKey, itemId]);
+  }, [ projectKey, itemId]);
 
   if (loadError) return <div className="p-8 text-red-600">{loadError}</div>;
 
@@ -141,8 +137,10 @@ export default function UpdateImplementation() {
     const foundProject = config.projects.find((p) => p.id === projectKey);
     if (!foundProject) throw new Error(`No project found for key "${projectKey}"`);
 
-    const listId = foundProject.mapping.implementation;
-    const token = await getAccessToken(instance, ["https://graph.microsoft.com/Sites.Manage.All"]);
+    const listId = foundProject.mapping.feasibility;
+    
+    const token = await getAccessToken(msalInstance,["https://graph.microsoft.com/Sites.Manage.All"]);
+
     if (!token) throw new Error("No token");
 
     // Filter out invalid fields
@@ -344,7 +342,7 @@ export default function UpdateImplementation() {
             className="h-16 w-auto mb-4"
           />
         )}
-        <h1 className="text-3xl font-bold">Update Implementation</h1>
+        <h1 className="text-3xl font-bold">Update Feasability </h1>
 
         {/* tabs */}
         <div className="flex border-b border-white/30">

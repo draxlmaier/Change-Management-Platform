@@ -16,6 +16,7 @@ import porscheLogo from '../assets/images/logos/Porsche.png';
 import rivianLogo from '../assets/images/logos/rivian.png';
 import teslaLogo from '../assets/images/logos/Tesla.png';
 import volkswagenLogo from '../assets/images/logos/Volkswagen.png';
+
 export const AVAILABLE_PROJECTS = [
   {
     id: 'audi',
@@ -98,3 +99,22 @@ export const AVAILABLE_PROJECTS = [
     logo: otherLogo,
   },
 ];
+export const PROJECT_LOGO_MAP: Record<string, string> = {
+  audi: audiLogo,
+  bmw: bmwLogo,
+  chevrolet: Chevrolet,
+  ford: fordLogo,
+  gmc: gmcLogo,
+  jaguar: jaguarLogo,
+  lamborghini: lamborghiniLogo,
+  landrover: landroverLogo,
+  lucid: lucidLogo,
+  "mercedes-benz": mercedesBenzLogo,
+  mini: miniLogo,
+  porsche: porscheLogo,
+  rivian: rivianLogo,
+  tesla: teslaLogo,
+  volkswagen: volkswagenLogo,
+  other: otherLogo,
+};
+

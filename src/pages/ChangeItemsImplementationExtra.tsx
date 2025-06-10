@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
 import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
 import harnessBg from "../assets/images/harness-bg.png";
+import { msalInstance } from "../auth/msalInstance";
 
 interface IProject {
   id: string;
@@ -38,7 +38,6 @@ interface ChangeItem {
 const ChangeItemsFeasibilityExtra: React.FC = () => {
   const { projectKey } = useParams<{ projectKey: string }>();
   const navigate = useNavigate();
-  const { instance } = useMsal();
 
   const [error, setError] = useState<string | null>(null);
 
@@ -72,11 +71,16 @@ const ChangeItemsFeasibilityExtra: React.FC = () => {
           setError("No feasibilityExtra list assigned");
           return;
         }
+        const account = msalInstance.getActiveAccount();
+if (!account) {
+  setError("No user is signed in.");
+  return;
+}
 
         const siteId = config.siteId;
-        const token = await getAccessToken(instance, [
-          "https://graph.microsoft.com/Sites.Read.All",
-        ]);
+        const token = await getAccessToken(msalInstance, [
+  "https://graph.microsoft.com/Sites.Read.All",
+]);
         if (!token) {
           setError("Authentication failed");
           return;
@@ -109,7 +113,7 @@ const ChangeItemsFeasibilityExtra: React.FC = () => {
         setError(e.response?.data?.error?.message || e.message);
       }
     })();
-  }, [projectKey, instance]);
+  }, [projectKey]);
 
   const pageCount = Math.ceil(items.length / pageSize);
   const currentItems = items.slice(page * pageSize, page * pageSize + pageSize);

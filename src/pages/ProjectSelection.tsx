@@ -1,52 +1,48 @@
-// src/pages/ProjectSelection.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
+import { updateProjectMappingsFromSites, IProject } from "./projectMapping";
+import { PROJECT_LOGO_MAP } from "../constants/projects"; // ⬅️ new
 
-/** 
- * Match whatever interface or shape you're saving in localStorage.
- * For instance, if your ConfigPage pushes objects like:
- * { key: "audi", title: "Audi", logo: "/some/path/Audi.png" }
- */
-interface IProject {
-  id: string;
-  displayName: string;
-  logo?: string;
-}
-
-// The key under which your Config page saves data.
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const ProjectSelection: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<IProject[]>([]);
 
-  // 1) Load projects from localStorage on mount
   useEffect(() => {
-    const raw = localStorage.getItem(LISTS_CONFIG_KEY);
-    if (raw) {
-      try {
-        // If you're storing an entire config object, parse that first:
-        const config = JSON.parse(raw);
-        // E.g. config might have { projects: [{ key, title, logo }, ...], ... }
-        if (Array.isArray(config.projects)) {
-          setProjects(config.projects);
+    const refreshAndLoadProjects = async () => {
+      await updateProjectMappingsFromSites();
+
+      const raw = localStorage.getItem(LISTS_CONFIG_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.projects)) {
+            const patched = parsed.projects.map((proj: IProject) => ({
+              ...proj,
+              logo: PROJECT_LOGO_MAP[proj.id.toLowerCase()] || PROJECT_LOGO_MAP["other"], // ✅ Fix here
+            }));
+            setProjects(patched);
+          }
+        } catch (err) {
+          console.error("Failed to parse localStorage config:", err);
         }
-      } catch (err) {
-        console.error("Error parsing projects from localStorage:", err);
       }
-    }
+    };
+
+    refreshAndLoadProjects();
   }, []);
 
   return (
     <div
-      className="relative w-full min-h-screen bg-cover bg-center"
+      className="relative w-full h-screen bg-cover bg-center overflow-hidden m-0 p-0"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
       {/* Back button */}
       <button
         onClick={() => navigate("/landing")}
-        className="self-start mb-4 ml-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+        className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition m-4"
       >
         ← Back
       </button>
@@ -57,7 +53,6 @@ const ProjectSelection: React.FC = () => {
           Select a Project
         </h1>
 
-        {/* Dynamically render project cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
           {projects.map((proj) => (
             <div
@@ -65,11 +60,13 @@ const ProjectSelection: React.FC = () => {
               onClick={() => navigate(`/changes/${proj.id}`)}
               className="cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition"
             >
-              <img
-                src={proj.logo}
-                alt={`${proj.displayName} logo`}
-                className="h-24 w-auto"
-              />
+              {proj.logo && (
+                <img
+                  src={proj.logo}
+                  alt={`${proj.displayName} logo`}
+                  className="h-24 w-auto"
+                />
+              )}
               <h2 className="text-xl font-semibold text-white">
                 {proj.displayName}
               </h2>
@@ -77,7 +74,6 @@ const ProjectSelection: React.FC = () => {
             </div>
           ))}
 
-          {/* If no projects found */}
           {projects.length === 0 && (
             <p className="col-span-full text-center text-gray-300 mt-6">
               No projects found. Please add some in the Config Page first!

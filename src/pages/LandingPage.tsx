@@ -1,55 +1,89 @@
+// LandingPage.tsx
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Footer from "../components/Footer";
+import Carousel from "react-multi-carousel";
+import "react-multi-carousel/lib/styles.css";
+import axios from "axios";
+import { msalInstance } from "../auth/msalInstance";
+
 import harnessBg from "../assets/images/harness.png";
 import cmp3dLogo from "../assets/images/change_management_platform_full2.png";
 import draxlLogo from "../assets/images/draxlmaier-group.png";
 import settingsIc from "../assets/images/settings-icon.png";
-import Carousel from "react-multi-carousel";
-import "react-multi-carousel/lib/styles.css";
 import changeBtn from "../assets/images/cmplogoofficialnotext.png";
 import dashBtn from "../assets/images/dashboard.png";
 import kpiBtn from "../assets/images/kpis.png";
-import { useMsal } from "@azure/msal-react";
-import { CarImage } from "./types"; // Ensure this is correctly pointing to your types file
-import { db } from "./db"; // Ensure your Dexie DB setup is exported from here
+import Footer from "../components/Footer";
+
+import { CarImage } from "./types";
+import { db } from "./db";
+import { getAccessToken } from "../auth/getToken";
+
+import HeaderWithBack from "../components/HeaderWithBack";
+import { ArrowLeftIcon } from "lucide-react";
+
+interface IProject {
+  id: string;
+  displayName: string;
+  logo?: string;
+  mapping: {
+    feasibility: string;
+    implementation: string;
+    feasibilityExtra?: string;
+    implementationExtra?: string;
+  };
+}
+
+interface cmConfigLists {
+  siteId: string;
+  questionsListId: string;
+  monthlyListId: string;
+  followCostListId: string;
+  projects: IProject[];
+  assignedRoles?: { email: string; role: string }[];
+  frequentSites?: string[];
+}
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { instance, accounts } = useMsal();
   const [userName, setUserName] = useState("");
   const [cars, setCars] = useState<CarImage[]>([]);
+  const [projects, setProjects] = useState<IProject[]>([]);
 
+  // Load cars from Dexie, load the config from localStorage
   useEffect(() => {
-    const loadIndexedDBImages = async () => {
+    (async () => {
+      // 1. Load all car images
       const carImages = await db.carImages.toArray();
-      setCars(carImages || []);
-    };
-    loadIndexedDBImages();
+      setCars(carImages);
+
+      // 2. Load config from localStorage to get the list of projects
+      const raw = localStorage.getItem("cmConfigLists");
+      if (!raw) return;
+      const config: cmConfigLists = JSON.parse(raw);
+      setProjects(config.projects || []);
+    })();
   }, []);
 
+  // Fetch user display name from Microsoft Graph (if desired)
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (accounts.length === 0) return;
-      const account = accounts[0];
+    (async () => {
       try {
-        const response = await instance.acquireTokenSilent({
-          scopes: ["User.Read"],
-          account,
-        });
-        const accessToken = response.accessToken;
+        const token = await getAccessToken(msalInstance,["User.Read"]);
+        if (!token) return;
         const profileRes = await fetch("https://graph.microsoft.com/v1.0/me", {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const profile = await profileRes.json();
         setUserName(profile.displayName || "");
       } catch (err) {
         console.error("Error loading user data", err);
       }
-    };
-    fetchUserProfile();
-  }, [accounts, instance]);
+    })();
+  }, []);
 
+  // Carousel responsive config
   const responsive = {
     superLargeDesktop: { breakpoint: { max: 4000, min: 3000 }, items: 5 },
     desktop: { breakpoint: { max: 3000, min: 1024 }, items: 3 },
@@ -66,14 +100,30 @@ const LandingPage: React.FC = () => {
         backgroundPosition: "center",
       }}
     >
-      <header className="fixed top-0 left-0 w-full h-16 bg-white/80 backdrop-blur-md z-20 flex items-center justify-between px-6">
-        <button onClick={() => navigate("/config")} className="p-2 hover:opacity-80">
+      {/* Header */}
+     <header className="fixed top-0 left-0 w-full h-16 bg-white/80 backdrop-blur-md z-20 flex items-center justify-between px-6">
+      {/* Left: Back */}
+      <button onClick={() => navigate("/tool-selection")} className="flex items-center gap-1 hover:opacity-80">
+        <ArrowLeftIcon className="h-5 w-5 text-black" />
+        <span className="text-black font-medium">Back</span>
+      </button>
+
+      {/* Center: CMP Logo */}
+      <div className="absolute left-1/2 transform -translate-x-1/2">
+        <img src={cmp3dLogo} alt="Change Management Platform" className="h-10" />
+      </div>
+
+      {/* Right: Config + Draxlmaier Logo */}
+      <div className="flex items-center gap-4">
+        <button onClick={() => navigate("/config")} className="hover:opacity-80">
           <img src={settingsIc} alt="Config" className="h-6 w-6" />
         </button>
-        <img src={cmp3dLogo} alt="Change Management Platform" className="h-10" />
         <img src={draxlLogo} alt="Dräxlmaier" className="h-8" />
-      </header>
+      </div>
+    </header>
 
+
+      {/* Main Content */}
       <main className="flex-1 overflow-y-auto relative z-10 flex flex-col items-center text-center px-4 pt-24 pb-14">
         {userName && (
           <div className="flex items-center gap-4 mb-6 text-white bg-black/30 p-4 rounded-xl">
@@ -81,6 +131,7 @@ const LandingPage: React.FC = () => {
           </div>
         )}
 
+        {/* Example Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-6">
           {[
             { img: changeBtn, label: "Change Management", route: "/project-selection" },
@@ -108,21 +159,43 @@ const LandingPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Carousel for user-uploaded images */}
+        {/* Car Carousel */}
         <div className="w-full mt-10">
           <Carousel responsive={responsive} infinite autoPlay autoPlaySpeed={3000}>
-            {cars.map((carImage, index) => (
-              <div key={carImage.id ?? index} className="p-2">
-                <img
-                  src={carImage.data}
-                  alt={carImage.name || `Car ${index + 2}`}
-                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                />
-                <div className="mt-2 text-white font-semibold text-center">
-                  {carImage.name || `Car ${index + 2}`}
+            {cars.map((car) => {
+              // Find the project for this car
+              const associatedProject = projects.find((p) => p.id === car.projectId);
+
+              return (
+                <div key={car.id} className="p-2 flex flex-col items-center">
+                  {/* Car Name at the top */}
+                  <div className="text-white font-semibold text-center mb-1">
+                    {car.name}
+                  </div>
+
+                  {/* Car Image */}
+                  <img
+                    src={car.data}
+                    alt={car.name}
+                    style={{ width: "100%", height: "330px", objectFit: "contain" }}
+                  />
+
+                  {/* Project’s Logo & Carline together */}
+                  <div className="mt-2 flex items-center gap-2 justify-center">
+                    {associatedProject?.logo && (
+                      <img
+                        src={associatedProject.logo}
+                        alt={associatedProject.displayName}
+                        className="w-12 h-12 object-contain" 
+                      />
+                    )}
+                    {car.carline && (
+                      <span className="text-white text-sm"> {car.carline}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </Carousel>
         </div>
       </main>

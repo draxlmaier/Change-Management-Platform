@@ -1,0 +1,234 @@
+// src/components/ExcelParser.tsx
+import React from "react";
+import * as XLSX from "xlsx";
+
+interface Props {
+  phase: string;
+  onDataParsed: (data: any[]) => void;
+  onProjectNameDetected: (name: string) => void;
+  onLog: (msg: string) => void;
+}
+
+const columnMapping = {
+  phase4: {
+    "ProcessnumberProcessinformation": "Processnumber",
+    "StatusProcessinformation": "Status",
+    "OEMProcessinformation": "OEM",
+    "CarlineProcessinformation": "Carline",
+    "ConstructedspaceProcessinformation": "Constructedspace",
+    "HanddriversProcessinformation": "Handdrivers",
+    "ProjectphaseProcessinformation": "Projectphase",
+    "DeadlineTBTProcessinformation": "DeadlineTBT",
+    "ModelyearProcessinformation": "Modelyear",
+    "RealizationplannedProcessinformation": "Realizationplanned",
+    "ApproxrealizationdateProcessinformation": "Approxrealizationdate",
+    "StartdateProcessinformation": "StartdateProcessinfo",
+    "EnddateProcessinformation": "EnddateProcessinfo",
+    "OEMOfferChangenumberProcessinformation": "OEMOfferChangenumber",
+    "OEMChangenumberProcessinformation": "OEMChangenumber",
+    "ReasonforchangesProcessinformation": "Reasonforchanges",
+    "StartdatePhase4": "StartdatePhase4",
+    "EnddatePhase4": "EnddatePhase4",
+    "StartdatePAVPhase4": "StartdatePAVPhase4",
+    "EnddatePAVPhase4": "EnddatePAVPhase4",
+    "EstimatedcostsPAVPhase4": "EstimatedcostsPAVPhase4",
+    "ToolsutilitiesavailablePAVPhase4": "ToolsutilitiesavailablePAVPhase4",
+    "ProcessFMEAPAVPhase4": "ProcessFMEAPAVPhase4",
+    "PLPRelevantPAVPhase4": "PLPRelevantPAVPhase4",
+    "RisklevelactualPAVPhase4": "RisklevelactualPAVPhase4"
+  },
+  phase8: {
+    "ProcessnumberProcessinformation": "Processnumber",
+    "StatusProcessinformation": "Status",
+    "OEMProcessinformation": "OEM",
+    "CarlineProcessinformation": "Carline",
+    "ConstructedspaceProcessinformation": "Constructedspace",
+    "HanddriversProcessinformation": "Handdrivers",
+    "ProjectphaseProcessinformation": "Projectphase",
+    "DeadlineTBTProcessinformation": "DeadlineTBT",
+    "ModelyearProcessinformation": "Modelyear",
+    "RealizationplannedProcessinformation": "Realizationplanned",
+    "ApproxrealizationdateProcessinformation": "Approxrealizationdate",
+    "StartdateProcessinformation": "StartdateProcessinfo",
+    "EnddateProcessinformation": "EnddateProcessinfo",
+    "OEMOfferChangenumberProcessinformation": "OEMOfferChangenumber",
+    "OEMChangenumberProcessinformation": "OEMChangenumber",
+    "ReasonforchangesProcessinformation": "Reasonforchanges",
+    "StartdatePhase4": "StartdatePhase4",
+    "EnddatePhase4": "EnddatePhase4",
+    "StartdatePAVPhase4": "StartdatePAVPhase4",
+    "EnddatePAVPhase4": "EnddatePAVPhase4",
+    "EstimatedcostsPAVPhase4": "EstimatedcostsPAVPhase4",
+    "ToolsutilitiesavailablePAVPhase4": "ToolsutilitiesavailablePAVPhase4",
+    "ProcessFMEAPAVPhase4": "ProcessFMEAPAVPhase4",
+    "PLPRelevantPAVPhase4": "PLPRelevantPAVPhase4",
+    "RisklevelactualPAVPhase4": "RisklevelactualPAVPhase4",
+    "Actualscrap": "Actualscrap",
+    "Actualcost": "Actualcost",
+    "Actualdowntime": "Actualdowntime",
+    "changedate": "changedate",
+    "StartdatePhase8": "StartdatePhase8",
+    "EnddatePhase8": "EnddatePhase8",
+    "NameChangepackagesPhase8": "Changepackages"
+  },
+  phase4extra: {
+    "ProcessnumberProcessinformation": "Processnumber"
+  },
+  phase8extra: {
+    "ProcessnumberProcessinformation": "Processnumber"
+  }
+};
+
+const cleanHeader = (header: string): string => String(header).replace(/[^A-Za-z0-9]/g, "");
+
+const calculateWorkingDays = (start: string, end: string): number | string => {
+  try {
+    const s = new Date(start);
+    const e = new Date(end);
+    let count = 0;
+    for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) count++;
+    }
+    return count;
+  } catch {
+    return "";
+  }
+};
+
+const parseProcessNumber = (val: string): string[] => {
+  const match = val?.match(/^.*_(\d{4})_(\d{2})_(\d{2})_(\d{3})$/);
+  return match ? match.slice(1) : ["", "", "", ""];
+};
+
+const getSheetName = (cs: string): string | string[] => {
+  const val = cs?.trim();
+  if (val === "Motorblock-Leitungssatz" || val === "MRA_(Motorraum)") return "MR";
+  if (val === "COC (Cockpit)") return "Cockpit";
+  if (val === "Innenraum") return "Innenraum";
+  if (val === "Innenraum + COC (Cockpit)") return ["Cockpit", "Innenraum"];
+  return "Autarke";
+};
+
+const ExcelParser: React.FC<Props> = ({ phase, onDataParsed, onProjectNameDetected, onLog }) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !phase) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const workbook = XLSX.read(new Uint8Array(evt.target!.result as ArrayBuffer), { type: "array" });
+      const sheetNames = workbook.SheetNames;
+
+      const paramSheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]], { header: 1 });
+      const params: Record<string, string> = {};
+      for (let i = 0; i < Math.min(paramSheet.length, 15); i++) {
+        const row = paramSheet[i];
+        if (!Array.isArray(row) || row.length < 2) continue;
+        const [labelRaw, value] = row;
+        const label = String(labelRaw).toLowerCase().trim();
+        if (label.includes("oem")) {
+          const cleanValue = String(value).trim();
+          if (cleanValue && cleanValue !== "---") {
+            params["OEM"] = cleanValue;
+            onProjectNameDetected(cleanValue);
+          }
+        }
+        if (label.includes("carline")) params["Carline"] = value;
+        if (label.includes("start date from")) params["Start date from"] = value;
+        if (label.includes("start date to")) params["Start date to"] = value;
+      }
+
+      const paramString = Object.entries(params)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" | ");
+
+      const allData: any[] = [];
+      for (let i = 1; i < sheetNames.length; i++) {
+        const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[i]], { defval: "", raw: false });
+        sheet.forEach((row) => {
+          const mappedRow: any = {};
+          const typedRow = row as Record<string, any>; // <-- FIX HERE
+
+          Object.entries(typedRow).forEach(([k, v]) => {
+            const cleanKey = cleanHeader(k);
+            const mappedKey = (columnMapping as any)[phase]?.[cleanKey] || cleanKey; // <-- Fix 2
+            mappedRow[mappedKey] = v === "---" ? "" : v;
+          });
+
+          mappedRow["Parameters"] = paramString;
+          allData.push(mappedRow);
+        });
+      }
+
+      // GROUP + MERGE
+      const grouped: Record<string, any[]> = {};
+      for (const row of allData) {
+        const key = row.Processnumber || "UNKNOWN";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(row);
+      }
+
+      const mergedData = Object.values(grouped).map((rows) => {
+        const merged: any = {};
+        for (const col of Object.keys(rows[0])) {
+          const all = rows.map((r) => r[col]).filter((v) => v !== undefined && v !== "");
+          merged[col] = [...new Set(all)].join(" | ");
+        }
+        const [year, month, day, pid] = parseProcessNumber(merged["Processnumber"]);
+        merged["processyear"] = year;
+        merged["processmonth"] = month;
+        merged["processday"] = day;
+        merged["processid"] = pid;
+
+        if (phase === "phase4") {
+          ["Estimatedscrap", "Estimatedcost", "Estimateddowntime", "Estimatedchangedate"].forEach((col) => {
+            merged[col] = "";
+          });
+        }
+        if (phase === "phase8") {
+          ["Actualscrap", "Scrap", "Actualcost", "Actualdowntime", "Changedate"].forEach((col) => {
+            merged[col] = "";
+          });
+        }
+
+        return merged;
+      });
+
+      // EXPAND by constructed space
+      const expandedData: any[] = [];
+      for (const row of mergedData) {
+        const sheetNames = getSheetName(row["Constructedspace"]);
+        const base = { ...row };
+
+        if (base.StartdateProcessinfo && base.EnddateProcessinfo)
+          base.WorkingDaysProcess = calculateWorkingDays(base.StartdateProcessinfo, base.EnddateProcessinfo);
+        if (base.StartdatePhase4 && base.EnddatePhase4)
+          base.WorkingDaysPhase4 = calculateWorkingDays(base.StartdatePhase4, base.EnddatePhase4);
+        if (base.StartdatePAVPhase4 && base.EnddatePAVPhase4)
+          base.WorkingDaysPAVPhase4 = calculateWorkingDays(base.StartdatePAVPhase4, base.EnddatePAVPhase4);
+        if (base.StartdatePhase8 && base.EnddatePhase8)
+          base.WorkingDaysPAVPhase8 = calculateWorkingDays(base.StartdatePhase8, base.EnddatePhase8);
+
+        if (Array.isArray(sheetNames)) {
+          for (const name of sheetNames) expandedData.push({ ...base, SheetName: name });
+        } else {
+          expandedData.push({ ...base, SheetName: sheetNames });
+        }
+      }
+
+      onDataParsed(expandedData);
+      onLog(`Processed ${expandedData.length} entries with merging, parsing, and sheet-based expansion.`);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  return (
+    <div className="excel-parser">
+      <input type="file" accept=".xlsx" onChange={handleUpload} disabled={!phase} />
+    </div>
+  );
+};
+
+export default ExcelParser;
