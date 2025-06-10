@@ -10,6 +10,7 @@ import {
   insertItem
 } from "../services/sharepointService";
 import { msalInstance } from "../auth/msalInstance";
+import { upsertProjectMapping } from "../services/configService";
 
 interface Props {
   data: any[];
@@ -85,6 +86,9 @@ const SharePointUploader: React.FC<Props> = ({
         const id = await insertItem(siteId, listId, fields, token);
         if (id) inserted++;
       }
+
+      // ✅ Auto-save mapping to config
+      upsertProjectMapping(projectName, projectName, phase, listId);
 
       setStatus(`✅ Uploaded ${inserted}/${data.length} rows.`);
       onLog(`✅ Upload complete: ${inserted}/${data.length} rows.`);

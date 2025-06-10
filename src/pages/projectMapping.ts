@@ -3,38 +3,12 @@ import axios from 'axios';
 import { getAccessToken } from '../auth/getToken';
 import { AVAILABLE_PROJECTS } from '../constants/projects';
 import { msalInstance } from "../auth/msalInstance";
-
-const LISTS_CONFIG_KEY = 'cmConfigLists';
-
-export interface IProject {
-  id: string;
-  displayName: string;
-  logo?: string;
-  mapping: {
-    feasibility: string;
-    implementation: string;
-    feasibilityExtra?: string;
-    implementationExtra?: string;
-  };
-}
-
-export interface cmConfigLists {
-  siteId: string;
-  questionsListId: string;
-  monthlyListId: string;
-  followCostListId: string;
-  projects: IProject[];
-  assignedRoles?: { email: string; role: string }[];
-  frequentSites?: string[];
-}
+import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
 
 export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
-  const raw = localStorage.getItem(LISTS_CONFIG_KEY);
-  if (!raw) return [];
-
-  const config: cmConfigLists = JSON.parse(raw);
+  const config = getConfig();
   const { frequentSites = [], projects = [] } = config;
-  
+
   const token = await getAccessToken(msalInstance,['https://graph.microsoft.com/Sites.Read.All']);
   const updatedProjectsMap: { [key: string]: IProject } = {};
   const existingProjectsMap = new Map(projects.map(p => [p.id, p]));
@@ -54,13 +28,13 @@ export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)$/i;
+      const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
 
       listsResp.data.value.forEach((list: any) => {
         const match = regex.exec(list.displayName);
         if (!match) return;
 
-        const [_, rawProjectName, phase] = match;
+        const [_, rawProjectName, phase, isExtra] = match;
         const projectId = rawProjectName.toLowerCase();
 
         const base = existingProjectsMap.get(projectId) || {
@@ -78,8 +52,10 @@ export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
 
         const updated = { ...base };
 
-        if (phase === '4') updated.mapping.feasibility = list.id;
-        if (phase === '8') updated.mapping.implementation = list.id;
+        if (phase === '4' && isExtra) updated.mapping.feasibilityExtra = list.id;
+        else if (phase === '4') updated.mapping.feasibility = list.id;
+        else if (phase === '8' && isExtra) updated.mapping.implementationExtra = list.id;
+        else if (phase === '8') updated.mapping.implementation = list.id;
 
         updatedProjectsMap[projectId] = updated;
       });
@@ -96,7 +72,7 @@ export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
     ...config,
     projects: newProjects,
   };
-  localStorage.setItem(LISTS_CONFIG_KEY, JSON.stringify(updatedConfig));
+  saveConfig(updatedConfig);
 
   return newProjects;
 }

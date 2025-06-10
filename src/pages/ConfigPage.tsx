@@ -9,34 +9,9 @@ import { CarImage } from "./types";
 import CarConfigurationComponent from "./CarConfigurationComponent";
 import { AVAILABLE_PROJECTS } from "../constants/projects";
 import { msalInstance } from "../auth/msalInstance";
-
-// If you still do MSAL in front-end
 import { getAccessToken } from "../auth/getToken";
+import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
 
-// The same localStorage key you used in ProjectSelection
-const LISTS_CONFIG_KEY = "cmConfigLists";
-
-interface IProject {
-  id: string;
-  displayName: string;
-  logo?: string;
-  mapping: {
-    feasibility: string;
-    implementation: string;
-    feasibilityExtra?: string;
-    implementationExtra?: string;
-  };
-}
-
-interface cmConfigLists {
-  siteId: string;
-  questionsListId: string;
-  monthlyListId: string;
-  followCostListId: string;
-  projects: IProject[];
-  assignedRoles?: { email: string; role: string }[];
-  frequentSites?: string[];
-}
 
 const ConfigPage: React.FC = () => {
   const navigate = useNavigate();
@@ -96,30 +71,24 @@ const handleSaveCarName = async () => {
 };
 
   // 1) Load config from localStorage on mount, plus load Dexie cars
-  useEffect(() => {
-  const raw = localStorage.getItem(LISTS_CONFIG_KEY);
+ useEffect(() => {
   const savedSite = localStorage.getItem("sharepointSite");
+  if (savedSite) setSiteName(savedSite);
 
-  if (savedSite) {
-    setSiteName(savedSite); // ✅ Set initial siteName field
+  try {
+    const cfg = getConfig();
+    setSiteId(cfg.siteId || null);
+    setQuestionsListId(cfg.questionsListId || "");
+    setMonthlyListId(cfg.monthlyListId || "");
+    setFollowCostListId(cfg.followCostListId || "");
+    setProjects(cfg.projects || []);
+    setAssignedRoles(cfg.assignedRoles || []);
+    setFrequentSites(cfg.frequentSites || []);
+  } catch (err) {
+    console.error("Failed to load config:", err);
   }
 
-  if (raw) {
-    try {
-      const cfg = JSON.parse(raw) as cmConfigLists;
-      setSiteId(cfg.siteId || null);
-      setQuestionsListId(cfg.questionsListId || "");
-      setMonthlyListId(cfg.monthlyListId || "");
-      setFollowCostListId(cfg.followCostListId || "");
-      setProjects(cfg.projects || []);
-      setAssignedRoles(cfg.assignedRoles || []);
-      setFrequentSites(cfg.frequentSites || []);
-    } catch (err) {
-      console.error("Failed to parse localStorage config:", err);
-    }
-  }
-
-  loadCarList(); // Always load car data
+  loadCarList();
 }, []);
 
 
@@ -197,7 +166,8 @@ const handleSaveCarName = async () => {
         assignedRoles,
         frequentSites: [...new Set([...frequentSites, siteName])],
       };
-      localStorage.setItem(LISTS_CONFIG_KEY, JSON.stringify(newConfig));
+      saveConfig(newConfig);
+
 
       // Add site to frequent list
       if (!frequentSites.includes(siteName)) {
@@ -294,7 +264,6 @@ const handleSaveCarName = async () => {
   for (const proj of projects) {
     const hasFeasibility = proj.mapping.feasibility || proj.mapping.feasibilityExtra;
     const hasImplementation = proj.mapping.implementation || proj.mapping.implementationExtra;
-
     if (!hasFeasibility && !hasImplementation) {
       setMessage(`Project "${proj.displayName}" must have at least one mapped list (feasibility or implementation).`);
       return;
@@ -311,7 +280,7 @@ const handleSaveCarName = async () => {
     frequentSites,
   };
 
-  localStorage.setItem(LISTS_CONFIG_KEY, JSON.stringify(newConfig));
+  saveConfig(newConfig);
   setMessage("Configuration saved successfully!");
 };
 

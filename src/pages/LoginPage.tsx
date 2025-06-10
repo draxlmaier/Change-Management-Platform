@@ -7,6 +7,7 @@ import {
   UnauthenticatedTemplate,
 } from "@azure/msal-react";
 import { useNavigate } from "react-router-dom";
+import signInWithMicrosoft from "../assets/images/signinwithmicrosoft.jpg";
 
 
 const LoginPage: React.FC = () => {
@@ -70,12 +71,12 @@ const LoginPage: React.FC = () => {
             Please sign in to continue
           </p>
           {/* your custom button image */}
-          <img
-            src= "../assets/images/sign in with microsoft.jpg"
-            alt="Sign in with Microsoft"
-            onClick={handleLogin}
-            className="mx-auto cursor-pointer select-none"
-          />
+         <img
+          src={signInWithMicrosoft}
+          alt="Sign in with Microsoft"
+          onClick={handleLogin}
+          className="mx-auto cursor-pointer select-none"
+        />
         </UnauthenticatedTemplate>
       </div>
     </div>
