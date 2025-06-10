@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
-import { updateProjectMappingsFromSites, IProject } from "./projectMapping";
+import { updateProjectMappingsFromSites} from "./projectMapping";
 import { PROJECT_LOGO_MAP } from "../constants/projects"; // ⬅️ new
+import { IProject } from "../services/configService";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 

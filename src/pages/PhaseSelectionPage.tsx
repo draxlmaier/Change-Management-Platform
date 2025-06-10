@@ -4,8 +4,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
 import feasibilityBtn from "../assets/images/implementation.png";
 import implementationBtn from "../assets/images/feasability2.png";
-import { IProject, updateProjectMappingsFromSites } from "./projectMapping";
+import {  updateProjectMappingsFromSites } from "./projectMapping";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
+import { IProject } from "../services/configService";
 
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
