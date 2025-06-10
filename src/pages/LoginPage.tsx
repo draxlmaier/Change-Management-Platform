@@ -39,9 +39,12 @@ const LoginPage: React.FC = () => {
     instance.loginRedirect({
       scopes: [
         "openid",
-        "profile",
-        "https://graph.microsoft.com/User.Read",
-        "https://graph.microsoft.com/Sites.Read.All",
+      "profile",
+      "https://graph.microsoft.com/User.Read",
+      "https://graph.microsoft.com/Sites.Read.All",
+      "https://graph.microsoft.com/Sites.ReadWrite.All",
+      "https://graph.microsoft.com/Mail.Send",
+      "https://graph.microsoft.com/Mail.Read"
       ],
       prompt: "select_account",
     });
