@@ -1,22 +1,22 @@
 {
   "files": {
-    "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.854b25d9.css",
-    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.e8d93d65.js",
-    "static/js/239.b86f0f52.chunk.js": "/Change-Management-Platform-Web-Portal/static/js/239.b86f0f52.chunk.js",
-    "static/js/977.386b16e7.chunk.js": "/Change-Management-Platform-Web-Portal/static/js/977.386b16e7.chunk.js",
-    "static/js/455.7d951397.chunk.js": "/Change-Management-Platform-Web-Portal/static/js/455.7d951397.chunk.js",
+    "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.0cb08a15.css",
+    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.00483727.js",
     "static/media/harness-bg.png": "/Change-Management-Platform-Web-Portal/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "/Change-Management-Platform-Web-Portal/static/media/harness.7c82532dfe02a78cb694.png",
     "static/media/implementation.png": "/Change-Management-Platform-Web-Portal/static/media/implementation.9770a79e36f89b9e88f7.png",
     "static/media/feasability2.png": "/Change-Management-Platform-Web-Portal/static/media/feasability2.6fbd2fdcd1d23f0683fb.png",
+    "static/media/cmpIcon.png": "/Change-Management-Platform-Web-Portal/static/media/cmpIcon.d03328b7fc868b26543b.png",
     "static/media/cmplogoofficialnotext.png": "/Change-Management-Platform-Web-Portal/static/media/cmplogoofficialnotext.acd299c5063e04bfcff9.png",
     "static/media/other.png": "/Change-Management-Platform-Web-Portal/static/media/other.a60036d39c463c241a62.png",
     "static/media/dashboard.png": "/Change-Management-Platform-Web-Portal/static/media/dashboard.95709c27ab9ee1d49647.png",
+    "static/media/dataToolIcon.png": "/Change-Management-Platform-Web-Portal/static/media/dataToolIcon.a77be357c2de9d1189a4.png",
     "static/media/kpis.png": "/Change-Management-Platform-Web-Portal/static/media/kpis.611cf6d21e0d0f4b7627.png",
     "static/media/login-bg.png": "/Change-Management-Platform-Web-Portal/static/media/login-bg.fedfb04e2a4f102295cc.png",
     "static/media/draxlmaier-group.png": "/Change-Management-Platform-Web-Portal/static/media/draxlmaier-group.4ee830f4200dc61defe7.png",
     "static/media/settings-icon.png": "/Change-Management-Platform-Web-Portal/static/media/settings-icon.cbb6a8636d24f42ded43.png",
     "static/media/rivian.png": "/Change-Management-Platform-Web-Portal/static/media/rivian.852146b667ea8d1b9a11.png",
+    "static/media/draxlmaeir slogan.png": "/Change-Management-Platform-Web-Portal/static/media/draxlmaeir slogan.0cccfa27b5ec4db61c18.png",
     "static/media/landrover.png": "/Change-Management-Platform-Web-Portal/static/media/landrover.41f514e6cee4b8c0fca4.png",
     "static/media/Mercedes-Benz.png": "/Change-Management-Platform-Web-Portal/static/media/Mercedes-Benz.a4fc55d67679d48e2d3f.png",
     "static/media/Lamborghini.png": "/Change-Management-Platform-Web-Portal/static/media/Lamborghini.0e7ce37d82a9cdc6f9dd.png",
@@ -29,14 +29,11 @@
     "static/media/Porsche.png": "/Change-Management-Platform-Web-Portal/static/media/Porsche.0c67baebd1b6381fdf51.png",
     "static/media/revicons.woff": "/Change-Management-Platform-Web-Portal/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "/Change-Management-Platform-Web-Portal/index.html",
-    "main.854b25d9.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.854b25d9.css.map",
-    "main.e8d93d65.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.e8d93d65.js.map",
-    "239.b86f0f52.chunk.js.map": "/Change-Management-Platform-Web-Portal/static/js/239.b86f0f52.chunk.js.map",
-    "977.386b16e7.chunk.js.map": "/Change-Management-Platform-Web-Portal/static/js/977.386b16e7.chunk.js.map",
-    "455.7d951397.chunk.js.map": "/Change-Management-Platform-Web-Portal/static/js/455.7d951397.chunk.js.map"
+    "main.0cb08a15.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.0cb08a15.css.map",
+    "main.00483727.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.00483727.js.map"
   },
   "entrypoints": [
-    "static/css/main.854b25d9.css",
-    "static/js/main.e8d93d65.js"
+    "static/css/main.0cb08a15.css",
+    "static/js/main.00483727.js"
   ]
 }
