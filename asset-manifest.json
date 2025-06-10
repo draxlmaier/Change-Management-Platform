@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.0cb08a15.css",
-    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.0a1fa173.js",
+    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.cbb62586.js",
     "static/media/harness-bg.png": "/Change-Management-Platform-Web-Portal/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "/Change-Management-Platform-Web-Portal/static/media/harness.7c82532dfe02a78cb694.png",
     "static/media/implementation.png": "/Change-Management-Platform-Web-Portal/static/media/implementation.9770a79e36f89b9e88f7.png",
@@ -18,6 +18,7 @@
     "static/media/rivian.png": "/Change-Management-Platform-Web-Portal/static/media/rivian.852146b667ea8d1b9a11.png",
     "static/media/draxlmaeir slogan.png": "/Change-Management-Platform-Web-Portal/static/media/draxlmaeir slogan.0cccfa27b5ec4db61c18.png",
     "static/media/landrover.png": "/Change-Management-Platform-Web-Portal/static/media/landrover.41f514e6cee4b8c0fca4.png",
+    "static/media/signinwithmicrosoft.jpg": "/Change-Management-Platform-Web-Portal/static/media/signinwithmicrosoft.f86a2db6ae2076477158.jpg",
     "static/media/Mercedes-Benz.png": "/Change-Management-Platform-Web-Portal/static/media/Mercedes-Benz.a4fc55d67679d48e2d3f.png",
     "static/media/Lamborghini.png": "/Change-Management-Platform-Web-Portal/static/media/Lamborghini.0e7ce37d82a9cdc6f9dd.png",
     "static/media/change_management_platform_full2.png": "/Change-Management-Platform-Web-Portal/static/media/change_management_platform_full2.44246f01ca0ccf5ad516.png",
@@ -30,10 +31,10 @@
     "static/media/revicons.woff": "/Change-Management-Platform-Web-Portal/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "/Change-Management-Platform-Web-Portal/index.html",
     "main.0cb08a15.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.0cb08a15.css.map",
-    "main.0a1fa173.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.0a1fa173.js.map"
+    "main.cbb62586.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.cbb62586.js.map"
   },
   "entrypoints": [
     "static/css/main.0cb08a15.css",
-    "static/js/main.0a1fa173.js"
+    "static/js/main.cbb62586.js"
   ]
 }
