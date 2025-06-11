@@ -4,42 +4,52 @@ import { useParams, useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
 import feasibilityBtn from "../assets/images/implementation.png";
 import implementationBtn from "../assets/images/feasability2.png";
-import {  updateProjectMappingsFromSites } from "./projectMapping";
+import { updateProjectMappingsFromSites } from "./projectMapping";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
 import { IProject } from "../services/configService";
-
+import { getAccessToken } from "../auth/getToken";
+import { msalInstance } from "../auth/msalInstance";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const PhaseSelectionPage: React.FC = () => {
   const [project, setProject] = useState<IProject | null>(null);
+  const [loading, setLoading] = useState(true);
   const { projectKey } = useParams<{ projectKey: string }>();
   const navigate = useNavigate();
 
   useEffect(() => {
     const refreshAndLoad = async () => {
-      await updateProjectMappingsFromSites();
+      try {
+        // Acquire token before making API calls
+        const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Read.All"]);
+        if (!token) {
+          console.warn("Access token unavailable — user not authenticated?");
+          return;
+        }
 
-      const raw = localStorage.getItem(LISTS_CONFIG_KEY);
-      if (raw) {
-        try {
+        await updateProjectMappingsFromSites(token);
+
+        const raw = localStorage.getItem(LISTS_CONFIG_KEY);
+        if (raw) {
           const config = JSON.parse(raw);
           if (Array.isArray(config.projects)) {
             const found = config.projects.find(
               (p: IProject) => p.id === projectKey
             );
             if (found) {
-            const patched = {
-              ...found,
-              logo: PROJECT_LOGO_MAP[found.id.toLowerCase()] || PROJECT_LOGO_MAP["other"],
-            };
-            setProject(patched);
+              const patched = {
+                ...found,
+                logo: PROJECT_LOGO_MAP[found.id.toLowerCase()] || PROJECT_LOGO_MAP["other"],
+              };
+              setProject(patched);
+            }
           }
-
-          }
-        } catch (err) {
-          console.error("Error parsing config from localStorage:", err);
         }
+      } catch (err) {
+        console.error("Error loading project mappings:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -47,6 +57,17 @@ const PhaseSelectionPage: React.FC = () => {
       refreshAndLoad();
     }
   }, [projectKey]);
+
+  if (loading) {
+    return (
+      <div
+        className="relative w-full min-h-screen bg-cover bg-center flex flex-col items-center justify-center text-white"
+        style={{ backgroundImage: `url(${harnessBg})` }}
+      >
+        <p className="text-lg">Loading phase selection...</p>
+      </div>
+    );
+  }
 
   if (!projectKey || !project) {
     return (
@@ -56,9 +77,7 @@ const PhaseSelectionPage: React.FC = () => {
       >
         <button
           onClick={() => navigate("/project-selection")}
-          className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition"
+          className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
         >
           ← Back
         </button>

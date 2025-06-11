@@ -1,29 +1,45 @@
 import axios from 'axios';
-import { getAccessToken } from '../auth/getToken';
-import { msalInstance } from "../auth/msalInstance";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
-import { getProjectLogo } from '../utils/getProjectLogo';  // <-- ADD THIS
+import { getProjectLogo } from '../utils/getProjectLogo';
 
-export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
+/**
+ * Updated: expects token passed externally.
+ */
+export async function updateProjectMappingsFromSites(token: string): Promise<IProject[]> {
   const config = getConfig();
   const { frequentSites = [], projects = [] } = config;
 
-  const token = await getAccessToken(msalInstance, ['https://graph.microsoft.com/Sites.Read.All']);
   const updatedProjectsMap: { [key: string]: IProject } = {};
   const existingProjectsMap = new Map(projects.map(p => [p.id, p]));
 
-  for (const siteName of frequentSites) {
+  for (const siteUrl of frequentSites) {
     try {
-      const fullUrl = `https://uittunis.sharepoint.com/sites/${siteName}`;
-      const url = new URL(fullUrl);
-      const path = `${url.hostname}:${url.pathname}:`;
+      // siteUrl may already be a full URL or just a sitename. Handle both
+      let hostname = '';
+      let path = '';
 
-      const siteResp = await axios.get(`https://graph.microsoft.com/v1.0/sites/${path}`, {
+      if (siteUrl.startsWith("https://")) {
+        // Full URL case
+        const url = new URL(siteUrl);
+        hostname = url.hostname;  // e.g. draexlmaier.sharepoint.com
+        path = url.pathname.replace(/^\/sites\//, ""); // e.g. ittest
+      } else {
+        // Only site name (short form), assume default tenant hostname:
+        hostname = "uittunis.sharepoint.com";  // <-- default fallback
+        path = siteUrl;
+      }
+
+      // Build valid Graph API URL
+      const graphSiteUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
+
+      const siteResp = await axios.get(graphSiteUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      const siteId = siteResp.data.id;
+
       const listsResp = await axios.get(
-        `https://graph.microsoft.com/v1.0/sites/${siteResp.data.id}/lists`,
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -39,7 +55,7 @@ export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
         const base = existingProjectsMap.get(projectId) || {
           id: projectId,
           displayName: rawProjectName,
-          logo: getProjectLogo(projectId),  // ✅ use resolver here
+          logo: getProjectLogo(projectId),
           mapping: {
             feasibility: '',
             implementation: '',
@@ -58,7 +74,7 @@ export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
         updatedProjectsMap[projectId] = updated;
       });
     } catch (err) {
-      console.error('Failed to fetch or parse site:', siteName, err);
+      console.error('Failed to fetch or parse site:', siteUrl, err);
     }
   }
 

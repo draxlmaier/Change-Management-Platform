@@ -3,33 +3,56 @@ import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
 import { updateProjectMappingsFromSites } from "./projectMapping";
 import { IProject } from "../services/configService";
-import { getProjectLogo } from "../utils/getProjectLogo";  // ✅ centralized logo resolver
+import { getProjectLogo } from "../utils/getProjectLogo";
+import { getAccessToken } from "../auth/getToken";
+import { msalInstance } from "../auth/msalInstance";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const ProjectSelection: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<IProject[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const refreshAndLoadProjects = async () => {
-      await updateProjectMappingsFromSites();
+      try {
+        // First: Acquire token
+        const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Read.All"]);
+        if (!token) {
+          console.warn("Access token unavailable — user not authenticated?");
+          return;
+        }
 
-      const raw = localStorage.getItem(LISTS_CONFIG_KEY);
-      if (raw) {
-        try {
+        // Second: Update mappings by injecting token
+        await updateProjectMappingsFromSites(token);
+
+        // Third: Load updated config from localStorage
+        const raw = localStorage.getItem(LISTS_CONFIG_KEY);
+        if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.projects)) {
-            setProjects(parsed.projects);  // ✅ no patching needed
+            setProjects(parsed.projects);
           }
-        } catch (err) {
-          console.error("Failed to parse localStorage config:", err);
         }
+      } catch (err) {
+        console.error("Error loading projects:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     refreshAndLoadProjects();
   }, []);
+
+  // Render loading state while waiting for projects
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-white text-lg">Loading projects...</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -44,7 +67,6 @@ const ProjectSelection: React.FC = () => {
         ← Back
       </button>
 
-      {/* Page content */}
       <div className="relative z-20 flex flex-col items-center px-4 py-12">
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-8">
           Select a Project
@@ -58,7 +80,7 @@ const ProjectSelection: React.FC = () => {
               className="cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition"
             >
               <img
-                src={getProjectLogo(proj.id)}  // ✅ dynamic logo resolution
+                src={getProjectLogo(proj.id)}
                 alt={`${proj.displayName} logo`}
                 className="h-24 w-auto"
               />
