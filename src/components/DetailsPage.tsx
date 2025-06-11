@@ -108,7 +108,7 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
       return (
         <div key={key} className="flex justify-between items-center mb-4">
           <div className="font-semibold text-white w-64">{label}</div>
-          <div className="p-2 rounded border border-white/30 text-white">{val}</div>
+          <div className="text-white">{val}</div> {/* No box here */}
         </div>
       );
     }
@@ -219,11 +219,13 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
         ← Back
       </button>
       <div className="relative z-20 flex mx-auto max-w-7xl p-10 space-x-10">
-        <div className="w-1/3 p-6 text-white">
+        {/* GENERAL FIELDS PANEL WITH DARK BACKGROUND */}
+        <div className="w-1/3 bg-black/50 rounded-2xl p-6 text-white">
           {project?.logo && <img src={project.logo} alt="logo" className="w-24 h-auto mb-4" />}
           {fieldsConfig.generalFields.map((field) => renderField(field, false))}
         </div>
 
+        {/* EDITABLE FIELDS PANEL */}
         <div className="w-2/3 bg-black/50 rounded-2xl p-6 text-white overflow-y-auto">
           <h1 className="text-3xl font-bold mb-6">Details</h1>
           {fieldsConfig.editableFields.map((field) => renderField(field, true))}

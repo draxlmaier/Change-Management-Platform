@@ -51,7 +51,6 @@ const ChangeItemsFeasibility: React.FC = () => {
 
   const [items, setItems] = useState<ChangeItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-
   const [page, setPage] = useState(0);
   const pageSize = 5;
 
@@ -60,7 +59,6 @@ const ChangeItemsFeasibility: React.FC = () => {
   const [searchDay, setSearchDay] = useState("");
   const [searchId, setSearchId] = useState("");
   const [areaFilter, setAreaFilter] = useState("all");
-
   const [project, setProject] = useState<IProject | null>(null);
 
   const parametersText = items[0]?.fields.Parameters || "";
@@ -165,6 +163,25 @@ const ChangeItemsFeasibility: React.FC = () => {
 
   return (
     <div className="relative w-full min-h-screen bg-cover bg-center text-lg" style={{ backgroundImage: `url(${harnessBg})` }}>
+      <style>{`
+        @keyframes row-attention {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        .animate-row-attention {
+          animation: row-attention 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dot-attention {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.3); opacity: 0.7; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-dot-attention {
+          animation: dot-attention 1s ease-in-out 1;
+        }
+      `}</style>
+
       <div className="absolute inset-0 z-10 pointer-events-none bg-transparent" />
 
       <div className="relative z-20 w-full flex items-center justify-between px-8 py-4 text-white">
@@ -193,8 +210,6 @@ const ChangeItemsFeasibility: React.FC = () => {
         )}
       </div>
 
-      {/* Filter UI (left out unchanged for brevity — you can copy from your original version) */}
-
       <div className="relative z-20 max-w-6xl mx-auto px-4 pb-8 space-y-4 text-white">
         <div className="grid items-center p-4 bg-white/10 border border-white/20 backdrop-blur-md rounded-2xl shadow-md" style={{ gridTemplateColumns: "14rem 14rem 6rem 6rem 6rem 8rem auto" }}>
           <span className="font-semibold">Change ID</span>
@@ -221,9 +236,9 @@ const ChangeItemsFeasibility: React.FC = () => {
               <span className="font-semibold">{f.Processnumber || ""}</span>
               <span className="font-semibold overflow-hidden whitespace-nowrap text-ellipsis">{f.OEMOfferChangenumber || ""}</span>
 
-              <span className={`justify-self-center w-3 h-3 rounded-full ${pav ? "bg-green-400" : "bg-red-400 animate-ping-once"}`} title="PAV-4 ended?" />
-              <span className={`justify-self-center w-3 h-3 rounded-full ${ph4 ? "bg-green-400" : "bg-red-400 animate-ping-once"}`} title="Phase 4 ended?" />
-              <span className={`justify-self-center w-3 h-3 rounded-full ${pi ? "bg-green-400" : "bg-red-400 animate-ping-once"}`} title="ProcInfo ended?" />
+              <span className={`justify-self-center w-3 h-3 rounded-full ${pav ? "bg-green-400" : "bg-red-400 animate-dot-attention"}`} title="PAV-4 ended?" />
+              <span className={`justify-self-center w-3 h-3 rounded-full ${ph4 ? "bg-green-400" : "bg-red-400 animate-dot-attention"}`} title="Phase 4 ended?" />
+              <span className={`justify-self-center w-3 h-3 rounded-full ${pi ? "bg-green-400" : "bg-red-400 animate-dot-attention"}`} title="ProcInfo ended?" />
               <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${areaClasses}`} title={`Area: ${area}`}>
                 {area || "—"}
               </span>
