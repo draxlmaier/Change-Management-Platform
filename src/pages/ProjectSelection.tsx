@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
-import { updateProjectMappingsFromSites} from "./projectMapping";
-import { PROJECT_LOGO_MAP } from "../constants/projects"; // ⬅️ new
+import { updateProjectMappingsFromSites } from "./projectMapping";
 import { IProject } from "../services/configService";
+import { getProjectLogo } from "../utils/getProjectLogo";  // ✅ centralized logo resolver
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
@@ -20,11 +20,7 @@ const ProjectSelection: React.FC = () => {
         try {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.projects)) {
-            const patched = parsed.projects.map((proj: IProject) => ({
-              ...proj,
-              logo: PROJECT_LOGO_MAP[proj.id.toLowerCase()] || PROJECT_LOGO_MAP["other"], // ✅ Fix here
-            }));
-            setProjects(patched);
+            setProjects(parsed.projects);  // ✅ no patching needed
           }
         } catch (err) {
           console.error("Failed to parse localStorage config:", err);
@@ -61,13 +57,11 @@ const ProjectSelection: React.FC = () => {
               onClick={() => navigate(`/changes/${proj.id}`)}
               className="cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition"
             >
-              {proj.logo && (
-                <img
-                  src={proj.logo}
-                  alt={`${proj.displayName} logo`}
-                  className="h-24 w-auto"
-                />
-              )}
+              <img
+                src={getProjectLogo(proj.id)}  // ✅ dynamic logo resolution
+                alt={`${proj.displayName} logo`}
+                className="h-24 w-auto"
+              />
               <h2 className="text-xl font-semibold text-white">
                 {proj.displayName}
               </h2>

@@ -1,15 +1,14 @@
-
 import axios from 'axios';
 import { getAccessToken } from '../auth/getToken';
-import { AVAILABLE_PROJECTS } from '../constants/projects';
 import { msalInstance } from "../auth/msalInstance";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
+import { getProjectLogo } from '../utils/getProjectLogo';  // <-- ADD THIS
 
 export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
   const config = getConfig();
   const { frequentSites = [], projects = [] } = config;
 
-  const token = await getAccessToken(msalInstance,['https://graph.microsoft.com/Sites.Read.All']);
+  const token = await getAccessToken(msalInstance, ['https://graph.microsoft.com/Sites.Read.All']);
   const updatedProjectsMap: { [key: string]: IProject } = {};
   const existingProjectsMap = new Map(projects.map(p => [p.id, p]));
 
@@ -40,8 +39,7 @@ export async function updateProjectMappingsFromSites(): Promise<IProject[]> {
         const base = existingProjectsMap.get(projectId) || {
           id: projectId,
           displayName: rawProjectName,
-          logo: AVAILABLE_PROJECTS.find(p => p.id === projectId)?.logo ||
-                AVAILABLE_PROJECTS.find(p => p.id === 'other')?.logo,
+          logo: getProjectLogo(projectId),  // ✅ use resolver here
           mapping: {
             feasibility: '',
             implementation: '',

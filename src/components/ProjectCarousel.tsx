@@ -1,11 +1,11 @@
 import React from 'react';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
+import { getProjectLogo } from '../utils/getProjectLogo';
 
 interface Project {
   id: string;
   displayName: string;
-  logo?: string;
 }
 
 interface ProjectCarouselProps {
@@ -20,22 +20,10 @@ const ProjectCarousel: React.FC<ProjectCarouselProps> = ({
   onProjectSelect,
 }) => {
   const responsive = {
-    superLargeDesktop: {
-      breakpoint: { max: 4000, min: 3000 },
-      items: 5,
-    },
-    desktop: {
-      breakpoint: { max: 3000, min: 1024 },
-      items: 3,
-    },
-    tablet: {
-      breakpoint: { max: 1024, min: 464 },
-      items: 2,
-    },
-    mobile: {
-      breakpoint: { max: 464, min: 0 },
-      items: 1,
-    },
+    superLargeDesktop: { breakpoint: { max: 4000, min: 3000 }, items: 5 },
+    desktop: { breakpoint: { max: 3000, min: 1024 }, items: 3 },
+    tablet: { breakpoint: { max: 1024, min: 464 }, items: 2 },
+    mobile: { breakpoint: { max: 464, min: 0 }, items: 1 },
   };
 
   return (
@@ -47,7 +35,7 @@ const ProjectCarousel: React.FC<ProjectCarouselProps> = ({
           className={`cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition ${selectedProject === proj.id ? 'border-2 border-blue-500' : ''}`}
         >
           <img
-            src={proj.logo}
+            src={getProjectLogo(proj.id)}
             alt={`${proj.displayName} logo`}
             className="h-24 w-auto"
           />

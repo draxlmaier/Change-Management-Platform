@@ -11,6 +11,7 @@ import { AVAILABLE_PROJECTS } from "../constants/projects";
 import { msalInstance } from "../auth/msalInstance";
 import { getAccessToken } from "../auth/getToken";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
+import { getProjectLogo } from '../utils/getProjectLogo';
 
 
 const ConfigPage: React.FC = () => {
@@ -256,10 +257,6 @@ const handleSaveCarName = async () => {
 
   // 5) Save entire config to localStorage
   const handleSave = () => {
-  if (!questionsListId || !monthlyListId || !followCostListId) {
-    setMessage("Please select all KPI lists.");
-    return;
-  }
 
   for (const proj of projects) {
     const hasFeasibility = proj.mapping.feasibility || proj.mapping.feasibilityExtra;
@@ -442,7 +439,7 @@ const handleSaveCarName = async () => {
                           <div className="flex items-center">
                             {proj.logo && (
                               <img
-                                src={proj.logo}
+                                src={getProjectLogo(proj.id)}
                                 alt={proj.displayName}
                                 className="w-10 h-10 object-contain mr-3"
                               />
