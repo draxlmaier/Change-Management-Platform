@@ -47,7 +47,7 @@ const getAreaColor = (areaName: string): string => {
   }
 };
 
-const ChangeItemsFeasibility: React.FC = () => {
+const ChangeItemsImplementation: React.FC = () => {
   const { projectKey } = useParams<{ projectKey: string }>();
   const navigate = useNavigate();
 
@@ -468,4 +468,4 @@ const startDateTo = toMatch ? toMatch[1] : "";
   );
 };
 
-export default ChangeItemsFeasibility;
+export default ChangeItemsImplementation;
