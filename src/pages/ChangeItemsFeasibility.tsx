@@ -396,7 +396,7 @@ const startDateTo = toMatch ? toMatch[1] : "";
 
           // If no date is found, add a bounce
           const hasDigit = /[0-9]/.test(pav);
-          const bounceClass = hasDigit ? "" : "animate-pulse";
+          const bounceClass = hasDigit ? "" : "animate-bounce";
 
           return (
             <div
