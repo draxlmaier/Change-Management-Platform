@@ -396,7 +396,7 @@ const startDateTo = toMatch ? toMatch[1] : "";
 
           // If no date is found, add a bounce
           const hasDigit = /[0-9]/.test(pav);
-          const bounceClass = hasDigit ? "" : "animate-bounce";
+          const bounceClass = hasDigit ? "" : "animate-pulse";
 
           return (
             <div
@@ -417,25 +417,25 @@ const startDateTo = toMatch ? toMatch[1] : "";
               </span>
               <span
                 className={`justify-self-center w-3 h-3 rounded-full ${
-                  pav ? "bg-green-400 animate-ping-once" : "bg-red-400 animate-ping-once"
+                  pav ? "bg-green-400" : "bg-red-400"
                 }`}
                 title="PAV-4 ended?"
               />
               <span
                 className={`justify-self-center w-3 h-3 rounded-full ${
-                  ph4 ? "bg-green-400 animate-ping-once" : "bg-red-400 animate-ping-once"
+                  ph4 ? "bg-green-400" : "bg-red-400"
                 }`}
                 title="Phase 4 ended?"
               />
               <span
                 className={`justify-self-center w-3 h-3 rounded-full ${
-                  ph8 ? "bg-green-400 animate-ping-once" : "bg-red-400 animate-ping-once"
+                  ph8 ? "bg-green-400" : "bg-red-400"
                 }`}
                 title="Phase 4 ended?"
               />
               <span
                 className={`justify-self-center w-3 h-3 rounded-full ${
-                  pi ? "bg-green-400 animate-ping-once" : "bg-red-400 animate-ping-once"
+                  pi ? "bg-green-400" : "bg-red-400"
                 }`}
                 title="ProcInfo ended?"
               />
