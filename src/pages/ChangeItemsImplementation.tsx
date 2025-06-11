@@ -402,7 +402,7 @@ const startDateTo = toMatch ? toMatch[1] : "";
               onClick={() => navigate(`/details/${projectKey}/feasibility/${item.id}`)}
               className={`grid h-20 items-center p-4 bg-white/10 border border-white/20
                          backdrop-blur-md rounded-2xl shadow-md cursor-pointer
-                         hover:bg-white/20 transition ${bounceClass}`}
+                         hover:bg-white/20`}
               style={{
                 gridTemplateColumns: "14rem 14rem 6rem 6rem 6rem 8rem auto",
               }}
