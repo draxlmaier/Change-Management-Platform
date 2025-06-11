@@ -48,15 +48,15 @@ const LISTS_CONFIG_KEY = "cmConfigLists";
 const ScrapFollowingSection: React.FC = () => {
   const navigate = useNavigate();
 
-  // State variables
   const [projects, setProjects] = useState<IProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [siteId, setSiteId] = useState("");
   const [items, setItems] = useState<IScrapItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load configuration from localStorage
+  // Load config from localStorage
   useEffect(() => {
     const raw = localStorage.getItem(LISTS_CONFIG_KEY);
     if (raw) {
@@ -70,7 +70,7 @@ const ScrapFollowingSection: React.FC = () => {
     }
   }, []);
 
-  // Fetch implementation items when a project is selected
+  // Fetch implementation items
   useEffect(() => {
     const projectObj = projects.find((p) => p.id === selectedProject);
     if (!siteId || !projectObj) return;
@@ -81,7 +81,7 @@ const ScrapFollowingSection: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const token = await getAccessToken(msalInstance,["https://graph.microsoft.com/Sites.Manage.All"]);
+        const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
         if (!token) throw new Error("Could not get access token.");
 
         const response = await axios.get(
@@ -101,23 +101,81 @@ const ScrapFollowingSection: React.FC = () => {
     loadImplementationItems();
   }, [siteId, selectedProject, projects]);
 
-  // Group items by month and year
+  // Group by month and year
   const groupedByMonthYear = items.reduce((acc: Record<string, IScrapItem[]>, item) => {
-  const { processmonth, processyear } = item.fields;
-
-  // Use "Unknown" if either value is missing
-  const monthKey = processmonth ? processmonth.substring(0, 7) : "UnknownMonth";
-  const yearKey = processyear ? processyear.substring(0, 4) : "UnknownYear";
-
-  // Combine keys for grouping, e.g. "2025-06 | 2025"
-  const groupKey = `${monthKey} | ${yearKey}`;
-
-  if (!acc[groupKey]) acc[groupKey] = [];
-  acc[groupKey].push(item);
-  return acc;
+    const { processmonth, processyear } = item.fields;
+    const monthKey = processmonth ? processmonth.substring(0, 7) : "UnknownMonth";
+    const yearKey = processyear ? processyear.substring(0, 4) : "UnknownYear";
+    const groupKey = `${monthKey} | ${yearKey}`;
+    if (!acc[groupKey]) acc[groupKey] = [];
+    acc[groupKey].push(item);
+    return acc;
   }, {});
 
-  // Render grouped data
+  // Handle individual item selection
+  const handleItemSelect = (itemId: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(itemId) ? prev.filter((x) => x !== itemId) : [...prev, itemId]
+    );
+  };
+
+  // Handle select all per group
+  const handleSelectAllInMonthYear = (monthYearKey: string) => {
+    const monthItems = groupedByMonthYear[monthYearKey].map((it) => it.id);
+    setSelectedItems((prev) => {
+      const allSelected = monthItems.every((id) => prev.includes(id));
+      if (allSelected) {
+        return prev.filter((id) => !monthItems.includes(id));
+      }
+      return Array.from(new Set([...prev, ...monthItems]));
+    });
+  };
+
+  // Bulk apply scrap value
+  const handleBulkScrap = async (scrapValue: string) => {
+    if (selectedItems.length === 0) {
+      alert("No items selected.");
+      return;
+    }
+
+    const projectObj = projects.find((p) => p.id === selectedProject);
+    if (!projectObj) {
+      alert("No project selected.");
+      return;
+    }
+
+    const implementationListId = projectObj.mapping.implementation;
+
+    try {
+      const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
+      if (!token) throw new Error("Could not get access token.");
+
+      for (const itemId of selectedItems) {
+        await axios.patch(
+          `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${implementationListId}/items/${itemId}/fields`,
+          { Scrap: scrapValue },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      setItems((prev) =>
+        prev.map((it) =>
+          selectedItems.includes(it.id)
+            ? { ...it, fields: { ...it.fields, Scrap: scrapValue } }
+            : it
+        )
+      );
+      setSelectedItems([]);
+    } catch (err: any) {
+      alert("Bulk update failed: " + (err.response?.data?.error?.message || err.message));
+    }
+  };
+
   return (
     <div className="p-4">
       <button
@@ -144,44 +202,77 @@ const ScrapFollowingSection: React.FC = () => {
         <p className="mt-4 text-gray-600">Please select a project to see scrap items.</p>
       )}
 
+      {selectedProject && (
+        <div className="mt-4 space-x-2">
+          <button
+            onClick={() => handleBulkScrap("Scrap")}
+            className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+          >
+            Mark as Scrap
+          </button>
+          <button
+            onClick={() => handleBulkScrap("No Scrap")}
+            className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+          >
+            Mark as No Scrap
+          </button>
+        </div>
+      )}
+
       {Object.keys(groupedByMonthYear).length === 0 && !loading && selectedProject && (
         <p className="mt-4 text-gray-600">No items found for this project’s implementation list.</p>
       )}
 
-      {Object.keys(groupedByMonthYear)
-      .sort()
-      .map((monthYearKey) => {
+      {Object.keys(groupedByMonthYear).sort().map((monthYearKey) => {
         const itemsInGroup = groupedByMonthYear[monthYearKey];
-        // Split back the combined key for display
         const [month, year] = monthYearKey.split(" | ");
 
         return (
           <div className="border border-gray-300 p-4 mt-4" key={monthYearKey}>
-            <h3 className="font-semibold">
-              Month: {month} | Year: {year}
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">Month: {month} | Year: {year}</h3>
+              <button
+                className="text-sm px-3 py-1 bg-gray-200 rounded"
+                onClick={() => handleSelectAllInMonthYear(monthYearKey)}
+              >
+                {itemsInGroup.every((x) => selectedItems.includes(x.id))
+                  ? "Unselect All"
+                  : "Select All"}
+              </button>
+            </div>
+
             <table className="min-w-full border border-gray-300 text-sm">
               <thead>
                 <tr>
+                  <th className="p-2 border w-8"></th>
                   <th className="p-2 border">Processnumber</th>
                   <th className="p-2 border">SheetName</th>
                   <th className="p-2 border">Scrap</th>
                 </tr>
               </thead>
               <tbody>
-                {itemsInGroup.map((item) => (
-                  <tr key={item.id}>
-                    <td className="p-2 border">{item.fields.Processnumber}</td>
-                    <td className="p-2 border">{item.fields.SheetName}</td>
-                    <td className="p-2 border">{item.fields.Scrap || ""}</td>
-                  </tr>
-                ))}
+                {itemsInGroup.map((item) => {
+                  const isChecked = selectedItems.includes(item.id);
+                  return (
+                    <tr key={item.id}>
+                      <td className="p-2 border">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleItemSelect(item.id)}
+                        />
+                      </td>
+                      <td className="p-2 border">{item.fields.Processnumber}</td>
+                      <td className="p-2 border">{item.fields.SheetName}</td>
+                      <td className="p-2 border">{item.fields.Scrap || ""}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         );
       })}
-
     </div>
   );
 };
