@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import harnessBg from "../assets/images/harness-bg.png";
-import feasibilityBtn from "../assets/images/implementation.png";
-import implementationBtn from "../assets/images/feasability2.png";
+import implementationBtn from "../assets/images/implementation.png";
+import feasibilityBtn from "../assets/images/feasability2.png";
 import { updateProjectMappingsFromSites } from "./projectMapping";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
 import { IProject } from "../services/configService";
@@ -119,44 +119,44 @@ const PhaseSelectionPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-6 items-center">
           {project.mapping.feasibility && (
-            <div
-              onClick={() => navigate(`/changes/${project.id}/implementation`)}
-              className="
-                flex flex-col items-center justify-center
-                w-56 sm:w-80
-                p-10
-                bg-[#1cb3d2]/30 
-                backdrop-blur-md
-                rounded-2xl
-                cursor-pointer
-                hover:scale-105
-                transition-transform
-              "
-            >
-              <img src={implementationBtn} alt="Feasibility" className="h-24 sm:h-32 mb-6" />
-              <span className="text-white text-lg font-semibold">Feasibility</span>
-            </div>
-          )}
+          <div
+            onClick={() => navigate(`/changes/${project.id}/feasibility`)}
+            className="
+              flex flex-col items-center justify-center
+              w-56 sm:w-80
+              p-10
+              bg-[#1cb3d2]/30 
+              backdrop-blur-md
+              rounded-2xl
+              cursor-pointer
+              hover:scale-105
+              transition-transform
+            "
+          >
+            <img src={feasibilityBtn} alt="Feasibility" className="h-24 sm:h-32 mb-6" />
+            <span className="text-white text-lg font-semibold">Feasibility</span>
+          </div>
+        )}
 
-          {project.mapping.implementation && (
-            <div
-              onClick={() => navigate(`/changes/${project.id}/feasibility`)}
-              className="
-                flex flex-col items-center justify-center
-                w-56 sm:w-80
-                p-10
-                bg-[#1cb3d2]/30 
-                backdrop-blur-md
-                rounded-2xl
-                cursor-pointer
-                hover:scale-105
-                transition-transform
-              "
-            >
-              <img src={feasibilityBtn} alt="Implementation" className="h-24 sm:h-32 mb-6" />
-              <span className="text-white text-lg font-semibold">Implementation</span>
-            </div>
-          )}
+        {project.mapping.implementation && (
+          <div
+            onClick={() => navigate(`/changes/${project.id}/implementation`)}
+            className="
+              flex flex-col items-center justify-center
+              w-56 sm:w-80
+              p-10
+              bg-[#1cb3d2]/30 
+              backdrop-blur-md
+              rounded-2xl
+              cursor-pointer
+              hover:scale-105
+              transition-transform
+            "
+          >
+            <img src={implementationBtn} alt="Implementation" className="h-24 sm:h-32 mb-6" />
+            <span className="text-white text-lg font-semibold">Implementation</span>
+          </div>
+        )}
         </div>
       </div>
     </div>

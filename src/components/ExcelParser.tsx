@@ -72,14 +72,16 @@ const columnMapping = {
     "NameChangepackagesPhase8": "Changepackages"
   },
   phase4extra: {
-    "ProcessnumberProcessinformation": "Processnumber"
-  },
-  phase8extra: {
-    "ProcessnumberProcessinformation": "Processnumber"
-  }
+  "ProcessnumberProcessinformation": "Processnumber",
+},
+phase8extra: {
+  "ProcessnumberProcessinformation": "Processnumber",
+}
 };
 
-const cleanHeader = (header: string): string => String(header).replace(/[^A-Za-z0-9]/g, "");
+const cleanHeader = (header: string, truncate: boolean = false): string => { 
+  const cleaned =String(header).replace(/[^A-Za-z0-9]/g, "");
+  return truncate ? cleaned.slice(0,32):cleaned;};
 
 const calculateWorkingDays = (start: string, end: string): number | string => {
   try {
@@ -150,9 +152,11 @@ const ExcelParser: React.FC<Props> = ({ phase, onDataParsed, onProjectNameDetect
           const mappedRow: any = {};
           const typedRow = row as Record<string, any>; // <-- FIX HERE
 
+          const isExtraPhase = phase === "phase4extra" || phase === "phase8extra";
+
           Object.entries(typedRow).forEach(([k, v]) => {
-            const cleanKey = cleanHeader(k);
-            const mappedKey = (columnMapping as any)[phase]?.[cleanKey] || cleanKey; // <-- Fix 2
+            const cleanKey = cleanHeader(k, isExtraPhase);
+            const mappedKey = (columnMapping as any)[phase]?.[cleanKey] || cleanKey;
             mappedRow[mappedKey] = v === "---" ? "" : v;
           });
 

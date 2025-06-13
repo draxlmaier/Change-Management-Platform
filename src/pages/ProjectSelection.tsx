@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
-import { updateProjectMappingsFromSites } from "./projectMapping";
 import { IProject } from "../services/configService";
 import { getProjectLogo } from "../utils/getProjectLogo";
-import { getAccessToken } from "../auth/getToken";
-import { msalInstance } from "../auth/msalInstance";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
@@ -15,44 +12,28 @@ const ProjectSelection: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const refreshAndLoadProjects = async () => {
+    const loadProjectsFromLocalStorage = () => {
       try {
-        // First: Acquire token
-        const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Read.All"]);
-        if (!token) {
-          console.warn("Access token unavailable — user not authenticated?");
-          return;
-        }
-
-        // Second: Update mappings by injecting token
-        await updateProjectMappingsFromSites(token);
-
-        // Third: Load updated config from localStorage
         const raw = localStorage.getItem(LISTS_CONFIG_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.projects)) {
             setProjects(parsed.projects);
+          } else {
+            console.warn("No valid projects found in config.");
           }
+        } else {
+          console.warn("No config found in localStorage.");
         }
       } catch (err) {
-        console.error("Error loading projects:", err);
+        console.error("Failed to parse localStorage config:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    refreshAndLoadProjects();
+    loadProjectsFromLocalStorage();
   }, []);
-
-  // Render loading state while waiting for projects
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-white text-lg">Loading projects...</p>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -72,31 +53,35 @@ const ProjectSelection: React.FC = () => {
           Select a Project
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-          {projects.map((proj) => (
-            <div
-              key={proj.id}
-              onClick={() => navigate(`/changes/${proj.id}`)}
-              className="cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition"
-            >
-              <img
-                src={getProjectLogo(proj.id)}
-                alt={`${proj.displayName} logo`}
-                className="h-24 w-auto"
-              />
-              <h2 className="text-xl font-semibold text-white">
-                {proj.displayName}
-              </h2>
-              <p className="text-gray-200 text-sm">View changes →</p>
-            </div>
-          ))}
+        {loading ? (
+          <p className="text-white text-lg">Loading projects...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+            {projects.map((proj) => (
+              <div
+                key={proj.id}
+                onClick={() => navigate(`/changes/${proj.id}`)}
+                className="cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition"
+              >
+                <img
+                  src={getProjectLogo(proj.id)}
+                  alt={`${proj.displayName} logo`}
+                  className="h-24 w-auto"
+                />
+                <h2 className="text-xl font-semibold text-white">
+                  {proj.displayName}
+                </h2>
+                <p className="text-gray-200 text-sm">View changes →</p>
+              </div>
+            ))}
 
-          {projects.length === 0 && (
-            <p className="col-span-full text-center text-gray-300 mt-6">
-              No projects found. Please add some in the Config Page first!
-            </p>
-          )}
-        </div>
+            {projects.length === 0 && (
+              <p className="col-span-full text-center text-gray-300 mt-6">
+                No projects found. Please add some in the Config Page first!
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

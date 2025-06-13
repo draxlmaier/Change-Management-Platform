@@ -133,7 +133,7 @@ const startDateTo = toMatch ? toMatch[1] : "";
             setProject(patchedProject);
 
       // List ID
-      const listId = foundProject.mapping.feasibility;
+      const listId = foundProject.mapping.implementation;
       if (!listId) {
         setError("No feasibility list assigned");
         return;
