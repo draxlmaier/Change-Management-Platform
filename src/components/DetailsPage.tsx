@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
@@ -7,6 +7,17 @@ import harnessBg from "../assets/images/harness-bg.png";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+interface FieldEntry {
+  label: string;
+  key: string;
+}
+
+interface FieldsConfig {
+  generalFields: FieldEntry[];
+  editableFields: FieldEntry[];
+  startEndWorkingGroup: FieldEntry[];
+}
 
 interface IProject {
   id: string;
@@ -30,16 +41,8 @@ interface ChangeItem {
   fields: Record<string, any>;
 }
 
-interface FieldEntry {
-  label: string;
-  key: string;
-}
-
 interface DetailsPageProps {
-  fieldsConfig: {
-    generalFields: FieldEntry[];
-    editableFields: FieldEntry[];
-  };
+  fieldsConfig: FieldsConfig;
   listType: "feasibility" | "implementation";
 }
 
@@ -49,11 +52,19 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
 
   const [item, setItem] = useState<ChangeItem | null>(null);
   const [project, setProject] = useState<IProject | null>(null);
+  const [config, setConfig] = useState<SavedConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editedValue, setEditedValue] = useState<string>("");
-  const [config, setConfig] = useState<SavedConfig | null>(null);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (editingField && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editingField]);
 
   useEffect(() => {
     (async () => {
@@ -100,79 +111,34 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
 
   const f = item.fields;
 
-  const renderField = ({ label, key }: FieldEntry, editable: boolean) => {
-    const val = f[key] ?? "—";
-    const isEditing = editingField === key;
+  const filledEditableFields = fieldsConfig.editableFields.filter(
+    (field) => f[field.key] !== undefined && f[field.key] !== null && f[field.key] !== ""
+  ).filter(field => !fieldsConfig.startEndWorkingGroup.some(g => g.key === field.key));
 
-    if (!editable) {
-      return (
-        <div key={key} className="flex justify-between items-center mb-4">
-          <div className="font-semibold text-white w-64">{label}</div>
-          <div className="text-white">{val}</div> {/* No box here */}
-        </div>
-      );
-    }
+  const emptyEditableFields = fieldsConfig.editableFields.filter(
+    (field) => !filledEditableFields.includes(field) &&
+      !fieldsConfig.startEndWorkingGroup.some(g => g.key === field.key)
+  );
 
-    return (
-      <div key={key} className="flex justify-between items-center mb-4">
-        <div className="font-semibold text-white w-64">{label}</div>
-        <div className="flex-1">
-          {isEditing ? (
-            <>
-              <input
-                className="p-1 rounded text-black w-full"
-                value={editedValue}
-                onChange={(e) => setEditedValue(e.target.value)}
-              />
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => saveEdit(key)}
-                  className="px-3 py-1 bg-green-500 rounded text-white"
-                  disabled={isSaving}
-                >
-                  {isSaving ? "Saving..." : "Save"}
-                </button>
-                <button
-                  onClick={() => cancelEdit()}
-                  className="px-3 py-1 bg-red-500 rounded text-white"
-                  disabled={isSaving}
-                >
-                  Cancel
-                </button>
-              </div>
-            </>
-          ) : (
-            <div
-              onDoubleClick={() => startEdit(key, val)}
-              className="p-2 rounded border border-white/30 hover:bg-white/20 transition cursor-pointer text-white"
-            >
-              {val}
-              <button
-                className="ml-2 px-2 py-1 bg-blue-500 text-xs text-white rounded"
-                onClick={() => startEdit(key, val)}
-              >
-                Edit
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  const getInputType = (key: string) => {
+    const k = key.toLowerCase();
+    if (k.includes("date")) return "date";
+    if (k.includes("cost") || k.includes("downtime") || k.includes("workingdays") || k.includes("scrap"))
+      return "number";
+    return "text";
   };
 
-  const startEdit = (key: string, val: any) => {
-    setEditingField(key);
-    setEditedValue(val);
+  const handleEditStart = (fieldKey: string, currentVal: string) => {
+    setEditingField(fieldKey);
+    setEditedValue(currentVal);
   };
 
-  const cancelEdit = () => {
-    if (!isSaving) {
+  const handleSave = async (fieldKey: string, newValue: string) => {
+    if (f[fieldKey] === newValue) {
       setEditingField(null);
-      setEditedValue("");
+      return; // Prevent unnecessary API calls
     }
-  };
 
-  const saveEdit = async (key: string) => {
     setIsSaving(true);
     try {
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
@@ -181,32 +147,51 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
           ? project?.mapping?.feasibility || project?.mapping?.implementation
           : project?.mapping?.implementation;
 
-      if (!listId) throw new Error("List ID not found");
-      const updatePayload = { [key]: editedValue };
+      const updatePayload = { [fieldKey]: newValue };
 
       await axios.patch(
-        `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${listId}/items/${itemId}/fields`,
+        `https://graph.microsoft.com/v1.0/sites/${config?.siteId}/lists/${listId}/items/${itemId}/fields`,
         updatePayload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setItem((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          fields: { ...prev.fields, [key]: editedValue },
-        };
-      });
-
-      toast.success("Field updated successfully!");
-    } catch (err: any) {
-      console.error("Error updating field", err);
-      toast.error("Error updating field: " + (err.response?.data?.error?.message || err.message));
+      setItem((prev) => prev ? ({ ...prev, fields: { ...prev.fields, [fieldKey]: newValue } }) : prev);
+      toast.success("Saved");
+    } catch (e: any) {
+      toast.error("Save failed");
     } finally {
       setIsSaving(false);
       setEditingField(null);
-      setEditedValue("");
     }
+  };
+
+  const renderEditable = (field: FieldEntry) => {
+    const currentValue = f[field.key] ?? "";
+
+    return (
+      <div key={field.key} className="mb-4">
+        <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
+
+        {editingField === field.key ? (
+          <input
+            ref={inputRef}
+            className="p-2 rounded text-black w-full"
+            type={getInputType(field.key)}
+            value={editedValue}
+            onChange={(e) => setEditedValue(e.target.value)}
+            onBlur={() => handleSave(field.key, editedValue)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSave(field.key, editedValue); }}
+          />
+        ) : (
+          <div
+            className="bg-white/10 p-2 rounded cursor-pointer hover:bg-white/20"
+            onClick={() => handleEditStart(field.key, currentValue)}
+          >
+            {currentValue || "—"}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -218,17 +203,33 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
       >
         ← Back
       </button>
-      <div className="relative z-20 flex mx-auto max-w-7xl p-10 space-x-10">
-        {/* GENERAL FIELDS PANEL WITH DARK BACKGROUND */}
-        <div className="w-1/3 bg-black/50 rounded-2xl p-6 text-white">
-          {project?.logo && <img src={project.logo} alt="logo" className="w-24 h-auto mb-4" />}
-          {fieldsConfig.generalFields.map((field) => renderField(field, false))}
+
+      <div className="relative z-20 flex flex-col lg:flex-row mx-auto max-w-7xl p-4 gap-6">
+        {/* LEFT PANEL */}
+        <div className="w-full lg:w-5/12 bg-black/50 rounded-2xl p-6 text-white">
+          {project?.logo && <img src={project.logo} alt="logo" className="w-32 h-auto mb-6 mx-auto" />}
+          <h1 className="text-3xl font-bold mb-6 text-center">Change Details</h1>
+
+          {fieldsConfig.generalFields.map(field => (
+  <div key={field.key} className="mb-4">
+    <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
+    <div className="bg-white/10 px-3 py-2 rounded text-white">{f[field.key] ?? "—"}</div>
+  </div>
+))}
+
         </div>
 
-        {/* EDITABLE FIELDS PANEL */}
-        <div className="w-2/3 bg-black/50 rounded-2xl p-6 text-white overflow-y-auto">
-          <h1 className="text-3xl font-bold mb-6">Details</h1>
-          {fieldsConfig.editableFields.map((field) => renderField(field, true))}
+        {/* RIGHT PANEL */}
+        <div className="w-full lg:w-7/12 bg-black/50 rounded-2xl p-6 text-white">
+          <h2 className="text-2xl font-bold mb-6">Edit Fields</h2>
+
+          {filledEditableFields.map(renderEditable)}
+          {emptyEditableFields.map(renderEditable)}
+
+          <h2 className="text-2xl font-semibold my-8 text-center">Timeline Summary</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {fieldsConfig.startEndWorkingGroup.map(renderEditable)}
+          </div>
         </div>
       </div>
     </div>

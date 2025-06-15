@@ -134,7 +134,7 @@ const LandingPage: React.FC = () => {
         {/* Example Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-6">
           {[
-            { img: changeBtn, label: "Change Management", route: "/project-selection" },
+            { img: changeBtn, label: "Projects", route: "/project-selection" },
             { img: dashBtn, label: "Dashboard", route: "/dashboard" },
             { img: kpiBtn, label: "KPIs", route: "/kpis" },
           ].map(({ img, label, route }) => (

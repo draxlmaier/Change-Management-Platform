@@ -118,7 +118,7 @@ const PhaseSelectionPage: React.FC = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-6 items-center">
-          {project.mapping.feasibility && (
+          {project.mapping.implementation && (
           <div
             onClick={() => navigate(`/changes/${project.id}/feasibility`)}
             className="

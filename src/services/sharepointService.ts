@@ -248,21 +248,42 @@ export async function processDataframe(
 export async function resolveSiteIdFromUrl(
   siteUrl: string,
   token: string
-): Promise<string | null> {
-  const hostname = new URL(siteUrl).hostname;
-  const path = new URL(siteUrl).pathname.replace(/^\/+|\/+$/g, "");
+): Promise<{ siteId: string | null, isPersonal: boolean }> {
+  try {
+    const parsedUrl = new URL(siteUrl);
+    const hostname = parsedUrl.hostname;
+    let path = parsedUrl.pathname.replace(/^\/+|\/+$/g, "");
 
-  const url = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
-  const resp = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    let graphUrl = "";
+    let isPersonal = false;
 
-  if (resp.ok) {
-    const data = await resp.json();
-    console.log(`[SITE_ID_RESOLVED] => ${data.id}`);
-    return data.id;
-  } else {
-    console.error("[SITE_ID_FAIL]", await resp.text());
-    return null;
+    if (path.startsWith("sites/")) {
+      path = path.replace(/^sites\//, "");
+      graphUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
+    } else if (path.startsWith("personal/")) {
+      path = path.replace(/^personal\//, "");
+      graphUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/personal/${path}`;
+      isPersonal = true;
+    } else {
+      console.error(`[SITE_ID_FAIL] Unsupported URL format: ${siteUrl}`);
+      return { siteId: null, isPersonal: false };
+    }
+
+    const resp = await fetch(graphUrl, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      console.log(`[SITE_ID_RESOLVED] => ${data.id}`);
+      return { siteId: data.id, isPersonal };
+    } else {
+      console.error("[SITE_ID_FAIL]", await resp.text());
+      return { siteId: null, isPersonal: false };
+    }
+  } catch (err: any) {
+    console.error("[SITE_ID_FAIL]", err.message);
+    return { siteId: null, isPersonal: false };
   }
 }
+

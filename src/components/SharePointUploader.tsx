@@ -1,4 +1,5 @@
 // src/components/SharePointUploader.tsx
+
 import React, { useState } from "react";
 import { getAccessToken } from "../auth/getToken";
 import {
@@ -11,30 +12,39 @@ import {
 } from "../services/sharepointService";
 import { msalInstance } from "../auth/msalInstance";
 import { upsertProjectMapping } from "../services/configService";
+import SmartSharingManager from "./SmartSharingManager";
+import uploadIcon from "../assets/images/uploadIcon.png"
 
 interface Props {
   data: any[];
-  phase: string;
+  phase: string;  
   projectName: string;
+  siteId: string;
+  isPersonal: boolean;
+  siteUrl: string;
   onLog: (msg: string) => void;
   onUploadComplete: () => void;
 }
 
-const scopes = ["Sites.ReadWrite.All"];
+const scopes = ["Sites.ReadWrite.All", "Sites.Manage.All"];
 
 const SharePointUploader: React.FC<Props> = ({
   data,
   phase,
   projectName,
+  siteId,
+  isPersonal,
+  siteUrl,
   onLog,
   onUploadComplete,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState("");
+  const [listId, setListId] = useState<string | null>(null);
 
   const handleUpload = async () => {
-    if (!data.length || !projectName || !phase) {
-      setStatus("Missing required data, project name, or phase.");
+    if (!data.length || !projectName) {
+      setStatus("Missing required data or project name.");
       return;
     }
 
@@ -44,23 +54,20 @@ const SharePointUploader: React.FC<Props> = ({
       const token = await getAccessToken(msalInstance, scopes);
       if (!token) throw new Error("Token acquisition failed.");
 
-      const siteId = localStorage.getItem("sharepointSiteId");
-      if (!siteId) throw new Error("SharePoint Site ID not found. Please resolve it first.");
-
       const listName = `changes_${projectName.trim()}_${phase.trim()}`;
       onLog(`Preparing to upload to SharePoint list: ${listName}`);
 
-      let listId = await findListIdByName(siteId, listName, token);
-      if (!listId) {
+      let listIdResult = await findListIdByName(siteId, listName, token);
+      if (!listIdResult) {
         onLog("Creating new SharePoint list...");
-        listId = await createSpList(siteId, listName, token);
-        if (!listId) throw new Error("Failed to create SharePoint list.");
+        listIdResult = await createSpList(siteId, listName, token);
+        if (!listIdResult) throw new Error("Failed to create SharePoint list.");
       } else {
         onLog("Existing list found. Clearing old data...");
-        await deleteAllItems(siteId, listId, token);
+        await deleteAllItems(siteId, listIdResult, token);
       }
 
-      const existingCols = await getExistingColumns(siteId, listId, token);
+      const existingCols = await getExistingColumns(siteId, listIdResult, token);
       const allCols = Object.keys(data[0]);
       const finalCols: string[] = [];
 
@@ -68,7 +75,7 @@ const SharePointUploader: React.FC<Props> = ({
         if (existingCols[col]) {
           finalCols.push(col);
         } else {
-          const created = await createTextColumnWithRetry(siteId, listId, col, token);
+          const created = await createTextColumnWithRetry(siteId, listIdResult, col, token);
           if (created) finalCols.push(col);
         }
       }
@@ -82,16 +89,15 @@ const SharePointUploader: React.FC<Props> = ({
         for (const col of finalCols) {
           fields[col] = row[col] === "---" ? "" : String(row[col] || "");
         }
-
-        const id = await insertItem(siteId, listId, fields, token);
+        const id = await insertItem(siteId, listIdResult, fields, token);
         if (id) inserted++;
       }
 
-      // ✅ Auto-save mapping to config
-      upsertProjectMapping(projectName, projectName, phase, listId);
+      upsertProjectMapping(projectName, projectName, phase, listIdResult);
 
       setStatus(`✅ Uploaded ${inserted}/${data.length} rows.`);
       onLog(`✅ Upload complete: ${inserted}/${data.length} rows.`);
+      setListId(listIdResult);
       onUploadComplete();
     } catch (error: any) {
       setStatus("❌ Upload failed: " + error.message);
@@ -102,31 +108,36 @@ const SharePointUploader: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex flex-col items-center">
       <button
         onClick={handleUpload}
         disabled={uploading}
-        className={`px-6 py-2 rounded font-medium transition ${
-          uploading
-            ? "bg-gray-500 cursor-not-allowed"
-            : "bg-[#1cb3d2] hover:bg-[#17a2ba]"
-        }`}
+        className="
+          w-72 h-72 
+          bg-white/20 backdrop-blur-md 
+          rounded-2xl shadow-lg
+          hover:bg-white/30 hover:scale-105 
+          transition transform duration-300 ease-in-out
+          flex flex-col items-center justify-center text-white
+        "
       >
-        {uploading ? "Uploading..." : "Upload to SharePoint"}
+        <img src={uploadIcon} alt="Upload" className="h-48 w-38 mb-6 object-contain" />
+        <span className="text-xl font-semibold">
+          {uploading ? "Uploading..." : "Upload to SharePoint"}
+        </span>
       </button>
 
       {status && (
-        <p
-          className={`text-sm ${
-            status.startsWith("✅")
-              ? "text-green-400"
-              : status.startsWith("❌")
-              ? "text-red-400"
-              : "text-yellow-200"
-          }`}
-        >
+        <p className={`text-sm ${status.startsWith("✅") ? "text-green-400" : status.startsWith("❌") ? "text-red-400" : "text-yellow-200"}`}>
           {status}
         </p>
+      )}
+
+      {listId && isPersonal && (
+        <SmartSharingManager 
+          siteUrl={siteUrl} 
+          listName={`changes_${projectName.trim()}_${phase.trim()}`} 
+        />
       )}
     </div>
   );
