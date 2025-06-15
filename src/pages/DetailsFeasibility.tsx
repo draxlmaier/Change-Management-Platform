@@ -44,5 +44,5 @@ export default function DetailsFeasibility() {
     ],
   };
 
-  return <DetailsPage fieldsConfig={fieldsConfig} listType="feasibility" />;
+  return <DetailsPage fieldsConfig={fieldsConfig} />;
 }
