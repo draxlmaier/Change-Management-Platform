@@ -157,7 +157,7 @@ const areaColors: Record<string, string> = {
       // List ID
       const listId = foundProject.mapping.implementation;
       if (!listId) {
-        setError("No feasibility list assigned");
+        setError("No list assigned");
         return;
       }
       const account = msalInstance.getActiveAccount();
@@ -380,7 +380,7 @@ const areaColors: Record<string, string> = {
           return (
             <div
               key={item.id}
-              onClick={() => navigate(`/details/${projectKey}/feasibility/${item.id}`)}
+              onClick={() => navigate(`/details/${projectKey}/implementation/${item.id}`)}
               className={`grid h-20 items-center p-4 bg-white/10 border border-white/20
                          backdrop-blur-md rounded-2xl shadow-md cursor-pointer
                          hover:bg-white/20`}

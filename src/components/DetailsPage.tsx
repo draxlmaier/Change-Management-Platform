@@ -43,10 +43,9 @@ interface ChangeItem {
 
 interface DetailsPageProps {
   fieldsConfig: FieldsConfig;
-  listType: "feasibility" | "implementation";
 }
 
-const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => {
+const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   const { projectKey, itemId } = useParams<{ projectKey: string; itemId: string }>();
   const navigate = useNavigate();
 
@@ -83,12 +82,8 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
         };
         setProject(patchedProject);
 
-        const listId =
-          listType === "feasibility"
-            ? foundProject.mapping.feasibility || foundProject.mapping.implementation
-            : foundProject.mapping.implementation;
-
-        if (!listId) return setError("List mapping not configured");
+        const listId = foundProject.mapping.implementation;
+        if (!listId) return setError("Implementation list not configured");
 
         const account = msalInstance.getActiveAccount();
         if (!account) return setError("No signed-in user");
@@ -104,7 +99,7 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
         setError(e.response?.data?.error?.message || e.message);
       }
     })();
-  }, [projectKey, itemId, listType]);
+  }, [projectKey, itemId]);
 
   if (error) return <div className="p-8 text-red-600">{error}</div>;
   if (!item || !project || !config) return null;
@@ -136,17 +131,13 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
   const handleSave = async (fieldKey: string, newValue: string) => {
     if (f[fieldKey] === newValue) {
       setEditingField(null);
-      return; // Prevent unnecessary API calls
+      return;
     }
 
     setIsSaving(true);
     try {
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
-      const listId =
-        listType === "feasibility"
-          ? project?.mapping?.feasibility || project?.mapping?.implementation
-          : project?.mapping?.implementation;
-
+      const listId = project?.mapping?.implementation;
       const updatePayload = { [fieldKey]: newValue };
 
       await axios.patch(
@@ -171,7 +162,6 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
     return (
       <div key={field.key} className="mb-4">
         <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
-
         {editingField === field.key ? (
           <input
             ref={inputRef}
@@ -211,12 +201,11 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig, listType }) => 
           <h1 className="text-3xl font-bold mb-6 text-center">Change Details</h1>
 
           {fieldsConfig.generalFields.map(field => (
-  <div key={field.key} className="mb-4">
-    <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
-    <div className="bg-white/10 px-3 py-2 rounded text-white">{f[field.key] ?? "—"}</div>
-  </div>
-))}
-
+            <div key={field.key} className="mb-4">
+              <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
+              <div className="bg-white/10 px-3 py-2 rounded text-white">{f[field.key] ?? "—"}</div>
+            </div>
+          ))}
         </div>
 
         {/* RIGHT PANEL */}
