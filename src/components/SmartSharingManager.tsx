@@ -7,7 +7,9 @@ import { msalInstance } from "../auth/msalInstance";
 // List of users to share with — you can load dynamically later
 const availableUsers = [
   { name: "Achraf Touati EXT", email: "Achraf.Touati.extern@draexlmaier.com" },
-  { name: "Achraf Touati", email: "achraf.touati@uit.university" }
+  { name: "Achraf Touati", email: "achraf.touati@uit.university" },
+  { name: "Talel Kasraoui", email: "talel.kasraoui@draexlmaier.com " }
+  
 ];
 
 interface Props {
