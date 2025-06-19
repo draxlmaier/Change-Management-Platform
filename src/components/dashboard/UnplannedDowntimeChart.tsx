@@ -4,57 +4,57 @@ import ReactECharts from "echarts-for-react";
 interface DowntimeRecord {
   year: string;
   Month: string;
-  UnplanneddowntimecausedbyTechnic?: number; // <-- fix here
-  rateofdowntime?: number;
-  Targetdowntime?: number;
-  seuildinterventiondowntime?: number;
+  UnplanneddowntimecausedbyTechnic?: number | string;
+  rateofdowntime?: number | string;
+  Targetdowntime?: number | string;
+  seuildinterventiondowntime?: number | string;
 }
-
 
 interface Props {
   data: DowntimeRecord[];
-  isQuarterly?: boolean;  // If set, the x-axis are quarter labels instead of months
+  isQuarterly?: boolean;
 }
 
 export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) => {
-  // Sort data by month name or by Q1..Q4
   const monthsOrder = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
   ];
-  const quartersOrder = ["Q1","Q2","Q3","Q4"];
 
-  // Decide how to sort
+  const getMonthIndex = (m: string = "") => {
+    const clean = m.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove accents
+    return monthsOrder.findIndex(mon =>
+      mon.toLowerCase() === clean.trim().toLowerCase()
+    );
+  };
+
   const sortedData = [...data].sort((a, b) => {
-  const yearDiff = parseInt(a.year) - parseInt(b.year);
-  if (yearDiff !== 0) return yearDiff;
+    const yearDiff = parseInt(a.year) - parseInt(b.year);
+    if (yearDiff !== 0) return yearDiff;
+    return getMonthIndex(a.Month) - getMonthIndex(b.Month);
+  });
 
-  const list = isQuarterly ? quartersOrder : monthsOrder;
-  return list.indexOf(a.Month) - list.indexOf(b.Month);
-});
+  console.log("✅ Final sorted data for chart:", sortedData);
 
+  const xAxisLabels = sortedData.map((rec) => {
+    const pretty = rec.Month.charAt(0).toUpperCase() + rec.Month.slice(1).toLowerCase();
+    return rec.year ? `${pretty} ${rec.year}` : pretty;
+  });
 
-  const xAxisLabels = sortedData.map((rec) =>
-  rec.year ? `${rec.Month} ${rec.year}` : rec.Month
-);
-
-
-  // For the primary axis: Downtime in minutes
   const downtimeSeries = {
     name: "Downtime (min)",
     type: "bar",
-    data: sortedData.map((rec) => rec.UnplanneddowntimecausedbyTechnic || 0),
+    data: sortedData.map(rec => parseFloat(String(rec.UnplanneddowntimecausedbyTechnic || 0))),
     yAxisIndex: 0,
     itemStyle: { color: "#fdae61" },
   };
 
-  // For the secondary axis (percent):
   const rateSeries = {
     name: "Rate of Downtime",
     type: "line",
     smooth: true,
-    data: sortedData.map((rec) =>
-      rec.rateofdowntime !== undefined ? rec.rateofdowntime * 100 : null
+    data: sortedData.map(rec =>
+      rec.rateofdowntime !== undefined ? parseFloat(String(rec.rateofdowntime)) * 100 : null
     ),
     yAxisIndex: 1,
     lineStyle: { width: 2 },
@@ -65,8 +65,8 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) =
     name: "Target in %",
     type: "line",
     smooth: true,
-    data: sortedData.map((rec) =>
-      rec.Targetdowntime !== undefined ? rec.Targetdowntime * 100 : null
+    data: sortedData.map(rec =>
+      rec.Targetdowntime !== undefined ? parseFloat(String(rec.Targetdowntime)) * 100 : null
     ),
     yAxisIndex: 1,
     lineStyle: { type: "dashed" },
@@ -77,9 +77,9 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) =
     name: "Seuil d'intervention",
     type: "line",
     smooth: true,
-    data: sortedData.map((rec) =>
+    data: sortedData.map(rec =>
       rec.seuildinterventiondowntime !== undefined
-        ? rec.seuildinterventiondowntime * 100
+        ? parseFloat(String(rec.seuildinterventiondowntime)) * 100
         : null
     ),
     yAxisIndex: 1,
@@ -102,7 +102,7 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) =
           if (p.seriesName.includes("Downtime (min)")) {
             txt += `${p.marker}${p.seriesName}: ${p.value?.toLocaleString()}<br/>`;
           } else {
-            txt += `${p.marker}${p.seriesName}: ${p.value?.toFixed(4)}%<br/>`;
+            txt += `${p.marker}${p.seriesName}: ${p.value?.toFixed(2)}%<br/>`;
           }
         });
         return txt;

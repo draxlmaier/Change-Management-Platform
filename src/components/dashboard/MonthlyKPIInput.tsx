@@ -128,7 +128,10 @@ const MonthlyKPIInput: React.FC<MonthlyKPIInputProps> = ({ siteId, listId }) => 
         {
           fields: {  Project: form.Project, // map correctly
   year: form.year,
-  Month: new Date(0, parseInt(form.Month) - 1).toLocaleString("default", { month: "long" }),
+  Month: new Date(0, parseInt(form.Month) - 1)
+  .toLocaleString("en-US", { month: "long" }),
+
+
 
   // DRX
   DRXIdeasubmittedIdeaGoal: form.DRXIdeasubmittedIdeaGoal,
@@ -246,7 +249,7 @@ const MonthlyKPIInput: React.FC<MonthlyKPIInputProps> = ({ siteId, listId }) => 
               >
                 {Array.from({ length: 12 }, (_, i) => {
                   const val = String(i + 1).padStart(2, "0");
-                  const label = new Date(0, i).toLocaleString("default", { month: "long" });
+                  const label = new Date(0, i).toLocaleString("en-US", { month: "long" });
                   return (
                     <option key={val} value={val}>
                       {label}

@@ -8,7 +8,7 @@ import { SubAreaPieChart } from "./SubAreaPieChart";
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
 import { UnplannedDowntimeChart } from "./UnplannedDowntimeChart";
-
+import { BudgetDepartmentKPI } from "../kpicharts/BudgetDepartmentKPI";
 interface IProject {
   id: string;
   displayName: string;
@@ -201,18 +201,35 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
             if (!Array.isArray(resp.data.value)) {
               throw new Error("Missing array at resp.data.value from SharePoint.");
             }
-            const pageItems = resp.data.value.map((it: any) => ({
-              ID: it.id,
-              Month: it.fields.Month,
-              Project: it.fields.Project,
-              UnplanneddowntimecausedbyTechnic: it.fields.UnplanneddowntimecausedbyTechnic,
-              rateofdowntime: it.fields.rateofdowntime,
-              Targetdowntime: it.fields.Targetdowntime,
-              seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
-              // add any other fields from MonthlyKPIs if desired
-            })) as MonthlyKPIItem[];
+            const frenchToEnglishMonths: Record<string, string> = {
+  janvier: "January",
+  février: "February",
+  mars: "March",
+  avril: "April",
+  mai: "May",
+  juin: "June",
+  juillet: "July",
+  août: "August",
+  septembre: "September",
+  octobre: "October",
+  novembre: "November",
+  décembre: "December",
+};
 
+const pageItems = resp.data.value.map((it: any) => {
+  const rawMonth = (it.fields.Month || "").toLowerCase().trim();
+  const englishMonth = frenchToEnglishMonths[rawMonth] || rawMonth;
 
+  return {
+    ID: it.id,
+    Month: englishMonth,
+    Project: it.fields.Project,
+    UnplanneddowntimecausedbyTechnic: it.fields.UnplanneddowntimecausedbyTechnic,
+    rateofdowntime: it.fields.rateofdowntime,
+    Targetdowntime: it.fields.Targetdowntime,
+    seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
+  };
+});
             kpiAccumulated.push(...pageItems);
             nextLink = resp.data["@odata.nextLink"] || "";
           }
@@ -220,7 +237,27 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
 
 
         await fetchMonthlyKPIs(config.monthlyListId);
-        setAllMonthlyKPIs(kpiAccumulated);
+        const frenchToEnglish: Record<string, string> = {
+  janvier: "January",
+  février: "February",
+  mars: "March",
+  avril: "April",
+  mai: "May",
+  juin: "June",
+  juillet: "July",
+  août: "August",
+  septembre: "September",
+  octobre: "October",
+  novembre: "November",
+  décembre: "December",
+};
+
+const normalizedMonthlyKPIs = kpiAccumulated.map((item) => ({
+  ...item,
+  Month: frenchToEnglish[item.Month?.toLowerCase() || ""] || item.Month,
+}));
+setAllMonthlyKPIs(normalizedMonthlyKPIs);
+
       }
     } catch (err: any) {
       console.error("Error:", err);
@@ -231,46 +268,36 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
   })();
 }, [project]);
 useEffect(() => {
-  // If there's no monthly KPI data, just clear the filtered array
   if (!allMonthlyKPIs.length) {
     setFilteredMonthlyKPIs([]);
     return;
   }
+
   const monthsOrder = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre"
-];
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   const newFiltered = allMonthlyKPIs.filter((item) => {
-    // If item.Month is "January", index is 0 => numeric month is 1
-    const mIndex = monthsOrder.indexOf(item.Month || "Unknown");
-    const itemMonthNum = mIndex + 1; // 1-based month
-    if (itemMonthNum < 1) {
-      // If not found in the array, skip this record
-      return false;
-    }
+    const mIndex = monthsOrder.indexOf(item.Month || "");
+    const itemMonthNum = mIndex + 1;
+
+    if (itemMonthNum < 1) return false;
+
     switch (filterMode) {
-     
       case "month":
-        // Compare numeric month to user-chosen selectedMonth (e.g. "05" => 5)
-        if (selectedMonth) {
-          const userMonthNum = parseInt(selectedMonth, 10);
-          return (itemMonthNum === userMonthNum);
-        }
-        return true;
+        return item.year === selectedYear && itemMonthNum === parseInt(selectedMonth);
 
       case "quarter": {
-        // Convert itemMonthNum => 1..12
-        // Q1 = months 1..3, Q2 = 4..6, Q3 = 7..9, Q4 = 10..12
+        if (item.year !== selectedYear) return false;
         const q = parseInt(selectedQuarter, 10);
-        if (isNaN(q) || q < 1 || q > 4) return true; // no valid quarter selected
-        const minM = (q - 1) * 3 + 1; // e.g. Q1 => 1, Q2 => 4
-        const maxM = q * 3;          // e.g. Q1 => 3, Q2 => 6
-        return (itemMonthNum >= minM && itemMonthNum <= maxM);
+        const minM = (q - 1) * 3 + 1;
+        const maxM = q * 3;
+        return itemMonthNum >= minM && itemMonthNum <= maxM;
       }
 
       default:
-        return true; // If no mode matched, pass everything
+        return true;
     }
   });
 
@@ -280,14 +307,7 @@ useEffect(() => {
   filterMode,
   selectedYear,
   selectedMonth,
-  selectedDay,
   selectedQuarter,
-  fromDay,
-  fromMonth,
-  fromYear,
-  toDay,
-  toMonth,
-  toYear,
 ]);
   // Recompute filtered items on filter changes
   useEffect(() => {
@@ -711,10 +731,22 @@ useEffect(() => {
             <ScrapPieChart items={filteredItems} groupBy="year" />
           </div>
           {/*  New chart for unplanned downtime */}
+
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">Unplanned Downtime</h2>
           <UnplannedDowntimeChart data={filteredMonthlyKPIs} />
         </div>
+        
+<div className="bg-white rounded-lg shadow-md p-6">
+  <BudgetDepartmentKPI
+    data={filteredMonthlyKPIs}
+    filterMode={filterMode as "month" | "quarter" | "year"}
+    selectedMonth={selectedMonth}
+    selectedQuarter={selectedQuarter}
+    selectedYear={selectedYear}
+  />
+</div>
+
         </div>
       </div>
     </div>
