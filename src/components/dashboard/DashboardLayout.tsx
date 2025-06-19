@@ -24,7 +24,7 @@ export default function DashboardLayout(): React.ReactElement {
         const config = JSON.parse(rawConfig);
         if (Array.isArray(config.projects)) {
           const validProjects = config.projects.filter((project: IProject) =>
-            project.mapping.feasibility && project.mapping.implementation
+             !!project.mapping.implementation
           );
 
           const mappedProjects = validProjects.map((project: IProject) => {

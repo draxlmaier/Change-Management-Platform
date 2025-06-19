@@ -1,4 +1,4 @@
-// src/components/SiteResolver.tsx
+// File: src/components/SiteResolver.tsx
 
 import React, { useState } from "react";
 import { getAccessToken } from "../auth/getToken";
@@ -6,7 +6,7 @@ import { msalInstance } from "../auth/msalInstance";
 import { resolveSiteIdFromUrl } from "../services/sharepointService";
 
 interface Props {
-  onResolved: (siteId: string, isPersonal: boolean, siteUrl: string) => void;
+  onResolved: (siteId: string, siteUrl: string) => void;
   onLog: (message: string) => void;
 }
 
@@ -22,15 +22,15 @@ const SiteResolver: React.FC<Props> = ({ onResolved, onLog }) => {
       const token = await getAccessToken(msalInstance, scopes);
       if (!token) throw new Error("Token not available");
 
-      const { siteId, isPersonal } = await resolveSiteIdFromUrl(siteUrl, token);
+      const { siteId } = await resolveSiteIdFromUrl(siteUrl, token);
       if (!siteId) throw new Error("Could not resolve Site ID.");
 
       // Persist values
       localStorage.setItem("sharepointSite", siteUrl);
       localStorage.setItem("sharepointSiteId", siteId);
 
-      onResolved(siteId, isPersonal, siteUrl);
-      onLog(`✅ SharePoint site resolved: ${siteId} (${isPersonal ? "Personal Site" : "Team Site"})`);
+      onResolved(siteId, siteUrl);
+      onLog(`✅ SharePoint site resolved: ${siteId}`);
     } catch (err: any) {
       console.error("Site resolution failed:", err);
       onLog(`❌ Site resolution failed: ${err.message}`);
@@ -46,7 +46,7 @@ const SiteResolver: React.FC<Props> = ({ onResolved, onLog }) => {
         type="text"
         value={siteUrl}
         onChange={(e) => setSiteUrl(e.target.value)}
-        placeholder="https://company.sharepoint.com/sites/YourSite OR https://company-my.sharepoint.com/personal/username"
+        placeholder="https://company.sharepoint.com/sites/YourSite"
         className="w-full p-2 rounded bg-white text-black"
       />
       <button

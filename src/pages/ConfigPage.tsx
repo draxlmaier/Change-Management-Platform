@@ -11,7 +11,6 @@ import { AVAILABLE_PROJECTS } from "../constants/projects";
 import { msalInstance } from "../auth/msalInstance";
 import { getAccessToken } from "../auth/getToken";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
-import { getProjectLogo } from '../utils/getProjectLogo';
 
 
 const ConfigPage: React.FC = () => {
@@ -257,11 +256,14 @@ const handleSaveCarName = async () => {
 
   // 5) Save entire config to localStorage
   const handleSave = () => {
+  if (!questionsListId || !monthlyListId || !followCostListId) {
+    setMessage("Please select all KPI lists.");
+    return;
+  }
 
   for (const proj of projects) {
-    const hasFeasibility = proj.mapping.feasibility || proj.mapping.feasibilityExtra;
     const hasImplementation = proj.mapping.implementation || proj.mapping.implementationExtra;
-    if (!hasFeasibility && !hasImplementation) {
+    if ( !hasImplementation) {
       setMessage(`Project "${proj.displayName}" must have at least one mapped list (feasibility or implementation).`);
       return;
     }
@@ -439,7 +441,7 @@ const handleSaveCarName = async () => {
                           <div className="flex items-center">
                             {proj.logo && (
                               <img
-                                src={getProjectLogo(proj.id)}
+                                src={proj.logo}
                                 alt={proj.displayName}
                                 className="w-10 h-10 object-contain mr-3"
                               />
@@ -456,7 +458,7 @@ const handleSaveCarName = async () => {
 
                         {/* Implementation (Phase 4) */}
                         <label className="block mt-2">
-                          <span className="text-sm">Implementation (Phase 8)</span>
+                          <span className="text-sm"> Associated List</span>
                           <select
                             value={proj.mapping.implementation}
                             onChange={(e) =>
@@ -464,7 +466,7 @@ const handleSaveCarName = async () => {
                             }
                             className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
                           >
-                            <option value="">-- Select Implementation --</option>
+                            <option value="">-- Select List --</option>
                             {lists.map((l) => (
                               <option key={l.id} value={l.id}>
                                 {l.displayName}
@@ -474,28 +476,12 @@ const handleSaveCarName = async () => {
                         </label>
 
                         {/* Feasibility (Phase 8) */}
-                        <label className="block mt-2">
-                          <span className="text-sm">Feasibility (Phase 4)</span>
-                          <select
-                            value={proj.mapping.feasibility}
-                            onChange={(e) =>
-                              handleProjectMappingChange(proj.id, "feasibility", e.target.value)
-                            }
-                            className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
-                          >
-                            <option value="">-- Select Feasibility --</option>
-                            {lists.map((l) => (
-                              <option key={l.id} value={l.id}>
-                                {l.displayName}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                       
 
                         {/* Implementation Extra */}
                         <label className="block mt-2">
                           <span className="text-sm">
-                            Implementation Extra (Phase 8) [Optional]
+                           Extra List [Optional]
                           </span>
                           <select
                             value={proj.mapping.implementationExtra || ""}
@@ -513,26 +499,7 @@ const handleSaveCarName = async () => {
                           </select>
                         </label>
 
-                        {/* Feasibility Extra */}
-                        <label className="block mt-2">
-                          <span className="text-sm">
-                            Feasibility Extra (Phase 4) [Optional]
-                          </span>
-                          <select
-                            value={proj.mapping.feasibilityExtra || ""}
-                            onChange={(e) =>
-                              handleProjectMappingChange(proj.id, "feasibilityExtra", e.target.value)
-                            }
-                            className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
-                          >
-                            <option value="">-- Optional --</option>
-                            {lists.map((l) => (
-                              <option key={l.id} value={l.id}>
-                                {l.displayName}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                       
                       </div>
                     ))}
 
@@ -671,6 +638,12 @@ const handleSaveCarName = async () => {
           {activeTab === "roles" && (
             <>
               <h2 className="text-2xl font-semibold">User Roles Configuration</h2>
+              <button
+                onClick={() => navigate("/admin/users")}
+                className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+              >
+                Go to Admin User Manager
+              </button>
               <form onSubmit={handleRoleAssignment} className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <input

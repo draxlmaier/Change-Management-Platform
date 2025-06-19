@@ -226,7 +226,7 @@ const areaColors: Record<string, string> = {
 
     {/* Title */}
     <div className="text-center text-white text-3xl font-bold py-4">
-      Implementation Changes for <span className="uppercase">{projectKey}</span>
+      Feasibility Changes for <span className="uppercase">{projectKey}</span>
     </div>
 
     {/* Unified Layout */}
@@ -380,7 +380,7 @@ const areaColors: Record<string, string> = {
           return (
             <div
               key={item.id}
-              onClick={() => navigate(`/details/${projectKey}/implementation/${item.id}`)}
+              onClick={() => navigate(`/details/${projectKey}/feasibility/${item.id}`)}
               className={`grid h-20 items-center p-4 bg-white/10 border border-white/20
                          backdrop-blur-md rounded-2xl shadow-md cursor-pointer
                          hover:bg-white/20`}

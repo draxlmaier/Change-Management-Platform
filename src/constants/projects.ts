@@ -1,6 +1,4 @@
-// src/constants/projects.ts
 
-// Import logos (kept inside src/assets/images/logos/)
 import audiLogo from '../assets/images/logos/Audi.png';
 import bmwLogo from '../assets/images/logos/BMW.png';
 import Chevrolet from '../assets/images/logos/Chevrolet.png';

@@ -1,5 +1,3 @@
-// src/components/dashboard/ChangesDashboard.tsx
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
@@ -9,20 +7,22 @@ import { ScrapPieChart } from "./ScrapPieChart";
 import { SubAreaPieChart } from "./SubAreaPieChart";
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
+import { UnplannedDowntimeChart } from "./UnplannedDowntimeChart";
 
 interface IProject {
   id: string;
   displayName: string;
   mapping: {
-    feasibility: string;
     implementation: string;
-    feasibilityExtra?: string;
     implementationExtra?: string;
+    feasibility?: string;
+    feasibilityExtra?: string;
   };
 }
 
 interface cmConfigLists {
   siteId: string;
+  monthlyListId: string;
   projects: IProject[];
 }
 
@@ -37,6 +37,19 @@ interface ChangeItem {
   processyear?: string;
   processmonth?: string;
   processday?: string;
+}
+
+// For unplanned downtime or other monthly KPI fields 
+interface MonthlyKPIItem {
+  ID: string;
+  year: string;
+  Month: string;
+  Project?: string;
+  UnplanneddowntimecausedbyTechnic?: number;
+  rateofdowntime?: number;
+  Targetdowntime?: number;
+  seuildinterventiondowntime?: number;
+  // other MonthlyKPI fields if you need them...
 }
 
 type FilterMode =
@@ -56,26 +69,29 @@ export const ChangesDashboard: React.FC = () => {
   const [filteredItems, setFilteredItems] = useState<ChangeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Feasibility vs. implementation
-  const [listType, setListType] = useState<"feasibility" | "implementation">("feasibility");
-
-  // FilterMode + date/time states
+  
+  const [allMonthlyKPIs, setAllMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
+const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
+  // Filter mode state
   const [filterMode, setFilterMode] = useState<FilterMode>("month");
+
+  // Current date for defaults
   const now = new Date();
   const defaultYear = String(now.getFullYear());
   const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
   const defaultDay = String(now.getDate()).padStart(2, "0");
 
+  // State for year/month/day/quarter
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedDay, setSelectedDay] = useState(defaultDay);
   const [selectedQuarter, setSelectedQuarter] = useState("1");
 
+  // State for week-of-month/week-of-year
   const [selectedWeekOfMonth, setSelectedWeekOfMonth] = useState<number | null>(null);
   const [selectedWeekOfYear, setSelectedWeekOfYear] = useState<number | null>(null);
 
-  // Custom range states
+  // State for custom range
   const [fromDay, setFromDay] = useState("01");
   const [fromMonth, setFromMonth] = useState("01");
   const [fromYear, setFromYear] = useState("2025");
@@ -83,11 +99,12 @@ export const ChangesDashboard: React.FC = () => {
   const [toMonth, setToMonth] = useState("12");
   const [toYear, setToYear] = useState("2025");
 
-  // Fetch data once on mount (and if project/listType changes)
+  // Fetch data once when "project" changes
   useEffect(() => {
     (async () => {
       setLoading(true);
       setError(null);
+
       try {
         const token = await getAccessToken(msalInstance, ["User.Read"]);
         if (!token) throw new Error("No valid token found. Please log in again.");
@@ -108,7 +125,7 @@ export const ChangesDashboard: React.FC = () => {
         const siteId = config.siteId;
         const accumulated: ChangeItem[] = [];
 
-        // Helper: fetch all pages from the given list ID
+        // Helper to fetch all pages from a single list
         const fetchListItems = async (listId: string) => {
           let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
           while (nextLink) {
@@ -135,16 +152,16 @@ export const ChangesDashboard: React.FC = () => {
           }
         };
 
-        // If project is "draxlmaeir," gather from multiple sub-projects
+        // If project is "draxlmaeir," gather multiple subprojects
         if (project?.toLowerCase() === "draxlmaeir") {
           const validProjects = config.projects.filter(
-            (p) => p.mapping?.feasibility && p.mapping?.implementation
+            (p) => p.mapping.implementation
           );
           if (!validProjects.length) {
-            throw new Error("No valid subprojects found for 'Draxlmaeir'.");
+            throw new Error("No valid subprojects found for 'draxlmaeir'.");
           }
           for (const sub of validProjects) {
-            const listId = sub.mapping[listType];
+            const listId = sub.mapping.implementation;
             if (listId) {
               await fetchListItems(listId);
             }
@@ -157,29 +174,128 @@ export const ChangesDashboard: React.FC = () => {
           if (!found) {
             throw new Error(`No project with id='${project}' found in config.`);
           }
-          const listId = found.mapping[listType];
+          const listId = found.mapping.implementation;
           if (!listId) {
-            throw new Error(`Project '${found.displayName}' missing '${listType}' mapping.`);
+            throw new Error(
+              `Project '${found.displayName}' missing implementation list.`
+            );
           }
           await fetchListItems(listId);
         }
 
         setAllItems(accumulated);
-      } catch (err: any) {
-        console.error("Error:", err);
-        setError(err.message || String(err));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [project, listType]);
+      // 2) Fetch from monthlyListId (if it exists)
+      if (!config.monthlyListId) {
+        console.warn("No monthlyListId in config. Skipping monthly KPI fetch.");
+      } else {
+        const kpiAccumulated: MonthlyKPIItem[] = [];
 
-  // Filter items whenever user changes filterMode / date states
+
+        // Helper to fetch "MonthlyKPIs"
+        const fetchMonthlyKPIs = async (listId: string) => {
+          let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
+          while (nextLink) {
+            const resp = await axios.get(nextLink, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!Array.isArray(resp.data.value)) {
+              throw new Error("Missing array at resp.data.value from SharePoint.");
+            }
+            const pageItems = resp.data.value.map((it: any) => ({
+              ID: it.id,
+              Month: it.fields.Month,
+              Project: it.fields.Project,
+              UnplanneddowntimecausedbyTechnic: it.fields.UnplanneddowntimecausedbyTechnic,
+              rateofdowntime: it.fields.rateofdowntime,
+              Targetdowntime: it.fields.Targetdowntime,
+              seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
+              // add any other fields from MonthlyKPIs if desired
+            })) as MonthlyKPIItem[];
+
+
+            kpiAccumulated.push(...pageItems);
+            nextLink = resp.data["@odata.nextLink"] || "";
+          }
+        };
+
+
+        await fetchMonthlyKPIs(config.monthlyListId);
+        setAllMonthlyKPIs(kpiAccumulated);
+      }
+    } catch (err: any) {
+      console.error("Error:", err);
+      setError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, [project]);
+useEffect(() => {
+  // If there's no monthly KPI data, just clear the filtered array
+  if (!allMonthlyKPIs.length) {
+    setFilteredMonthlyKPIs([]);
+    return;
+  }
+  const monthsOrder = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+];
+
+  const newFiltered = allMonthlyKPIs.filter((item) => {
+    // If item.Month is "January", index is 0 => numeric month is 1
+    const mIndex = monthsOrder.indexOf(item.Month || "Unknown");
+    const itemMonthNum = mIndex + 1; // 1-based month
+    if (itemMonthNum < 1) {
+      // If not found in the array, skip this record
+      return false;
+    }
+    switch (filterMode) {
+     
+      case "month":
+        // Compare numeric month to user-chosen selectedMonth (e.g. "05" => 5)
+        if (selectedMonth) {
+          const userMonthNum = parseInt(selectedMonth, 10);
+          return (itemMonthNum === userMonthNum);
+        }
+        return true;
+
+      case "quarter": {
+        // Convert itemMonthNum => 1..12
+        // Q1 = months 1..3, Q2 = 4..6, Q3 = 7..9, Q4 = 10..12
+        const q = parseInt(selectedQuarter, 10);
+        if (isNaN(q) || q < 1 || q > 4) return true; // no valid quarter selected
+        const minM = (q - 1) * 3 + 1; // e.g. Q1 => 1, Q2 => 4
+        const maxM = q * 3;          // e.g. Q1 => 3, Q2 => 6
+        return (itemMonthNum >= minM && itemMonthNum <= maxM);
+      }
+
+      default:
+        return true; // If no mode matched, pass everything
+    }
+  });
+
+  setFilteredMonthlyKPIs(newFiltered);
+}, [
+  allMonthlyKPIs,
+  filterMode,
+  selectedYear,
+  selectedMonth,
+  selectedDay,
+  selectedQuarter,
+  fromDay,
+  fromMonth,
+  fromYear,
+  toDay,
+  toMonth,
+  toYear,
+]);
+  // Recompute filtered items on filter changes
   useEffect(() => {
     if (!allItems.length) {
       setFilteredItems([]);
       return;
     }
+
     const newFiltered = allItems.filter((item) => {
       const y = item.processyear || "";
       const m = item.processmonth || "";
@@ -191,20 +307,22 @@ export const ChangesDashboard: React.FC = () => {
 
         case "month":
           return y === selectedYear && m === selectedMonth;
+
         case "quarter": {
-            if (y !== selectedYear) return false;
-            const monthNum = parseInt(m, 10);
-            const q = parseInt(selectedQuarter, 10);
-            if (isNaN(monthNum) || isNaN(q)) return false;
-            const quarterRanges: Record<number, [number, number]> = {
-              1: [1, 3],
-              2: [4, 6],
-              3: [7, 9],
-              4: [10, 12],
-            };
-            const [minMonth, maxMonth] = quarterRanges[q];
-            return monthNum >= minMonth && monthNum <= maxMonth;
-          }
+          if (y !== selectedYear) return false;
+          const monthNum = parseInt(m, 10);
+          const q = parseInt(selectedQuarter, 10);
+          if (isNaN(monthNum) || isNaN(q)) return false;
+          const quarterRanges: Record<number, [number, number]> = {
+            1: [1, 3],
+            2: [4, 6],
+            3: [7, 9],
+            4: [10, 12],
+          };
+          const [minMonth, maxMonth] = quarterRanges[q];
+          return monthNum >= minMonth && monthNum <= maxMonth;
+        }
+
         case "day":
           return y === selectedYear && m === selectedMonth && d === selectedDay;
 
@@ -268,10 +386,18 @@ export const ChangesDashboard: React.FC = () => {
     toDay,
     toMonth,
     toYear,
+    selectedQuarter,
   ]);
 
-  if (loading) return <p style={{ padding: 20 }}>Loading…</p>;
-  if (error) return <p style={{ color: "red", padding: 20 }}>Error: {error}</p>;
+  if (loading) {
+    return <p style={{ padding: 20 }}>Loading…</p>;
+  }
+
+  if (error) {
+    return <p style={{ color: "red", padding: 20 }}>Error: {error}</p>;
+  }
+  
+  
 
   // Summaries
   const totalChanges = filteredItems.length;
@@ -282,205 +408,315 @@ export const ChangesDashboard: React.FC = () => {
   });
 
   return (
-  <div className="bg-gray-100 min-h-screen p-6">
-    <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
-      {/* Dashboard Title */}
-      <h1 className="text-2xl font-bold text-gray-900">
-        {project?.toLowerCase() === "draxlmaeir"
-          ? "Changes Dashboard – Combined – Project: draxlmaeir"
-          : `Changes Dashboard – ${
-              listType === "feasibility" ? "Feasibility" : "Implementation"
-            } – Project: ${project}`}
-      </h1>
+    <div className="bg-gray-100 min-h-screen p-6">
+      <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
+        {/* Dashboard Title */}
+        <h1 className="text-2xl font-bold text-gray-900">
+          {project?.toLowerCase() === "draxlmaeir"
+            ? "Changes Dashboard – Combined – Project: draxlmaeir"
+            : `Changes Dashboard – Implementation – Project: ${project}`}
+        </h1>
 
-      {/* Dropdown: Feasibility vs. Implementation */}
-      <div className="flex space-x-4 mb-4">
-        <label className="text-gray-700">List Type:</label>
-        <select
-          value={listType}
-          onChange={(e) => setListType(e.target.value as "feasibility" | "implementation")}
-          className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="feasibility">Feasibility</option>
-          <option value="implementation">Implementation</option>
-        </select>
-      </div>
+        {/* Filter Mode Selector */}
+        <div className="flex space-x-4 items-center mb-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Filter Mode:</label>
+            <select
+              value={filterMode}
+              onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="year">Year Only</option>
+              <option value="quarter">Quarter</option>
+              <option value="month">Month</option>
+              <option value="day">Day</option>
+              <option value="weekOfMonth">Week of Month</option>
+              <option value="weekOfYear">Week of Year</option>
+              <option value="customRange">Custom Range</option>
+            </select>
+          </div>
 
-      {/* Filter Mode Selector */}
-      <div className="flex space-x-4 items-center mb-4">
-        <div>
-          <label className="text-sm font-medium text-gray-700">Filter Mode:</label>
-          <select
-            value={filterMode}
-            onChange={(e) => setFilterMode(e.target.value as FilterMode)}
-            className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="year">Year Only</option>
-            <option value="quarter">Quarter</option>
-            <option value="month">Month</option>
-            <option value="day">Day</option>
-            <option value="weekOfMonth">Week of Month</option>
-            <option value="weekOfYear">Week of Year</option>
-            <option value="customRange">Custom Range</option>
-          </select>
+          {/* Week of Year */}
+          {filterMode === "weekOfYear" && (
+            <div>
+              <label className="text-gray-700">Week # of Year:</label>
+              <select
+                value={selectedWeekOfYear ?? ""}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setSelectedWeekOfYear(isNaN(val) ? null : val);
+                }}
+                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Weeks</option>
+                {Array.from({ length: 53 }, (_, i) => i + 1).map((week) => (
+                  <option key={week} value={week}>
+                    {week}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Week of Month */}
+          {filterMode === "weekOfMonth" && (
+            <div>
+              <label className="text-gray-700">Week # in Month:</label>
+              <select
+                value={selectedWeekOfMonth ?? ""}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setSelectedWeekOfMonth(isNaN(val) ? null : val);
+                }}
+                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Weeks</option>
+                <option value="1">1 (Days 1-7)</option>
+                <option value="2">2 (Days 8-14)</option>
+                <option value="3">3 (Days 15-21)</option>
+                <option value="4">4 (Days 22-28)</option>
+                <option value="5">5 (Days 29+)</option>
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Week of Year */}
-        {filterMode === "weekOfYear" && (
-          <div>
-            <label className="text-gray-700">Week # of Year:</label>
-            <select
-              value={selectedWeekOfYear ?? ""}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                setSelectedWeekOfYear(isNaN(val) ? null : val);
-              }}
-              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Weeks</option>
-              {Array.from({ length: 53 }, (_, i) => i + 1).map((week) => (
-                <option key={week} value={week}>
-                  {week}
-                </option>
-              ))}
-            </select>
+        {/* Year/Month/Day selectors */}
+        {filterMode !== "customRange" && (
+          <div className="flex space-x-4 mb-4">
+            {/* Year */}
+            <div>
+              <label className="text-gray-700">Year:</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Year --</option>
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const yearOpt = 2024 + i;
+                  return (
+                    <option key={yearOpt} value={String(yearOpt)}>
+                      {yearOpt}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Month */}
+            <div>
+              <label className="text-gray-700">Month:</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Month --</option>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const monthStr = String(i + 1).padStart(2, "0");
+                  return (
+                    <option key={monthStr} value={monthStr}>
+                      {new Date(0, i).toLocaleString("default", { month: "long" })}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Day */}
+            <div>
+              <label className="text-gray-700">Day:</label>
+              <select
+                value={selectedDay}
+                onChange={(e) => setSelectedDay(e.target.value)}
+                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Day --</option>
+                {Array.from({ length: 31 }, (_, i) => {
+                  const dayStr = String(i + 1).padStart(2, "0");
+                  return (
+                    <option key={dayStr} value={dayStr}>
+                      {dayStr}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
         )}
 
-        {/* Week of Month */}
-        {filterMode === "weekOfMonth" && (
-          <div>
-            <label className="text-gray-700">Week # in Month:</label>
+        {filterMode === "quarter" && (
+          <div className="space-x-2 mb-4">
+            <label className="text-sm">Quarter:</label>
             <select
-              value={selectedWeekOfMonth ?? ""}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                setSelectedWeekOfMonth(isNaN(val) ? null : val);
-              }}
-              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedQuarter}
+              onChange={(e) => setSelectedQuarter(e.target.value)}
+              className="border rounded px-2 py-1"
             >
-              <option value="">All Weeks</option>
-              <option value="1">1 (Days 1-7)</option>
-              <option value="2">2 (Days 8-14)</option>
-              <option value="3">3 (Days 15-21)</option>
-              <option value="4">4 (Days 22-28)</option>
-              <option value="5">5 (Days 29+)</option>
+              <option value="1">Q1 (Jan–Mar)</option>
+              <option value="2">Q2 (Apr–Jun)</option>
+              <option value="3">Q3 (Jul–Sep)</option>
+              <option value="4">Q4 (Oct–Dec)</option>
             </select>
-          </div>
-        )}
-      </div>
-
-      {/* Year/Month/Day Selectors */}
-      {filterMode !== "customRange" && (
-        <div className="flex space-x-4 mb-4">
-          <div>
-            <label className="text-gray-700">Year:</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border rounded px-2 py-1"
             >
-              <option value="">-- Select Year --</option>
-              {Array.from({ length: 6 }).map((_, i) => {
-                const yearOpt = 2024 + i;
-                return (
-                  <option key={yearOpt} value={String(yearOpt)}>
-                    {yearOpt}
-                  </option>
-                );
-              })}
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              {/* Add more years if needed */}
             </select>
           </div>
+        )}
 
-          <div>
-            <label className="text-gray-700">Month:</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">-- Select Month --</option>
-              {Array.from({ length: 12 }, (_, i) => {
-                const month = String(i + 1).padStart(2, "0");
-                return (
-                  <option key={month} value={month}>
-                    {new Date(0, i).toLocaleString("default", { month: "long" })}
-                  </option>
-                );
-              })}
-            </select>
+        {/* Custom Date Range */}
+        {filterMode === "customRange" && (
+          <div className="flex flex-col space-y-4 mb-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-700">From Date:</h4>
+              <div className="mt-1 flex space-x-2">
+                {/* Day */}
+                <select
+                  value={fromDay}
+                  onChange={(e) => setFromDay(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Day --</option>
+                  {Array.from({ length: 31 }, (_, i) => {
+                    const dayStr = String(i + 1).padStart(2, "0");
+                    return (
+                      <option key={dayStr} value={dayStr}>
+                        {dayStr}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Month */}
+                <select
+                  value={fromMonth}
+                  onChange={(e) => setFromMonth(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Month --</option>
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const monthStr = String(i + 1).padStart(2, "0");
+                    return (
+                      <option key={monthStr} value={monthStr}>
+                        {new Date(0, i).toLocaleString("default", { month: "long" })}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Year */}
+                <select
+                  value={fromYear}
+                  onChange={(e) => setFromYear(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Year --</option>
+                  {Array.from({ length: 6 }).map((_, i) => {
+                    const yearOpt = 2025 + i;
+                    return (
+                      <option key={yearOpt} value={String(yearOpt)}>
+                        {yearOpt}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium text-gray-700">To Date:</h4>
+              <div className="mt-1 flex space-x-2">
+                {/* Day */}
+                <select
+                  value={toDay}
+                  onChange={(e) => setToDay(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Day --</option>
+                  {Array.from({ length: 31 }, (_, i) => {
+                    const dayStr = String(i + 1).padStart(2, "0");
+                    return (
+                      <option key={dayStr} value={dayStr}>
+                        {dayStr}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Month */}
+                <select
+                  value={toMonth}
+                  onChange={(e) => setToMonth(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Month --</option>
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const monthStr = String(i + 1).padStart(2, "0");
+                    return (
+                      <option key={monthStr} value={monthStr}>
+                        {new Date(0, i).toLocaleString("default", { month: "long" })}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {/* Year */}
+                <select
+                  value={toYear}
+                  onChange={(e) => setToYear(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Year --</option>
+                  {Array.from({ length: 6 }).map((_, i) => {
+                    const yearOpt = 2025 + i;
+                    return (
+                      <option key={yearOpt} value={String(yearOpt)}>
+                        {yearOpt}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
           </div>
+        )}
 
-          <div>
-            <label className="text-gray-700">Day:</label>
-            <select
-              value={selectedDay}
-              onChange={(e) => setSelectedDay(e.target.value)}
-              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">-- Select Day --</option>
-              {Array.from({ length: 31 }, (_, i) => {
-                const day = String(i + 1).padStart(2, "0");
-                return (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                );
-              })}
-            </select>
+        {/* Stats Summary */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <StatsCards totalChanges={totalChanges} changesByArea={changesByArea} />
+        </div>
+
+        {/* Visuals */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <SubAreaPieChart items={filteredItems} />
           </div>
-        </div>
-      )}
-      {filterMode === "quarter" && (
-        <div className="space-x-2">
-          <label className="text-sm">Quarter:</label>
-          <select
-            value={selectedQuarter}
-            onChange={(e) => setSelectedQuarter(e.target.value)}
-            className="border rounded px-2 py-1"
-          >
-            <option value="1">Q1 (Jan–Mar)</option>
-            <option value="2">Q2 (Apr–Jun)</option>
-            <option value="3">Q3 (Jul–Sep)</option>
-            <option value="4">Q4 (Oct–Dec)</option>
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="border rounded px-2 py-1"
-          >
-            {/* Populate with years dynamically if you want */}
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-          </select>
-        </div>
-      )}
-
-
-      {/* Stats Summary */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <StatsCards totalChanges={totalChanges} changesByArea={changesByArea} />
-      </div>
-
-      {/* Visuals */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <OpenClosedPieChart items={filteredItems} type="phase4" />
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <OpenClosedPieChart items={filteredItems} type="pav" />
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <OpenClosedPieChart items={filteredItems} type="phase8" />
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <ScrapPieChart items={filteredItems} groupBy="year" />
+          </div>
+          {/*  New chart for unplanned downtime */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <SubAreaPieChart items={filteredItems} />
+          <h2 className="text-xl font-semibold mb-2">Unplanned Downtime</h2>
+          <UnplannedDowntimeChart data={filteredMonthlyKPIs} />
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <OpenClosedPieChart items={filteredItems} type="phase4" />
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <OpenClosedPieChart items={filteredItems} type="pav" />
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <OpenClosedPieChart items={filteredItems} type="phase8" />
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <ScrapPieChart items={filteredItems} groupBy="year"/>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 };

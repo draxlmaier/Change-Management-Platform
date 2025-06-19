@@ -36,9 +36,8 @@ const SharePointUploaderPage: React.FC = () => {
     log("✅ Upload complete.");
   };
 
-  const handleSiteResolved = (id: string, isPersonal: boolean, resolvedUrl: string) => {
+  const handleSiteResolved = (id: string, resolvedUrl: string) => {
     setSiteId(id);
-    setIsPersonalSite(isPersonal);
     setSiteUrl(resolvedUrl);
     log(`✅ Using SharePoint Site ID: ${id}`);
   };

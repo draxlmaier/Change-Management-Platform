@@ -9,7 +9,8 @@ import { msalInstance } from "../auth/msalInstance";
 
 // Represents the fields in "MonthlyKPIs"
 interface IMonthlyKPIFields {
-  Month: string; // e.g., "2025-09"
+  year:string;
+  Month: string; 
   Project: string;
   DRXIdeasubmittedIdeaGoal: number;
   DRXParticipationQuota: number;
@@ -123,6 +124,7 @@ const MonthlyKPIEditor: React.FC = () => {
       // Build updatedFields by whitelisting only valid internal names
       // ────────────────────────────────────────────────────────────
       const allowedFields = [
+        "year",
         "Month",
         "Project",
         "DRXIdeasubmittedIdeaGoal",
@@ -259,7 +261,7 @@ const MonthlyKPIEditor: React.FC = () => {
       </div>
 
       {/* Content Container */}
-      <div className="relative z-20 max-w-6xl mx-auto px-4 pb-8">
+      <div className="relative z-20 max-w-8xl mx-auto px-4 pb-8">
         <h1 className="flex items-center space-x-2
                      px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
                      rounded-2xl shadow-md text-white text-sm transition">Monthly KPI Editor</h1>
@@ -276,6 +278,7 @@ const MonthlyKPIEditor: React.FC = () => {
               <thead className="bg-white/10">
                 <tr>
                   <th className="p-2 border border-white/20">Actions</th>
+                  <th className="p-2 border border-white/20">Year</th>
                   <th className="p-2 border border-white/20">Month</th>
                   <th className="p-2 border border-white/20">Project</th>
                   <th className="p-2 border border-white/20">DRX Idea Goal</th>
@@ -355,6 +358,22 @@ const MonthlyKPIEditor: React.FC = () => {
                               Delete
                             </button>
                           </>
+                        )}
+                      </td>
+                      
+                       {/* Year */}
+                      <td className="p-2 border border-white/20">
+                        {isEditing ? (
+                          <input
+                            type="year"
+                            className="border p-1 text-black w-24"
+                            value={rowState?.draft.year || ""}
+                            onChange={(e) =>
+                              handleEditFieldChange(itm.id, "year", e.target.value)
+                            }
+                          />
+                        ) : (
+                          itm.fields.year
                         )}
                       </td>
 

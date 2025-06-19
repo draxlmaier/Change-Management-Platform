@@ -33,6 +33,8 @@ import MonthlyKPIEditor from "./pages/MonthlyKPIEditor";
 import ToolSelectionPage from "./pages/ToolSelectionPage";
 import SharePointUploaderPage from "./pages/SharePointUploaderPage"; // assuming this exists
 
+import AdminUserManager from "./pages/AdminUserManager";
+import ProtectedRoute from "./components/ProtectedRoute";
 const App: React.FC = () => (
   <Routes>
     {/* Auth & Landing */}
@@ -42,6 +44,7 @@ const App: React.FC = () => (
     <Route path="/data-extraction" element={<SharePointUploaderPage />} />
     {/* Configuration */}
     <Route path="/config" element={<ConfigPage />} />
+     <Route path="/admin/users" element={<AdminUserManager />} />
 
     {/* Change management flow */}
     <Route path="/project-selection" element={<ProjectSelection />} />
