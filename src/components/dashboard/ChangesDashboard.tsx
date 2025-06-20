@@ -9,6 +9,8 @@ import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
 import { UnplannedDowntimeChart } from "./UnplannedDowntimeChart";
 import { BudgetDepartmentKPI } from "../kpicharts/BudgetDepartmentKPI";
+import FilterControls from "./FilterControls";
+
 interface IProject {
   id: string;
   displayName: string;
@@ -441,63 +443,48 @@ useEffect(() => {
         {/* Filter Mode Selector */}
         <div className="flex space-x-4 items-center mb-4">
           <div>
-            <label className="text-sm font-medium text-gray-700">Filter Mode:</label>
-            <select
-              value={filterMode}
-              onChange={(e) => setFilterMode(e.target.value as FilterMode)}
-              className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="year">Year Only</option>
-              <option value="quarter">Quarter</option>
-              <option value="month">Month</option>
-              <option value="day">Day</option>
-              <option value="weekOfMonth">Week of Month</option>
-              <option value="weekOfYear">Week of Year</option>
-              <option value="customRange">Custom Range</option>
-            </select>
+            <FilterControls
+  filterMode={filterMode}
+  setFilterMode={setFilterMode}
+  selectedYear={selectedYear}
+  setSelectedYear={setSelectedYear}
+  selectedMonth={selectedMonth}
+  setSelectedMonth={setSelectedMonth}
+  selectedQuarter={selectedQuarter}
+  setSelectedQuarter={setSelectedQuarter}
+  selectedDay={selectedDay}
+  setSelectedDay={setSelectedDay}
+  selectedWeekOfMonth={selectedWeekOfMonth}
+  setSelectedWeekOfMonth={setSelectedWeekOfMonth}
+  selectedWeekOfYear={selectedWeekOfYear}
+  setSelectedWeekOfYear={setSelectedWeekOfYear}
+  fromDay={fromDay}
+  fromMonth={fromMonth}
+  fromYear={fromYear}
+  toDay={toDay}
+  toMonth={toMonth}
+  toYear={toYear}
+  setFromDay={setFromDay}
+  setFromMonth={setFromMonth}
+  setFromYear={setFromYear}
+  setToDay={setToDay}
+  setToMonth={setToMonth}
+  setToYear={setToYear}
+/>
+
           </div>
 
           {/* Week of Year */}
           {filterMode === "weekOfYear" && (
             <div>
-              <label className="text-gray-700">Week # of Year:</label>
-              <select
-                value={selectedWeekOfYear ?? ""}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setSelectedWeekOfYear(isNaN(val) ? null : val);
-                }}
-                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Weeks</option>
-                {Array.from({ length: 53 }, (_, i) => i + 1).map((week) => (
-                  <option key={week} value={week}>
-                    {week}
-                  </option>
-                ))}
-              </select>
+              
             </div>
           )}
 
           {/* Week of Month */}
           {filterMode === "weekOfMonth" && (
             <div>
-              <label className="text-gray-700">Week # in Month:</label>
-              <select
-                value={selectedWeekOfMonth ?? ""}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setSelectedWeekOfMonth(isNaN(val) ? null : val);
-                }}
-                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Weeks</option>
-                <option value="1">1 (Days 1-7)</option>
-                <option value="2">2 (Days 8-14)</option>
-                <option value="3">3 (Days 15-21)</option>
-                <option value="4">4 (Days 22-28)</option>
-                <option value="5">5 (Days 29+)</option>
-              </select>
+             
             </div>
           )}
         </div>
@@ -507,88 +494,25 @@ useEffect(() => {
           <div className="flex space-x-4 mb-4">
             {/* Year */}
             <div>
-              <label className="text-gray-700">Year:</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Select Year --</option>
-                {Array.from({ length: 6 }).map((_, i) => {
-                  const yearOpt = 2024 + i;
-                  return (
-                    <option key={yearOpt} value={String(yearOpt)}>
-                      {yearOpt}
-                    </option>
-                  );
-                })}
-              </select>
+              
             </div>
 
             {/* Month */}
             <div>
-              <label className="text-gray-700">Month:</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Select Month --</option>
-                {Array.from({ length: 12 }, (_, i) => {
-                  const monthStr = String(i + 1).padStart(2, "0");
-                  return (
-                    <option key={monthStr} value={monthStr}>
-                      {new Date(0, i).toLocaleString("default", { month: "long" })}
-                    </option>
-                  );
-                })}
-              </select>
+              
             </div>
 
             {/* Day */}
             <div>
-              <label className="text-gray-700">Day:</label>
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Select Day --</option>
-                {Array.from({ length: 31 }, (_, i) => {
-                  const dayStr = String(i + 1).padStart(2, "0");
-                  return (
-                    <option key={dayStr} value={dayStr}>
-                      {dayStr}
-                    </option>
-                  );
-                })}
-              </select>
+             
             </div>
           </div>
         )}
 
         {filterMode === "quarter" && (
           <div className="space-x-2 mb-4">
-            <label className="text-sm">Quarter:</label>
-            <select
-              value={selectedQuarter}
-              onChange={(e) => setSelectedQuarter(e.target.value)}
-              className="border rounded px-2 py-1"
-            >
-              <option value="1">Q1 (Jan–Mar)</option>
-              <option value="2">Q2 (Apr–Jun)</option>
-              <option value="3">Q3 (Jul–Sep)</option>
-              <option value="4">Q4 (Oct–Dec)</option>
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="border rounded px-2 py-1"
-            >
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-              {/* Add more years if needed */}
-            </select>
+            
+            
           </div>
         )}
 
@@ -596,114 +520,26 @@ useEffect(() => {
         {filterMode === "customRange" && (
           <div className="flex flex-col space-y-4 mb-4">
             <div>
-              <h4 className="text-sm font-medium text-gray-700">From Date:</h4>
               <div className="mt-1 flex space-x-2">
-                {/* Day */}
-                <select
-                  value={fromDay}
-                  onChange={(e) => setFromDay(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Day --</option>
-                  {Array.from({ length: 31 }, (_, i) => {
-                    const dayStr = String(i + 1).padStart(2, "0");
-                    return (
-                      <option key={dayStr} value={dayStr}>
-                        {dayStr}
-                      </option>
-                    );
-                  })}
-                </select>
+               
 
                 {/* Month */}
-                <select
-                  value={fromMonth}
-                  onChange={(e) => setFromMonth(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Month --</option>
-                  {Array.from({ length: 12 }, (_, i) => {
-                    const monthStr = String(i + 1).padStart(2, "0");
-                    return (
-                      <option key={monthStr} value={monthStr}>
-                        {new Date(0, i).toLocaleString("default", { month: "long" })}
-                      </option>
-                    );
-                  })}
-                </select>
+               
 
                 {/* Year */}
-                <select
-                  value={fromYear}
-                  onChange={(e) => setFromYear(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Year --</option>
-                  {Array.from({ length: 6 }).map((_, i) => {
-                    const yearOpt = 2025 + i;
-                    return (
-                      <option key={yearOpt} value={String(yearOpt)}>
-                        {yearOpt}
-                      </option>
-                    );
-                  })}
-                </select>
+               
               </div>
             </div>
 
             <div>
-              <h4 className="text-sm font-medium text-gray-700">To Date:</h4>
               <div className="mt-1 flex space-x-2">
                 {/* Day */}
-                <select
-                  value={toDay}
-                  onChange={(e) => setToDay(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Day --</option>
-                  {Array.from({ length: 31 }, (_, i) => {
-                    const dayStr = String(i + 1).padStart(2, "0");
-                    return (
-                      <option key={dayStr} value={dayStr}>
-                        {dayStr}
-                      </option>
-                    );
-                  })}
-                </select>
-
+              
                 {/* Month */}
-                <select
-                  value={toMonth}
-                  onChange={(e) => setToMonth(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Month --</option>
-                  {Array.from({ length: 12 }, (_, i) => {
-                    const monthStr = String(i + 1).padStart(2, "0");
-                    return (
-                      <option key={monthStr} value={monthStr}>
-                        {new Date(0, i).toLocaleString("default", { month: "long" })}
-                      </option>
-                    );
-                  })}
-                </select>
+               
 
                 {/* Year */}
-                <select
-                  value={toYear}
-                  onChange={(e) => setToYear(e.target.value)}
-                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Year --</option>
-                  {Array.from({ length: 6 }).map((_, i) => {
-                    const yearOpt = 2025 + i;
-                    return (
-                      <option key={yearOpt} value={String(yearOpt)}>
-                        {yearOpt}
-                      </option>
-                    );
-                  })}
-                </select>
+                
               </div>
             </div>
           </div>
