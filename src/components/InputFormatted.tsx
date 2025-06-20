@@ -29,7 +29,8 @@ const InputFormatted: React.FC<InputFormattedProps> = ({
   const value = useMemo(() => {
     if (valueOuter === "") return "";
     if (focused) return valueOuter;
-    return format(Number(valueOuter));
+    const num = Number(valueOuter);
+    return num === 0 ? "" : format(num);
   }, [focused, valueOuter, format]);
 
   return (

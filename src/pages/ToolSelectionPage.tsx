@@ -82,12 +82,24 @@ const ToolSelectionPage: React.FC = () => {
       className="relative flex flex-col min-h-screen bg-cover bg-center"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
-      <div className="absolute inset-0 backdrop-blur-sm z-0" />
+      <div className="absolute inset-0 z-0" />
 
       {/* Header */}
 <header className="relative z-10 w-full h-16 bg-white/80 backdrop-blur-md flex items-center justify-between px-6">
-  <img src={cmp3dLogo} alt="CMP" className="h-10" />
-  <img src={draxlLogo} alt="Dräxlmaier" className="h-8" />
+  {/* Left placeholder (if you want it to remain empty) */}
+  <div className="w-1/3">
+    {/* You can put a back button or leave it empty */}
+  </div>
+
+  {/* Center logo absolutely positioned */}
+  <div className="absolute left-1/2 transform -translate-x-1/2">
+    <img src={cmp3dLogo} alt="CMP" className="h-10" />
+  </div>
+
+  {/* Right logo */}
+  <div className="w-1/3 flex justify-end">
+    <img src={draxlLogo} alt="Dräxlmaier" className="h-8" />
+  </div>
 </header>
 
 {/* Main Content */}
