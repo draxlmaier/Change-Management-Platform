@@ -42,7 +42,7 @@ const ProjectSelection: React.FC = () => {
     >
       {/* Back button */}
       <button
-        onClick={() => navigate("/landing")}
+        onClick={() => navigate("/tool-selection")}
         className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition m-4"
       >
         ← Back

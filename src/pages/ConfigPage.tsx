@@ -290,7 +290,7 @@ const handleSaveCarName = async () => {
     >
       <div className="absolute inset-0 bg-opacity-50" />
       <button
-        onClick={() => navigate("/landing")}
+        onClick={() => navigate("/tool-selection")}
         className="absolute top-4 left-4 z-20 px-3 py-2 bg-white/30 rounded text-white hover:bg-white/50 transition"
       >
         ← Back

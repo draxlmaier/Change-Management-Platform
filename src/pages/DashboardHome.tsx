@@ -13,7 +13,7 @@ export default function DashboardHome() {
           Select a project from the side menu to view its metrics.
         </p>
         <button
-          onClick={() => navigate("/landing")}
+          onClick={() => navigate("/tool-selection")}
           className="mt-4 px-8 py-3 bg-white text-teal-900 font-semibold rounded-lg shadow hover:bg-gray-100 transition"
         >
           ← Return to Landing Page

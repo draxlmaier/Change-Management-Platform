@@ -130,7 +130,7 @@ const FollowUpCostInput: React.FC<FollowUpCostInputProps> = ({ siteId, listId })
       {/* Top bar */}
       <div className="relative z-20 max-w-6xl mx-auto p-4 flex items-center space-x-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/tool-selection')}
           className="flex items-center space-x-2
                      px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
                      rounded-2xl shadow-md text-white text-sm transition"

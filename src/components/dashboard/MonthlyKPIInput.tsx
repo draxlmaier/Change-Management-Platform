@@ -147,7 +147,7 @@ const MonthlyKPIInput: React.FC = () => {
 
       <div className="relative z-20 max-w-6xl mx-auto p-4 flex items-center space-x-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/tool-selection')}
           className="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
         >
           ← Back
@@ -214,38 +214,63 @@ const MonthlyKPIInput: React.FC = () => {
             </div>
           </div>
 
-          <fieldset className="border border-white/20 p-4 rounded-md space-y-4 mt-6">
-            <legend className="text-lg font-semibold mb-4 text-white/80">📊 Monthly KPI Metrics</legend>
+          {/* Section 1: Engineering DRX Ideas Tracking */}
+<fieldset className="border border-white/20 p-4 rounded-md space-y-4 mt-6">
+  <legend className="text-lg font-semibold mb-4 text-white/80"> Engineering DRX Ideas Tracking</legend>
 
-            {[
-              { label: "DRX Idea submitted Idea", key: "DRXIdeasubmittedIdea" },
-              { label: "DRX Idea submitted Idea Goal", key: "DRXIdeasubmittedIdeaGoal" },
-              { label: "Production Minutes", key: "productionminutes" },
-              { label: "Unplanned downtime caused by Technical Change", key: "UnplanneddowntimecausedbyTechnic" },
-              { label: "Rate of Downtime", key: "rateofdowntime" },
-              { label: "Target Downtime", key: "Targetdowntime" },
-              { label: "Seuil d'intervention Downtime", key: "seuildinterventiondowntime" },
-            ].map(({ label, key }) => (
-              <div key={key}>
-                <label className="block font-semibold mb-1 text-white">
-                  {label}
-                </label>
-                <InputFormatted
-                className="w-full p-2 border rounded text-black"
-                value={form[key as keyof MonthlyForm]}
-                onChange={(e) => {
-                  const val = e.target.valueAsNumber;
-                  const field = key as keyof MonthlyForm;
-                  setForm((prev) => ({
-                    ...prev,
-                    [field]: isNaN(val) ? 0 : val,
-                  }));
-                }}
-                format={formatter.format}
-              />
-              </div>
-            ))}
-          </fieldset>
+  {[
+    { label: "DRX Idea submitted Idea", key: "DRXIdeasubmittedIdea" },
+    { label: "DRX Idea submitted Idea Goal", key: "DRXIdeasubmittedIdeaGoal" },
+    { label: "Production Minutes", key: "productionminutes" },
+  ].map(({ label, key }) => (
+    <div key={key}>
+      <label className="block font-semibold mb-1 text-white">{label}</label>
+      <InputFormatted
+        className="w-full p-2 border rounded text-black"
+        value={form[key as keyof MonthlyForm]}
+        onChange={(e) => {
+          const val = e.target.valueAsNumber;
+          const field = key as keyof MonthlyForm;
+          setForm((prev) => ({
+            ...prev,
+            [field]: isNaN(val) ? 0 : val,
+          }));
+        }}
+        format={formatter.format}
+      />
+    </div>
+  ))}
+</fieldset>
+
+{/* Section 2: Downtime */}
+<fieldset className="border border-white/20 p-4 rounded-md space-y-4 mt-6">
+  <legend className="text-lg font-semibold mb-4 text-white/80"> Downtime</legend>
+
+  {[
+    { label: "Unplanned downtime caused by Technical Change", key: "UnplanneddowntimecausedbyTechnic" },
+    { label: "Rate of Downtime", key: "rateofdowntime" },
+    { label: "Target Downtime", key: "Targetdowntime" },
+    { label: "Seuil d'intervention Downtime", key: "seuildinterventiondowntime" },
+  ].map(({ label, key }) => (
+    <div key={key}>
+      <label className="block font-semibold mb-1 text-white">{label}</label>
+      <InputFormatted
+        className="w-full p-2 border rounded text-black"
+        value={form[key as keyof MonthlyForm]}
+        onChange={(e) => {
+          const val = e.target.valueAsNumber;
+          const field = key as keyof MonthlyForm;
+          setForm((prev) => ({
+            ...prev,
+            [field]: isNaN(val) ? 0 : val,
+          }));
+        }}
+        format={formatter.format}
+      />
+    </div>
+  ))}
+</fieldset>
+
 
           <div className="flex justify-end mt-6">
             <button
