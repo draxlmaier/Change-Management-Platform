@@ -101,7 +101,7 @@ const KPIInputPage: React.FC = () => {
       <div className="relative z-20 max-w-6xl mx-auto px-4 pb-8">
         <div className="bg-white/10 border border-white/20 backdrop-blur-md p-8 rounded-xl shadow-xl">
           {activeTab === "monthly" && (
-            <MonthlyKPIInput siteId={siteId} listId={monthlyListId} />
+            <MonthlyKPIInput />
           )}
           {activeTab === "followup" && (
             <FollowUpKPIInput siteId={siteId} listId={followCostListId} />

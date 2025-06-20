@@ -245,11 +245,11 @@ const areaColors: Record<string, string> = {
       <div className="flex items-center justify-center bg-white/10 backdrop-blur-md shadow-md rounded-2xl p-6 w-1/4 h-full text-white text-center border border-white/20">
   <div className="space-y-4">
     <div>
-      <p className="text-lg font-semibold text-white/80 mb-1">Start Date From</p>
+      <p className="text-lg font-semibold text-white/80 mb-1"> Period From</p>
       <p className="text-xl font-bold text-green-300">{startDateFrom || "—"}</p>
     </div>
     <div>
-      <p className="text-lg font-semibold text-white/80 mb-1">Start Date To</p>
+      <p className="text-lg font-semibold text-white/80 mb-1"> To </p>
       <p className="text-xl font-bold text-green-300">{startDateTo || "—"}</p>
     </div>
   </div>

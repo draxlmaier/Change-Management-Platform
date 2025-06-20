@@ -2,9 +2,6 @@ import axios from 'axios';
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
 import { getProjectLogo } from '../utils/getProjectLogo';
 
-/**
- * Updated: expects token passed externally.
- */
 export async function updateProjectMappingsFromSites(token: string): Promise<IProject[]> {
   const config = getConfig();
   const { frequentSites = [], projects = [] } = config;
@@ -14,35 +11,27 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
 
   for (const siteUrl of frequentSites) {
     try {
-      // siteUrl may already be a full URL or just a sitename. Handle both
       let hostname = '';
       let path = '';
 
       if (siteUrl.startsWith("https://")) {
-        // Full URL case
         const url = new URL(siteUrl);
         hostname = url.hostname;  // e.g. draexlmaier.sharepoint.com
         path = url.pathname.replace(/^\/sites\//, ""); // e.g. ittest
       } else {
-        // Only site name (short form), assume default tenant hostname:
         hostname = "uittunis.sharepoint.com";  // <-- default fallback
         path = siteUrl;
       }
-
-      // Build valid Graph API URL
       const graphSiteUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
 
       const siteResp = await axios.get(graphSiteUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const siteId = siteResp.data.id;
-
       const listsResp = await axios.get(
         `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
 
       listsResp.data.value.forEach((list: any) => {
@@ -77,11 +66,8 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
       console.error('Failed to fetch or parse site:', siteUrl, err);
     }
   }
-
   const merged = Object.values(updatedProjectsMap);
-
   const newProjects = Array.from(new Map([...projects, ...merged].map(p => [p.id, { ...p }])).values());
-
   const updatedConfig: cmConfigLists = {
     ...config,
     projects: newProjects,

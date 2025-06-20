@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 // Import icons (make sure you have these in your assets)
 import uploadIcon from "../assets/images/uploadIcon.png";
 import projectsIcon from "../assets/images/projectsIcon.png";
+import EnsureSharePointLists from "../components/EnsureSharePointLists";
 
 const SharePointUploaderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -85,6 +86,9 @@ const SharePointUploaderPage: React.FC = () => {
           <p className="mt-2 text-sm text-yellow-100 italic">Please resolve the site before continuing.</p>
         )}
       </section>
+      {siteId && (
+  <EnsureSharePointLists siteId={siteId} onLog={log} />
+)}
 
       {/* Upload + Redirect Buttons */}
       {data.length > 0 && projectName && siteId && (

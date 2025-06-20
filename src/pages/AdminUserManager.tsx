@@ -4,8 +4,11 @@ import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
 import { getResolvedSiteId } from "../utils/getResolvedSiteId";
+import { getConfig } from "../services/configService";
 
-const USERS_LIST_ID = "7f101e19-338b-455c-9740-1f1aa5dd4095";
+
+const config = getConfig();
+const USERS_LIST_ID = config.usersListId;
 
 interface UserEntry {
   id?: string;

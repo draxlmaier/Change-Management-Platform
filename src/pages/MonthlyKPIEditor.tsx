@@ -12,18 +12,12 @@ interface IMonthlyKPIFields {
   year:string;
   Month: string; 
   Project: string;
+  DRXIdeasubmittedIdea: number;
   DRXIdeasubmittedIdeaGoal: number;
-  DRXParticipationQuota: number;
-  DRXParticipationQuotaGoal: number;
-  DRXAcceptanceQuota: number;
-  DRXAcceptanceQuotaGoal: number;
-  DRXClosingDuration: number;
-  DRXClosingDurationGoal: number;
   UnplanneddowntimecausedbyTechnic: number;
   rateofdowntime: number;
   Targetdowntime: number;
   seuildinterventiondowntime: number;
-  BudgetDepartment: number;
 }
 
 interface IMonthlyKPIItem {
@@ -127,13 +121,8 @@ const MonthlyKPIEditor: React.FC = () => {
         "year",
         "Month",
         "Project",
+        "DRXIdeasubmittedIdea",
         "DRXIdeasubmittedIdeaGoal",
-        "DRXParticipationQuota",
-        "DRXParticipationQuotaGoal",
-        "DRXAcceptanceQuota",
-        "DRXAcceptanceQuotaGoal",
-        "DRXClosingDuration",
-        "DRXClosingDurationGoal",
         "UnplanneddowntimecausedbyTechnic",
         "rateofdowntime",
         "Targetdowntime",
@@ -278,21 +267,15 @@ const MonthlyKPIEditor: React.FC = () => {
               <thead className="bg-white/10">
                 <tr>
                   <th className="p-2 border border-white/20">Actions</th>
+                  <th className="p-2 border border-white/20">Project</th>
                   <th className="p-2 border border-white/20">Year</th>
                   <th className="p-2 border border-white/20">Month</th>
-                  <th className="p-2 border border-white/20">Project</th>
-                  <th className="p-2 border border-white/20">DRX Idea Goal</th>
-                  <th className="p-2 border border-white/20">DRX Part. Quota</th>
-                  <th className="p-2 border border-white/20">DRX Part. Quota Goal</th>
-                  <th className="p-2 border border-white/20">DRX Acceptance Quota</th>
-                  <th className="p-2 border border-white/20">DRX Acceptance Goal</th>
-                  <th className="p-2 border border-white/20">DRX Closing</th>
-                  <th className="p-2 border border-white/20">DRX Closing Goal</th>
-                  <th className="p-2 border border-white/20">Unplanned Tech Downtime</th>
+                  <th className="p-2 border border-white/20">DRX Idea submitted Idea</th>
+                  <th className="p-2 border border-white/20">DRX Idea submitted Idea Goal</th>
+                  <th className="p-2 border border-white/20">Unplanned downtime caused by Technical Change</th>
                   <th className="p-2 border border-white/20">Rate of Downtime</th>
                   <th className="p-2 border border-white/20">Target Downtime</th>
-                  <th className="p-2 border border-white/20">Seuil d'interv. Downtime</th>
-                  <th className="p-2 border border-white/20">Budget Dept</th>
+                  <th className="p-2 border border-white/20">Seuil d'intervention Downtime</th>
                 </tr>
               </thead>
               <tbody>
@@ -360,7 +343,21 @@ const MonthlyKPIEditor: React.FC = () => {
                           </>
                         )}
                       </td>
-                      
+                      {/* Project */}
+                      <td className="p-2 border border-white/20">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="border p-1 text-black w-32"
+                            value={rowState?.draft.Project || ""}
+                            onChange={(e) =>
+                              handleEditFieldChange(itm.id, "Project", e.target.value)
+                            }
+                          />
+                        ) : (
+                          itm.fields.Project
+                        )}
+                      </td>
                        {/* Year */}
                       <td className="p-2 border border-white/20">
                         {isEditing ? (
@@ -392,24 +389,23 @@ const MonthlyKPIEditor: React.FC = () => {
                           itm.fields.Month
                         )}
                       </td>
-
-                      {/* Project */}
+                       {/* DRX Submitted Idea  */}
                       <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            className="border p-1 text-black w-32"
-                            value={rowState?.draft.Project || ""}
-                            onChange={(e) =>
-                              handleEditFieldChange(itm.id, "Project", e.target.value)
-                            }
-                          />
-                        ) : (
-                          itm.fields.Project
-                        )}
-                      </td>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          className="border p-1 text-black w-16"
+                          value={rowState?.draft.DRXIdeasubmittedIdea ?? 0}
+                          onChange={(e) =>
+                            handleEditFieldChange(itm.id, "DRXIdeasubmittedIdea", e.target.value)
+                          }
+                        />
+                      ) : (
+                        itm.fields.DRXIdeasubmittedIdea
+                      )}
+                    </td>
 
-                      {/* DRX Idea Goal */}
+                      {/* DRX Submitted Idea Goal */}
                       <td className="p-2 border border-white/20">
                         {isEditing ? (
                           <input
@@ -426,126 +422,6 @@ const MonthlyKPIEditor: React.FC = () => {
                           />
                         ) : (
                           itm.fields.DRXIdeasubmittedIdeaGoal
-                        )}
-                      </td>
-
-                      {/* DRX Participation Quota */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-16"
-                            value={rowState?.draft.DRXParticipationQuota ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "DRXParticipationQuota",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.DRXParticipationQuota
-                        )}
-                      </td>
-
-                      {/* DRX Participation Quota Goal */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-16"
-                            value={rowState?.draft.DRXParticipationQuotaGoal ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "DRXParticipationQuotaGoal",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.DRXParticipationQuotaGoal
-                        )}
-                      </td>
-
-                      {/* DRX Acceptance Quota */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-16"
-                            value={rowState?.draft.DRXAcceptanceQuota ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "DRXAcceptanceQuota",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.DRXAcceptanceQuota
-                        )}
-                      </td>
-
-                      {/* DRX Acceptance Quota Goal */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-16"
-                            value={rowState?.draft.DRXAcceptanceQuotaGoal ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "DRXAcceptanceQuotaGoal",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.DRXAcceptanceQuotaGoal
-                        )}
-                      </td>
-
-                      {/* DRX Closing Duration */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-16"
-                            value={rowState?.draft.DRXClosingDuration ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "DRXClosingDuration",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.DRXClosingDuration
-                        )}
-                      </td>
-
-                      {/* DRX Closing Duration Goal */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-16"
-                            value={rowState?.draft.DRXClosingDurationGoal ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "DRXClosingDurationGoal",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.DRXClosingDurationGoal
                         )}
                       </td>
 
@@ -626,26 +502,6 @@ const MonthlyKPIEditor: React.FC = () => {
                           />
                         ) : (
                           itm.fields.seuildinterventiondowntime
-                        )}
-                      </td>
-
-                      {/* Budget Dept */}
-                      <td className="p-2 border border-white/20">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            className="border p-1 text-black w-20"
-                            value={rowState?.draft.BudgetDepartment ?? 0}
-                            onChange={(e) =>
-                              handleEditFieldChange(
-                                itm.id,
-                                "BudgetDepartment",
-                                e.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          itm.fields.BudgetDepartment
                         )}
                       </td>
                     </tr>

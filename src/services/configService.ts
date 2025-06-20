@@ -20,6 +20,7 @@ export interface cmConfigLists {
   questionsListId: string;
   monthlyListId: string;
   followCostListId: string;
+  usersListId?: string;
   projects: IProject[];
   assignedRoles?: { email: string; role: string }[];
   frequentSites?: string[];

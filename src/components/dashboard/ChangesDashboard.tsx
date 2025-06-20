@@ -222,6 +222,7 @@ const pageItems = resp.data.value.map((it: any) => {
 
   return {
     ID: it.id,
+    year: it.fields.year,
     Month: englishMonth,
     Project: it.fields.Project,
     UnplanneddowntimecausedbyTechnic: it.fields.UnplanneddowntimecausedbyTechnic,
