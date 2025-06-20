@@ -221,7 +221,7 @@ const MonthlyKPIInput: React.FC = () => {
   {[
     { label: "DRX Idea submitted Idea", key: "DRXIdeasubmittedIdea" },
     { label: "DRX Idea submitted Idea Goal", key: "DRXIdeasubmittedIdeaGoal" },
-    { label: "Production Minutes", key: "productionminutes" },
+    
   ].map(({ label, key }) => (
     <div key={key}>
       <label className="block font-semibold mb-1 text-white">{label}</label>
@@ -248,6 +248,7 @@ const MonthlyKPIInput: React.FC = () => {
 
   {[
     { label: "Unplanned downtime caused by Technical Change", key: "UnplanneddowntimecausedbyTechnic" },
+    { label: "Production Minutes", key: "productionminutes" },
     { label: "Rate of Downtime", key: "rateofdowntime" },
     { label: "Target Downtime", key: "Targetdowntime" },
     { label: "Seuil d'intervention Downtime", key: "seuildinterventiondowntime" },
