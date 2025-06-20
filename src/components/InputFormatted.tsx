@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 
-interface InputFormattedProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputFormattedProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "placeholder"> {
   value: number | string;
   format: (n: number) => string;
 }
