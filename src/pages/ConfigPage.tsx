@@ -1,5 +1,4 @@
 // src/pages/ConfigPage.tsx
-
 import React, { useState, FormEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -12,46 +11,33 @@ import { msalInstance } from "../auth/msalInstance";
 import { getAccessToken } from "../auth/getToken";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
 import TopMenu from "../components/TopMenu";
-
-
+import { getProjectLogo } from "../utils/getProjectLogo";
 const ConfigPage: React.FC = () => {
   const navigate = useNavigate();
-
-  // Basic states
   const [siteName, setSiteName] = useState("");
   const [siteId, setSiteId] = useState<string | null>(null);
   const [lists, setLists] = useState<{ id: string; displayName: string }[]>([]);
   const [loadingLists, setLoadingLists] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
   // Frequent sites
   const [frequentSites, setFrequentSites] = useState<string[]>([]);
-
   // KPI Lists
   const [questionsListId, setQuestionsListId] = useState("");
   const [monthlyListId, setMonthlyListId] = useState("");
   const [followCostListId, setFollowCostListId] = useState("");
-
   // Projects
   const [projects, setProjects] = useState<IProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
-
   // Roles
   const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("");
   const [assignedRoles, setAssignedRoles] = useState<{ email: string; role: string }[]>([]);
-
   // Dexie-based car images
   const [carList, setCarList] = useState<CarImage[]>([]);
-
   // Track which tab is active: "lists", "cars", or "roles"
   const [activeTab, setActiveTab] = useState<"lists" | "cars" | "roles">("lists");
-
-
   const [editCarId, setEditCarId] = useState<number | null>(null);
 const [editCarName, setEditCarName] = useState("");
-
-
 
   const handleDeleteCar = async (carId: number) => {
   await db.carImages.delete(carId);
@@ -70,7 +56,6 @@ const handleSaveCarName = async () => {
   setEditCarName("");
   loadCarList(); // refresh
 };
-
   // 1) Load config from localStorage on mount, plus load Dexie cars
  useEffect(() => {
   const savedSite = localStorage.getItem("sharepointSite");
@@ -82,7 +67,7 @@ const handleSaveCarName = async () => {
     setQuestionsListId(cfg.questionsListId || "");
     setMonthlyListId(cfg.monthlyListId || "");
     setFollowCostListId(cfg.followCostListId || "");
-    setProjects(cfg.projects || []);
+    setProjects((cfg.projects || []).map(p => ({ ...p, logo: p.logo || getProjectLogo(p.id) })));
     setAssignedRoles(cfg.assignedRoles || []);
     setFrequentSites(cfg.frequentSites || []);
   } catch (err) {
@@ -92,97 +77,111 @@ const handleSaveCarName = async () => {
   loadCarList();
 }, []);
 
-
   const loadCarList = async () => {
     const allCars = await db.carImages.toArray();
     setCarList(allCars);
   };
-
   // 2) Site lookup
     const handleSiteLookup = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoadingLists(true);
-    setMessage(null);
+  e.preventDefault();
+  setLoadingLists(true);
+  setMessage(null);
 
-    try {
-      const account = msalInstance.getActiveAccount();
-      if (!account) throw new Error("No signed-in account. Please log in.");
-      const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Read.All"]);
-      if (!token) throw new Error("No token");
+  try {
+    const account = msalInstance.getActiveAccount();
+    if (!account) throw new Error("No signed-in account. Please log in.");
+    const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Read.All"]);
+    if (!token) throw new Error("No token");
 
-      const url = new URL(siteName);
-      const path = `${url.hostname}:${url.pathname}:`;
-      const siteResp = await axios.get(`https://graph.microsoft.com/v1.0/sites/${path}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSiteId(siteResp.data.id);
+    const url = new URL(siteName);
+    const path = `${url.hostname}:${url.pathname}:`;
+    const siteResp = await axios.get(`https://graph.microsoft.com/v1.0/sites/${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSiteId(siteResp.data.id);
 
-      const listsResp = await axios.get(
-        `https://graph.microsoft.com/v1.0/sites/${siteResp.data.id}/lists`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setLists(listsResp.data.value);
+    const listsResp = await axios.get(
+      `https://graph.microsoft.com/v1.0/sites/${siteResp.data.id}/lists`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const fetchedLists = listsResp.data.value;
+    setLists(fetchedLists);
 
-      const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
-      const newProjectsMap: { [key: string]: IProject } = {};
+    // 🔍 Automatically detect target lists by display name
+    const findListIdByName = (partialName: string) =>
+      fetchedLists.find((list: any) =>
+        list.displayName.toLowerCase().includes(partialName.toLowerCase())
+      )?.id || "";
 
-      listsResp.data.value.forEach((list: any) => {
-        const match = regex.exec(list.displayName);
-        if (!match) return;
-        const [, rawProjectName, phase, isExtra] = match;
-        const projectId = rawProjectName.toLowerCase();
-        const existing = newProjectsMap[projectId] || projects.find(p => p.id === projectId);
+    const autoQuestionsId = findListIdByName("question");
+    const autoMonthlyId = findListIdByName("monthly");
+    const autoFollowId = findListIdByName("follow");
 
-        const updatedProject: IProject = existing
-          ? { ...existing }
-          : {
-              id: projectId,
-              displayName: rawProjectName,
-              mapping: {
-                feasibility: "",
-                implementation: "",
-                feasibilityExtra: "",
-                implementationExtra: "",
-              },
-            };
+    // Set state to auto-fill the selects
+    setQuestionsListId(autoQuestionsId);
+    setMonthlyListId(autoMonthlyId);
+    setFollowCostListId(autoFollowId);
 
-        if (phase === "4" && isExtra) updatedProject.mapping.feasibilityExtra = list.id;
-        else if (phase === "4") updatedProject.mapping.feasibility = list.id;
-        else if (phase === "8" && isExtra) updatedProject.mapping.implementationExtra = list.id;
-        else if (phase === "8") updatedProject.mapping.implementation = list.id;
+    // Extract projects from naming convention
+    const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
+    const newProjectsMap: { [key: string]: IProject } = {};
 
-        newProjectsMap[projectId] = updatedProject;
-      });
+    fetchedLists.forEach((list: any) => {
+      const match = regex.exec(list.displayName);
+      if (!match) return;
+      const [, rawProjectName, phase, isExtra] = match;
+      const projectId = rawProjectName.toLowerCase();
+      const existing = newProjectsMap[projectId] || projects.find(p => p.id === projectId);
 
-      const finalProjects = Object.values(newProjectsMap);
-      setProjects(finalProjects);
+      const updatedProject: IProject = existing
+        ? { ...existing }
+        : {
+            id: projectId,
+            displayName: rawProjectName,
+            logo: getProjectLogo(projectId),
+            mapping: {
+              feasibility: "",
+              implementation: "",
+              feasibilityExtra: "",
+              implementationExtra: "",
+            },
+          };
 
-      // ✅ Auto-save to localStorage
-      const newConfig: cmConfigLists = {
-        siteId: siteResp.data.id,
-        questionsListId,
-        monthlyListId,
-        followCostListId,
-        projects: finalProjects,
-        assignedRoles,
-        frequentSites: [...new Set([...frequentSites, siteName])],
-      };
-      saveConfig(newConfig);
+      if (phase === "4" && isExtra) updatedProject.mapping.feasibilityExtra = list.id;
+      else if (phase === "4") updatedProject.mapping.feasibility = list.id;
+      else if (phase === "8" && isExtra) updatedProject.mapping.implementationExtra = list.id;
+      else if (phase === "8") updatedProject.mapping.implementation = list.id;
 
+      newProjectsMap[projectId] = updatedProject;
+    });
 
-      // Add site to frequent list
-      if (!frequentSites.includes(siteName)) {
-        setFrequentSites((prev) => [...prev, siteName]);
-        setMessage(`Added ${siteName} to frequently used sites.`);
-      } else {
-        setMessage(`${siteName} is already in your frequently used sites.`);
-      }
-    } catch (err: any) {
-      setMessage(err.response?.data?.error?.message || err.message);
-    } finally {
-      setLoadingLists(false);
+    const finalProjects = Object.values(newProjectsMap);
+    setProjects(finalProjects);
+
+    // ✅ Save everything to localStorage
+    const newConfig: cmConfigLists = {
+      siteId: siteResp.data.id,
+      questionsListId: autoQuestionsId,
+      monthlyListId: autoMonthlyId,
+      followCostListId: autoFollowId,
+      projects: finalProjects,
+      assignedRoles,
+      frequentSites: [...new Set([...frequentSites, siteName])],
+    };
+    saveConfig(newConfig);
+
+    if (!frequentSites.includes(siteName)) {
+      setFrequentSites((prev) => [...prev, siteName]);
+      setMessage(`Added ${siteName} to frequently used sites.`);
+    } else {
+      setMessage(`${siteName} is already in your frequently used sites.`);
     }
-  };
+  } catch (err: any) {
+    setMessage(err.response?.data?.error?.message || err.message);
+  } finally {
+    setLoadingLists(false);
+  }
+};
   // 3) Roles
   const handleRoleAssignment = (e: FormEvent) => {
     e.preventDefault();
@@ -193,7 +192,6 @@ const handleSaveCarName = async () => {
       setMessage(`User ${userEmail} already has a role assigned.`);
       return;
     }
-
     const newRole = { email: userEmail, role: userRole };
     setAssignedRoles((prev) => [...prev, newRole]);
     setUserEmail("");
@@ -203,7 +201,6 @@ const handleSaveCarName = async () => {
   const removeRole = (email: string) => {
     setAssignedRoles((prev) => prev.filter((r) => r.email !== email));
   };
-
   // 4) Projects
   const addProjectFromDropdown = () => {
     if (!selectedProjectId) {
