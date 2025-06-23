@@ -48,13 +48,13 @@ const CarConfigurationComponent: React.FC<CarConfigProps> = ({ projects, siteId 
     loadCarList();
   }, []);
 
-  // Fetch items from Feasibility list => parse "Carline:" from "Parameters"
+  // Fetch items from Implementation list => parse "Carline:" from "Parameters"
   useEffect(() => {
     const fetchCarlineValues = async () => {
       if (!siteId || !selectedProject) return;
 
       const project = projects.find((p) => p.id === selectedProject);
-      if (!project?.mapping?.feasibility) return;
+      if (!project?.mapping?.implementation) return;
 
       try {
 
@@ -67,9 +67,9 @@ const CarConfigurationComponent: React.FC<CarConfigProps> = ({ projects, siteId 
 
         if (!token) throw new Error("No token available");
 
-        const listId = project.mapping.feasibility;
+        const listId = project.mapping.implementation;
 
-        // Call Graph API to get "Parameters" from feasibility items
+        // Call Graph API to get "Parameters" from implementation items
         const response = await axios.get(
           `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?$expand=fields($select=Parameters)`,
           { headers: { Authorization: `Bearer ${token}` } }
