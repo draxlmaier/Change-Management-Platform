@@ -6,13 +6,11 @@ import "react-multi-carousel/lib/styles.css";
 
 import cmp3dLogo from "../assets/images/change_management_platform_full2.png";
 import draxlLogo from "../assets/images/draxlmaier-group.png";
-import cmpIcon from "../assets/images/cmpIcon.png";
 import dataToolIcon from "../assets/images/dataToolIcon.png";
-import changeBtn from "../assets/images/cmplogoofficialnotext.png";
 import dashBtn from "../assets/images/dashboard.png";
 import kpiBtn from "../assets/images/kpis.png";
 import harnessBg from "../assets/images/harness.png";
-import settingsIc from "../assets/images/settings-icon.png";
+import settingsIc from "../assets/images/cmplogoofficialnotext.png";
 import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
 import { db } from "./db";

@@ -7,6 +7,7 @@ import { getAccessToken } from "../auth/getToken";
 import harnessBg from "../assets/images/harness-bg.png";
 import { msalInstance } from "../auth/msalInstance";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
+import TopMenu from "../components/TopMenu";
 
 interface IProject {
   id: string;
@@ -218,6 +219,7 @@ const areaColors: Record<string, string> = {
 
     {/* TopBar */}
     <div className="relative z-20 w-full flex items-center justify-between px-8 py-4 text-white">
+     <TopMenu />
       <button onClick={() => navigate(`/changes/${projectKey}`)} className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition">← Back</button>
       <div className="flex items-center space-x-2">
         <button onClick={() => navigate(`/changes/${projectKey}/feasibility-extra`)} className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-white text-sm">Go to Feasibility Extra</button>
@@ -244,11 +246,11 @@ const areaColors: Record<string, string> = {
       <div className="flex items-center justify-center bg-white/10 backdrop-blur-md shadow-md rounded-2xl p-6 w-1/4 h-full text-white text-center border border-white/20">
   <div className="space-y-4">
     <div>
-      <p className="text-lg font-semibold text-white/80 mb-1">Start Date From</p>
+      <p className="text-lg font-semibold text-white/80 mb-1">Period From</p>
       <p className="text-xl font-bold text-green-300">{startDateFrom || "—"}</p>
     </div>
     <div>
-      <p className="text-lg font-semibold text-white/80 mb-1">Start Date To</p>
+      <p className="text-lg font-semibold text-white/80 mb-1"> To </p>
       <p className="text-xl font-bold text-green-300">{startDateTo || "—"}</p>
     </div>
   </div>
@@ -368,14 +370,12 @@ const areaColors: Record<string, string> = {
           const ph8 = f.EnddatePhase8;
           const pi = f.EnddateProcessinfo;
           const area = f.SheetName;
-          
-
+        
           // If area matches filter button color
           const areaClasses = getAreaColor(area);
 
           // If no date is found, add a bounce
           const hasDigit = /[0-9]/.test(pav);
-          const bounceClass = hasDigit ? "" : "animate-pulse";
 
           return (
             <div

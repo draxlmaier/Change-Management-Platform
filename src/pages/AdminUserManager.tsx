@@ -5,6 +5,7 @@ import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
 import { getResolvedSiteId } from "../utils/getResolvedSiteId";
 import { getConfig } from "../services/configService";
+import TopMenu from "../components/TopMenu";
 
 
 const config = getConfig();
@@ -135,6 +136,7 @@ const AdminUserManager: React.FC = () => {
 
   return (
     <div className="p-6 bg-white rounded shadow-md max-w-4xl mx-auto text-black">
+      <TopMenu />
       <h2 className="text-xl font-bold mb-4">{isEditing ? "Edit User" : "Add New User"}</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../auth/getToken";
 import { graphTokenRequest } from "../authConfig";
 import { msalInstance } from "../auth/msalInstance";
+import TopMenu from "../components/TopMenu";
 
 interface QuestionState {
   id: string;
@@ -72,6 +73,7 @@ export default function AddQuestionPage() {
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Add a New Question</h2>
       <div className="mb-2">
+        <TopMenu />
          <button
         onClick={() => navigate(-1)}
         className="absolute top-4 left-4 z-20 px-3 py-2 bg-white/20 hover:bg-white/30

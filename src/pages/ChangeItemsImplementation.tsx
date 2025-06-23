@@ -7,6 +7,7 @@ import { getAccessToken } from "../auth/getToken";
 import harnessBg from "../assets/images/harness-bg.png";
 import { msalInstance } from "../auth/msalInstance";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
+import TopMenu from "../components/TopMenu";
 
 interface IProject {
   id: string;
@@ -219,6 +220,7 @@ const areaColors: Record<string, string> = {
 
     {/* TopBar */}
     <div className="relative z-20 w-full flex items-center justify-between px-8 py-4 text-white">
+      <TopMenu />
       <button onClick={() => navigate(`/changes/${projectKey}`)} className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition">← Back</button>
       <div className="flex items-center space-x-2">
         <button onClick={() => navigate(`/changes/${projectKey}/feasibility-extra`)} className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-white text-sm">Go to Feasibility Extra</button>
@@ -376,7 +378,6 @@ const areaColors: Record<string, string> = {
 
           // If no date is found, add a bounce
           const hasDigit = /[0-9]/.test(pav);
-          const bounceClass = hasDigit ? "" : "animate-pulse";
 
           return (
             <div

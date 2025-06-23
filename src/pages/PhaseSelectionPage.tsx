@@ -9,6 +9,7 @@ import { PROJECT_LOGO_MAP } from "../constants/projects";
 import { IProject } from "../services/configService";
 import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
+import TopMenu from "../components/TopMenu";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
@@ -75,10 +76,11 @@ const PhaseSelectionPage: React.FC = () => {
         className="relative w-full min-h-screen bg-cover bg-center flex flex-col items-center justify-center text-white"
         style={{ backgroundImage: `url(${harnessBg})` }}
       >
+        <TopMenu />
         <button
           onClick={() => navigate("/project-selection")}
-          className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
-        >
+           className="absolute top-4 left-4 z-20 flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+      >
           ← Back
         </button>
         <p className="text-2xl mt-6">

@@ -5,6 +5,7 @@ import { getAccessToken } from "../auth/getToken";
 import { graphTokenRequest } from "../authConfig";
 import harnessBg from "../assets/images/harness-bg.png";
 import { msalInstance } from "../auth/msalInstance";
+import TopMenu from "../components/TopMenu";
 
 interface QuestionState {
   id: string;
@@ -159,6 +160,7 @@ export default function EditQuestionPage() {
       <div className="absolute inset-0 z-10 pointer-events-none" />
       <div className="relative z-20 w-full p-8 space-y-6 text-white max-w-2xl mx-auto">
         {/* Back button */}
+        <TopMenu />
         <button
           onClick={() => navigate(-1)}
           className="px-3 py-1 bg-gray-300 hover:bg-gray-400 rounded text-black"

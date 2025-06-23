@@ -1,9 +1,8 @@
 // src/App.tsx
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import LoginPage                 from "./pages/LoginPage";
-import LandingPage               from "./pages/LandingPage";
 import ConfigPage                from "./pages/ConfigPage";
 import ProjectSelection          from "./pages/ProjectSelection";
 import PhaseSelectionPage        from "./pages/PhaseSelectionPage";
@@ -14,7 +13,6 @@ import DetailsFeasibility        from "./pages/DetailsFeasibility";
 import UpdateImplementation      from "./pages/UpdateImplementation";
 import UpdateFeasibility         from "./pages/UpdateFeasibility";
 import SendEmailPage             from "./pages/SendEmailPage";
-import ExtractionMonitoring      from "./pages/ExtractionMonitoring";
 import NotFoundPage              from "./pages/NotFoundPage";
 import KPIInputPage              from "./pages/KPIInputPage";
 
@@ -28,18 +26,24 @@ import AddQuestionPage from "./pages/AddQuestionPage";
 import EditQuestionPage from "./pages/EditQuestionPage";
 import ScrapFollowingSection from "./pages/ScrapFollowingSection";
 import FollowCostKPIEditor from "./pages/FollowCostKPIEditor";
-import MonthlyKPIEditor from "./pages/MonthlyKPIEditor";
 
 import ToolSelectionPage from "./pages/ToolSelectionPage";
 import SharePointUploaderPage from "./pages/SharePointUploaderPage"; // assuming this exists
 
 import AdminUserManager from "./pages/AdminUserManager";
-import ProtectedRoute from "./components/ProtectedRoute";
+import DRXKPIInput from "./components/dashboard/DRXKPIInput";
+import DowntimeKPIInput from "./components/dashboard/DowntimeKPIInput";
+import BudgetKPIInput from "./components/dashboard/BudgetKPIInput";
+import FollowUpKPIInput from "./components/dashboard/FollowUpKPIInput";
+
+import DRXKPIEditor from "./pages/DRXKPIEditor";
+import DowntimeKPIEditor from "./pages/DowntimeKPIEditor";
+import BudgetKPIEditor from "./pages/BudgetKPIEditor";
+
 const App: React.FC = () => (
   <Routes>
     {/* Auth & Landing */}
     <Route index element={<LoginPage />} />
-    <Route path="landing" element={<LandingPage />} />
     <Route path="/tool-selection" element={<ToolSelectionPage />} />
     <Route path="/data-extraction" element={<SharePointUploaderPage />} />
     {/* Configuration */}
@@ -63,19 +67,26 @@ const App: React.FC = () => (
     <Route path="/changes/:projectKey/feasibility-extra" element={<ChangeItemsFeasibilityExtra />} />
     <Route path="/changes/:projectKey/implementation-extra" element={<ChangeItemsImplementationExtra />} />
 
-    {/* Extraction Monitoring */}
-    <Route path="/extraction-monitoring" element={<ExtractionMonitoring />} />
-
     {/* Dashboard section */}
     <Route path="/dashboard/*" element={<DashboardLayout />}>  
       <Route index element={<DashboardHome />} />
       <Route path=":project" element={<DashboardPage />} />
     </Route>
     {/* …other routes */}
-    <Route path="/kpis" element={<KPIInputPage/>} />
-    <Route path="/monthly-editor" element={<MonthlyKPIEditor/>}/>
-    <Route path="/follow-cost-editor" element={<FollowCostKPIEditor/>}/>
-    <Route path="/scrap-following" element={<ScrapFollowingSection/>}/>
+    <Route path="/kpis" element={<KPIInputPage />}>
+  <Route index element={<Navigate to="drx" />} />   {/* ✅ FIXED */}
+  <Route path="drx" element={<DRXKPIInput />} />
+  <Route path="downtime" element={<DowntimeKPIInput />} />
+  <Route path="budget" element={<BudgetKPIInput />} />
+  <Route path="followup" element={<FollowUpKPIInput />} />
+  <Route path="scrap" element={<ScrapFollowingSection />} />
+</Route>
+
+<Route path="/kpi-editor/drx" element={<DRXKPIEditor />} />
+<Route path="/kpi-editor/downtime" element={<DowntimeKPIEditor />} />
+<Route path="/kpi-editor/budget" element={<BudgetKPIEditor />} />
+<Route path="/follow-cost-editor" element={<FollowCostKPIEditor/>}/>
+
 
     {/* 404 */}
     <Route path="*" element={<NotFoundPage />} />

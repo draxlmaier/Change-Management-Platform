@@ -3,8 +3,8 @@ import ReactECharts from "echarts-for-react";
 
 interface DowntimeRecord {
   year: string;
-  Month: string;
-  UnplanneddowntimecausedbyTechnic?: number | string;
+  Monthid: string; // New: numeric month from SharePoint
+  downtime?: number | string;
   rateofdowntime?: number | string;
   Targetdowntime?: number | string;
   seuildinterventiondowntime?: number | string;
@@ -21,30 +21,26 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) =
     "July", "August", "September", "October", "November", "December"
   ];
 
-  const getMonthIndex = (m: string = "") => {
-    const clean = m.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove accents
-    return monthsOrder.findIndex(mon =>
-      mon.toLowerCase() === clean.trim().toLowerCase()
-    );
+  const getMonthName = (monthId: string) => {
+    const index = parseInt(monthId, 10) - 1;
+    return monthsOrder[index] || "Unknown";
   };
 
   const sortedData = [...data].sort((a, b) => {
     const yearDiff = parseInt(a.year) - parseInt(b.year);
     if (yearDiff !== 0) return yearDiff;
-    return getMonthIndex(a.Month) - getMonthIndex(b.Month);
+    return parseInt(a.Monthid) - parseInt(b.Monthid);
   });
 
-  console.log("✅ Final sorted data for chart:", sortedData);
-
   const xAxisLabels = sortedData.map((rec) => {
-    const pretty = rec.Month.charAt(0).toUpperCase() + rec.Month.slice(1).toLowerCase();
-    return rec.year ? `${pretty} ${rec.year}` : pretty;
+    const monthName = getMonthName(rec.Monthid);
+    return `${monthName} ${rec.year}`;
   });
 
   const downtimeSeries = {
     name: "Downtime (min)",
     type: "bar",
-    data: sortedData.map(rec => parseFloat(String(rec.UnplanneddowntimecausedbyTechnic || 0))),
+    data: sortedData.map(rec => parseFloat(String(rec.downtime || 0))),
     yAxisIndex: 0,
     itemStyle: { color: "#fdae61" },
   };

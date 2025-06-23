@@ -15,16 +15,19 @@ const REQUIRED_LISTS = [
   {
     name: "MonthlyKPIs",
     fields: [
+      { name: "Project", type: "Text" },
       { name: "year", type: "Text" },
       { name: "Month", type: "Text" },
-      { name: "Project", type: "Text" },
+      { name: "Monthid", type: "Text" },
       { name: "DRXIdeasubmittedIdea", type: "Number" },
       { name: "DRXIdeasubmittedIdeaGoal", type: "Number" },
       { name: "productionminutes", type: "Number" },
-      { name: "UnplanneddowntimecausedbyTechnic", type: "Number" },
+      { name: "downtime", type: "Number" },
       { name: "rateofdowntime", type: "Number" },
       { name: "Targetdowntime", type: "Number" },
       { name: "seuildinterventiondowntime", type: "Number" },
+      { name: "Budgetdepartment", type: "Number" },
+      { name: "Budgetdepartmentplanified", type: "Number" },
     ],
   },
   {

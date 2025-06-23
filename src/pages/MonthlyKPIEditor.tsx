@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../auth/getToken";
 import harnessBg from "../assets/images/harness-bg.png";
 import { msalInstance } from "../auth/msalInstance";
+import TopMenu from "../components/TopMenu";
 
 // Represents the fields in "MonthlyKPIs"
 interface IMonthlyKPIFields {
@@ -239,6 +240,7 @@ const MonthlyKPIEditor: React.FC = () => {
 
       {/* Top bar */}
       <div className="relative z-20 max-w-6xl mx-auto p-4 flex items-center space-x-4">
+        <TopMenu />
         <button
           onClick={() => navigate(-1)}
           className="flex items-center space-x-2

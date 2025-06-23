@@ -1,12 +1,11 @@
-// File: src/pages/MonthlyKPIInput.tsx
+// File: src/pages/shared/KPIInputWrapper.tsx
 
-import React, { useState, useEffect } from "react";
-import ProjectCarousel from "../ProjectCarousel";
+import React, { useEffect, useState } from "react";
+import ProjectCarousel from "../../components/ProjectCarousel";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
-import InputFormatted from "../InputFormatted";
+import InputFormatted from "../../components/InputFormatted";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
@@ -19,7 +18,7 @@ interface MonthlyForm {
   DRXIdeasubmittedIdea: number;
   DRXIdeasubmittedIdeaGoal: number;
   productionminutes: number;
-  downtimec: number;
+  downtime: number;
   rateofdowntime: number;
   Targetdowntime: number;
   seuildinterventiondowntime: number;
@@ -33,18 +32,31 @@ interface IProject {
   logo?: string;
 }
 
-const parseDecimal = (val: string): number => {
-  if (!val) return 0;
-  return parseFloat(val.replace(",", "."));
-};
+interface FieldDef {
+  label: string;
+  key: keyof MonthlyForm;
+}
 
-const MonthlyKPIInput: React.FC = () => {
-  const navigate = useNavigate();
+interface SharePointItem {
+  id: string;
+  Title: string;
+  [key: string]: any;
+}
+
+const formatter = new Intl.NumberFormat(undefined, {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+  useGrouping: false,
+});
+
+const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ title, fields }) => {
   const [projects, setProjects] = useState<IProject[]>([]);
   const [monthlyListId, setMonthlyListId] = useState<string | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [itemId, setItemId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [, setCachedItems] = useState<SharePointItem[]>([]);
 
   const now = new Date();
   const defaultYear = String(now.getFullYear());
@@ -59,18 +71,12 @@ const MonthlyKPIInput: React.FC = () => {
     DRXIdeasubmittedIdea: 0,
     DRXIdeasubmittedIdeaGoal: 0,
     productionminutes: 0,
-    downtimec: 0,
+    downtime: 0,
     rateofdowntime: 0,
     Targetdowntime: 0,
     seuildinterventiondowntime: 0,
     Budgetdepartment: 0,
     Budgetdepartmentplanified: 0,
-  });
-
-  const formatter = new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-    useGrouping: false,
   });
 
   useEffect(() => {
@@ -82,9 +88,6 @@ const MonthlyKPIInput: React.FC = () => {
         setSiteId(config.siteId || null);
         if (config.projects && Array.isArray(config.projects)) {
           setProjects(config.projects);
-          if (config.projects.length > 0) {
-            setForm((prev) => ({ ...prev, Project: config.projects[0].id }));
-          }
         }
       } catch (err) {
         console.error("Error loading config from localStorage:", err);
@@ -92,58 +95,95 @@ const MonthlyKPIInput: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (form.Project && form.Month && form.year && siteId && monthlyListId) {
-      const uniqueKey = `${form.Project}_${form.Monthid}_${form.year}`;
-      setForm((prev) => ({ ...prev, uniqueKey }));
-      checkOrCreateItem(uniqueKey);
-    }
-  }, [form.Project, form.Month, form.year, siteId, monthlyListId]);
-
-  const checkOrCreateItem = async (uniqueKey: string) => {
+  const fetchAndMatchItem = async (uniqueKey: string): Promise<SharePointItem | undefined> => {
     try {
+      setLoading(true);
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
-      const res = await axios.get(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items?$expand=fields&$filter=fields/uniqueKey eq '${uniqueKey}'`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      let items: SharePointItem[] = [];
+      let nextLink: string | null = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items?$expand=fields&$top=5000`;
 
-      if (res.data.value.length > 0) {
-        setItemId(res.data.value[0].id);
-      } else {
-        const create = await axios.post(
-          `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items`,
-          { fields: { Project: form.Project, year: form.year, Month: form.Month, Monthid: form.Monthid, uniqueKey } },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setItemId(create.data.id);
+      while (nextLink) {
+       const res: { data: { value: any[]; "@odata.nextLink"?: string } } = await axios.get(nextLink, {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+
+        const batch = res.data.value.map((item: any) => ({
+          id: item.id,
+          ...item.fields,
+        }));
+
+        items = [...items, ...batch];
+        nextLink = res.data["@odata.nextLink"] || null;
       }
+
+      setCachedItems(items);
+      const match = items.find((i) => i.Title === uniqueKey);
+      if (match) {
+        setItemId(match.id);
+        setForm((prev) => ({ ...prev, ...match }));
+      }
+      return match;
     } catch (err) {
-      console.error("Error checking or creating item:", err);
+      console.error("Error fetching items:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSaveSection = async (fields: Partial<MonthlyForm>) => {
+  const handleSaveSection = async () => {
     try {
-      if (!siteId || !monthlyListId || !itemId) throw new Error("Missing config or item ID.");
+      if (!siteId || !monthlyListId) throw new Error("Missing site or list config.");
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
 
-      const updates: any = { ...fields };
+      const uniqueKey = `${form.Project}_${form.Monthid}_${form.year}`;
+      setForm((prev) => ({ ...prev, uniqueKey }));
 
-      // Auto-calculate rateofdowntime if needed
-      if ("productionminutes" in updates || "downtimec" in updates) {
+      let currentItemId = itemId;
+      if (!currentItemId) {
+        const match = await fetchAndMatchItem(uniqueKey);
+        if (match) {
+          currentItemId = match.id;
+          setItemId(currentItemId);
+        } else {
+          const res = await axios.post(
+            `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items`,
+            {
+              fields: {
+                Title: uniqueKey,
+                Project: form.Project,
+                year: form.year,
+                Month: form.Month,
+                Monthid: form.Monthid
+              },
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+          currentItemId = res.data.id;
+          setItemId(currentItemId);
+        }
+      }
+
+      const updates: Record<string, number> = {};
+      fields.forEach(({ key }) => {
+        const value = form[key];
+        updates[key] = typeof value === "number" ? value : parseFloat(String(value));
+      });
+
+      if ("productionminutes" in updates || "downtime" in updates) {
         const prod = updates.productionminutes ?? form.productionminutes;
-        const down = updates.downtimec ?? form.downtimec;
+        const down = updates.downtime ?? form.downtime;
         updates.rateofdowntime = prod > 0 ? down / prod : 0;
       }
 
       await axios.patch(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items/${itemId}/fields`,
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items/${currentItemId}/fields`,
         updates,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setForm((prev) => ({ ...prev, ...updates }));
       setMsg("✅ Section saved.");
     } catch (err: any) {
       console.error("Save failed:", err);
@@ -156,34 +196,11 @@ const MonthlyKPIInput: React.FC = () => {
     setForm((prev) => ({ ...prev, [key]: isNaN(val) ? 0 : val }));
   };
 
-  const Section = ({ title, fields }: { title: string; fields: { label: string; key: keyof MonthlyForm }[] }) => (
-    <fieldset className="border border-white/20 p-4 rounded-md space-y-4 mt-6">
-      <legend className="text-lg font-semibold mb-4 text-white/80">{title}</legend>
-      {fields.map(({ label, key }) => (
-        <div key={key}>
-          <label className="block font-semibold mb-1 text-white">{label}</label>
-          <InputFormatted
-            className="w-full p-2 border rounded text-black"
-            value={form[key]}
-            onChange={(e) => handleNumberInput(key)(e)}
-            format={formatter.format}
-          />
-        </div>
-      ))}
-      <button
-        onClick={() => handleSaveSection(
-          Object.fromEntries(fields.map(({ key }) => [key, form[key]]))
-        )}
-        className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded shadow"
-      >
-        Save {title}
-      </button>
-    </fieldset>
-  );
-
   return (
     <div className="relative w-full min-h-screen bg-cover bg-center text-white">
       <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
+        <h2 className="text-2xl font-semibold mb-4 text-white/80">{title}</h2>
+
         {projects.length > 0 && (
           <ProjectCarousel
             projects={projects}
@@ -191,8 +208,6 @@ const MonthlyKPIInput: React.FC = () => {
             onProjectSelect={(projectId) => setForm((prev) => ({ ...prev, Project: projectId }))}
           />
         )}
-
-        {msg && <div className="text-sm text-yellow-200 mt-4">{msg}</div>}
 
         <div className="flex space-x-4 mt-6">
           <div className="flex-1">
@@ -227,34 +242,35 @@ const MonthlyKPIInput: React.FC = () => {
           </div>
         </div>
 
-        <Section
-          title="Engineering DRX Ideas Tracking"
-          fields={[
-            { label: "DRX Idea submitted Idea", key: "DRXIdeasubmittedIdea" },
-            { label: "DRX Idea submitted Idea Goal", key: "DRXIdeasubmittedIdeaGoal" },
-          ]}
-        />
+        {loading ? (
+          <div className="text-yellow-300 text-sm mt-4">⏳ Loading data...</div>
+        ) : msg ? (
+          <div className="text-sm text-yellow-200 mt-4">{msg}</div>
+        ) : null}
 
-        <Section
-          title="Downtime"
-          fields={[
-            { label: "Downtime (minutes)", key: "downtimec" },
-            { label: "Production Minutes", key: "productionminutes" },
-            { label: "Target Downtime", key: "Targetdowntime" },
-            { label: "Seuil d'intervention Downtime", key: "seuildinterventiondowntime" },
-          ]}
-        />
+        <fieldset className="border border-white/20 p-4 rounded-md space-y-4 mt-6">
+          {fields.map(({ label, key }) => (
+            <div key={key}>
+              <label className="block font-semibold mb-1 text-white">{label}</label>
+              <InputFormatted
+                className="w-full p-2 border rounded text-black"
+                value={form[key]}
+                onChange={(e) => handleNumberInput(key)(e)}
+                format={formatter.format}
+              />
+            </div>
+          ))}
 
-        <Section
-          title="Budget"
-          fields={[
-            { label: "Actual Budget", key: "Budgetdepartment" },
-            { label: "Planned Budget", key: "Budgetdepartmentplanified" },
-          ]}
-        />
+          <button
+            onClick={handleSaveSection}
+            className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded shadow"
+          >
+            Save {title}
+          </button>
+        </fieldset>
       </div>
     </div>
   );
 };
 
-export default MonthlyKPIInput;
+export default KPIInputWrapper;

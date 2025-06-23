@@ -8,8 +8,14 @@ import { SubAreaPieChart } from "./SubAreaPieChart";
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
 import { UnplannedDowntimeChart } from "./UnplannedDowntimeChart";
-import { BudgetDepartmentKPI } from "../kpicharts/BudgetDepartmentKPI";
 import FilterControls from "./FilterControls";
+import { DRXIdeaProgressChart } from "./DRXIdeaProgressChart";
+import { BudgetDepartmentChart } from "./BudgetDepartmentChart";
+import { BudgetEntriesChart } from "./BudgetEntriesChart";
+import { DRXEntriesChart } from "./DRXEntriesChart";
+import { FollowupCostByAreaChart } from "./FollowupCostByAreaChart";
+import { FollowupCostByReasonChart } from "./FollowupCostByReasonChart";
+import { FollowupCostCombinedChart } from "./FollowupCostCombinedChart";
 
 interface IProject {
   id: string;
@@ -17,14 +23,13 @@ interface IProject {
   mapping: {
     implementation: string;
     implementationExtra?: string;
-    feasibility?: string;
-    feasibilityExtra?: string;
   };
 }
 
 interface cmConfigLists {
   siteId: string;
   monthlyListId: string;
+  followCostListId: string;
   projects: IProject[];
 }
 
@@ -40,18 +45,30 @@ interface ChangeItem {
   processmonth?: string;
   processday?: string;
 }
-
-// For unplanned downtime or other monthly KPI fields 
 interface MonthlyKPIItem {
   ID: string;
   year: string;
-  Month: string;
+  Monthid: string; 
   Project?: string;
-  UnplanneddowntimecausedbyTechnic?: number;
+  downtime?: number;
   rateofdowntime?: number;
   Targetdowntime?: number;
   seuildinterventiondowntime?: number;
-  // other MonthlyKPI fields if you need them...
+  DRXIdeasubmittedIdea?: number;
+  DRXIdeasubmittedIdeaGoal?: number; 
+  Budgetdepartment?: number;
+  Budgetdepartmentplanified?: number;
+}
+interface FollowCostKPIItem {
+  ID: string;
+  Project: string;
+  Area: string;
+  Followupcost_x002f_BudgetPA: number;
+  InitiationReasons: string;
+  BucketID: string;
+  Date: string;
+  BucketResponsible: string;
+  Postname_x002f_ID: string;
 }
 
 type FilterMode =
@@ -101,7 +118,8 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
   const [toMonth, setToMonth] = useState("12");
   const [toYear, setToYear] = useState("2025");
 
-  // Fetch data once when "project" changes
+  const [followCostItems, setFollowCostItems] = useState<FollowCostKPIItem[]>([]);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -120,14 +138,11 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
         } catch {
           throw new Error("Failed to parse cmConfigLists from localStorage.");
         }
-
         if (!config.siteId) {
           throw new Error("No siteId in config.");
         }
         const siteId = config.siteId;
         const accumulated: ChangeItem[] = [];
-
-        // Helper to fetch all pages from a single list
         const fetchListItems = async (listId: string) => {
           let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
           while (nextLink) {
@@ -153,8 +168,6 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
             nextLink = resp.data["@odata.nextLink"] || "";
           }
         };
-
-        // If project is "draxlmaeir," gather multiple subprojects
         if (project?.toLowerCase() === "draxlmaeir") {
           const validProjects = config.projects.filter(
             (p) => p.mapping.implementation
@@ -184,16 +197,12 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
           }
           await fetchListItems(listId);
         }
-
         setAllItems(accumulated);
       // 2) Fetch from monthlyListId (if it exists)
       if (!config.monthlyListId) {
         console.warn("No monthlyListId in config. Skipping monthly KPI fetch.");
       } else {
         const kpiAccumulated: MonthlyKPIItem[] = [];
-
-
-        // Helper to fetch "MonthlyKPIs"
         const fetchMonthlyKPIs = async (listId: string) => {
           let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
           while (nextLink) {
@@ -203,63 +212,55 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
             if (!Array.isArray(resp.data.value)) {
               throw new Error("Missing array at resp.data.value from SharePoint.");
             }
-            const frenchToEnglishMonths: Record<string, string> = {
-  janvier: "January",
-  février: "February",
-  mars: "March",
-  avril: "April",
-  mai: "May",
-  juin: "June",
-  juillet: "July",
-  août: "August",
-  septembre: "September",
-  octobre: "October",
-  novembre: "November",
-  décembre: "December",
-};
-
 const pageItems = resp.data.value.map((it: any) => {
-  const rawMonth = (it.fields.Month || "").toLowerCase().trim();
-  const englishMonth = frenchToEnglishMonths[rawMonth] || rawMonth;
-
   return {
-    ID: it.id,
-    year: it.fields.year,
-    Month: englishMonth,
-    Project: it.fields.Project,
-    UnplanneddowntimecausedbyTechnic: it.fields.UnplanneddowntimecausedbyTechnic,
-    rateofdowntime: it.fields.rateofdowntime,
-    Targetdowntime: it.fields.Targetdowntime,
-    seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
-  };
+  ID: it.id,
+  year: it.fields.year,
+  Monthid: it.fields.Monthid,
+  Project: it.fields.Project,
+  downtime: it.fields.downtime,
+  rateofdowntime: it.fields.rateofdowntime,
+  Targetdowntime: it.fields.Targetdowntime,
+  seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
+  DRXIdeasubmittedIdea: it.fields.DRXIdeasubmittedIdea, 
+  DRXIdeasubmittedIdeaGoal: it.fields.DRXIdeasubmittedIdeaGoal, 
+  Budgetdepartment: it.fields.Budgetdepartment,
+  Budgetdepartmentplanified: it.fields.Budgetdepartmentplanified,
+};
 });
             kpiAccumulated.push(...pageItems);
             nextLink = resp.data["@odata.nextLink"] || "";
           }
         };
-
-
         await fetchMonthlyKPIs(config.monthlyListId);
-        const frenchToEnglish: Record<string, string> = {
-  janvier: "January",
-  février: "February",
-  mars: "March",
-  avril: "April",
-  mai: "May",
-  juin: "June",
-  juillet: "July",
-  août: "August",
-  septembre: "September",
-  octobre: "October",
-  novembre: "November",
-  décembre: "December",
-};
+        setAllMonthlyKPIs(kpiAccumulated);
 
-const normalizedMonthlyKPIs = kpiAccumulated.map((item) => ({
-  ...item,
-  Month: frenchToEnglish[item.Month?.toLowerCase() || ""] || item.Month,
-}));
-setAllMonthlyKPIs(normalizedMonthlyKPIs);
+        if (config.followCostListId) {
+  const followCostAccumulated: FollowCostKPIItem[] = [];
+  const fetchFollowCostKPIs = async (listId: string) => {
+    let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
+    while (nextLink) {
+      const resp = await axios.get(nextLink, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const pageItems = resp.data.value.map((it: any) => ({
+        ID: it.id,
+        Project: it.fields.Project,
+        Area: it.fields.Area,
+        Followupcost_x002f_BudgetPA: it.fields.Followupcost_x002f_BudgetPA,
+        InitiationReasons: it.fields.InitiationReasons,
+        BucketID: it.fields.BucketID,
+        Date: it.fields.Date,
+        BucketResponsible: it.fields.BucketResponsible,
+        Postname_x002f_ID: it.fields.Postname_x002f_ID,
+      }));
+      followCostAccumulated.push(...pageItems);
+      nextLink = resp.data["@odata.nextLink"] || "";
+    }
+  };
+  await fetchFollowCostKPIs(config.followCostListId);
+  setFollowCostItems(followCostAccumulated);
+}
 
       }
     } catch (err: any) {
@@ -275,16 +276,9 @@ useEffect(() => {
     setFilteredMonthlyKPIs([]);
     return;
   }
-
-  const monthsOrder = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-
   const newFiltered = allMonthlyKPIs.filter((item) => {
-    const mIndex = monthsOrder.indexOf(item.Month || "");
-    const itemMonthNum = mIndex + 1;
-
+    const itemMonthNum = parseInt(item.Monthid, 10);
+if (isNaN(itemMonthNum)) return false;
     if (itemMonthNum < 1) return false;
 
     switch (filterMode) {
@@ -298,12 +292,10 @@ useEffect(() => {
         const maxM = q * 3;
         return itemMonthNum >= minM && itemMonthNum <= maxM;
       }
-
       default:
         return true;
     }
   });
-
   setFilteredMonthlyKPIs(newFiltered);
 }, [
   allMonthlyKPIs,
@@ -312,13 +304,11 @@ useEffect(() => {
   selectedMonth,
   selectedQuarter,
 ]);
-  // Recompute filtered items on filter changes
   useEffect(() => {
     if (!allItems.length) {
       setFilteredItems([]);
       return;
     }
-
     const newFiltered = allItems.filter((item) => {
       const y = item.processyear || "";
       const m = item.processmonth || "";
@@ -419,11 +409,7 @@ useEffect(() => {
   if (error) {
     return <p style={{ color: "red", padding: 20 }}>Error: {error}</p>;
   }
-  
-  
-
-  // Summaries
-  const totalChanges = filteredItems.length;
+    const totalChanges = filteredItems.length;
   const changesByArea: Record<string, number> = {};
   filteredItems.forEach((item) => {
     const area = item.SheetName || "Unknown";
@@ -471,80 +457,8 @@ useEffect(() => {
   setToMonth={setToMonth}
   setToYear={setToYear}
 />
-
-          </div>
-
-          {/* Week of Year */}
-          {filterMode === "weekOfYear" && (
-            <div>
-              
-            </div>
-          )}
-
-          {/* Week of Month */}
-          {filterMode === "weekOfMonth" && (
-            <div>
-             
-            </div>
-          )}
+          </div>         
         </div>
-
-        {/* Year/Month/Day selectors */}
-        {filterMode !== "customRange" && (
-          <div className="flex space-x-4 mb-4">
-            {/* Year */}
-            <div>
-              
-            </div>
-
-            {/* Month */}
-            <div>
-              
-            </div>
-
-            {/* Day */}
-            <div>
-             
-            </div>
-          </div>
-        )}
-
-        {filterMode === "quarter" && (
-          <div className="space-x-2 mb-4">
-            
-            
-          </div>
-        )}
-
-        {/* Custom Date Range */}
-        {filterMode === "customRange" && (
-          <div className="flex flex-col space-y-4 mb-4">
-            <div>
-              <div className="mt-1 flex space-x-2">
-               
-
-                {/* Month */}
-               
-
-                {/* Year */}
-               
-              </div>
-            </div>
-
-            <div>
-              <div className="mt-1 flex space-x-2">
-                {/* Day */}
-              
-                {/* Month */}
-               
-
-                {/* Year */}
-                
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats Summary */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <StatsCards totalChanges={totalChanges} changesByArea={changesByArea} />
@@ -573,14 +487,71 @@ useEffect(() => {
           <h2 className="text-xl font-semibold mb-2">Unplanned Downtime</h2>
           <UnplannedDowntimeChart data={filteredMonthlyKPIs} />
         </div>
-        
-<div className="bg-white rounded-lg shadow-md p-6">
-  <BudgetDepartmentKPI
+        <div className="bg-white rounded-lg shadow-md p-6">
+  <h2 className="text-xl font-semibold mb-2">DRX Idea Progress</h2>
+  <DRXIdeaProgressChart
     data={filteredMonthlyKPIs}
     filterMode={filterMode as "month" | "quarter" | "year"}
-    selectedMonth={selectedMonth}
-    selectedQuarter={selectedQuarter}
+  />
+</div>
+<div className="bg-white rounded-lg shadow-md p-6">
+  <h2 className="text-xl font-semibold mb-2">Budget Department</h2>
+  <BudgetDepartmentChart
+    data={filteredMonthlyKPIs}
+    filterMode={filterMode as "month" | "quarter" | "year"}
+  />
+</div>
+<div className="bg-white rounded-lg shadow-md p-6">
+  <h2 className="text-xl font-semibold mb-2">Detailed Budget Entries</h2>
+  <BudgetEntriesChart
+    data={filteredMonthlyKPIs}
+    filterMode={filterMode as "month" | "quarter" | "year"}
+  />
+</div>
+<div className="bg-white rounded-lg shadow-md p-6">
+  <h2 className="text-xl font-semibold mb-2">Detailed DRX Idea Entries</h2>
+  <DRXEntriesChart
+    data={filteredMonthlyKPIs}
+    filterMode={filterMode as "month" | "quarter" | "year"}
+  />
+</div>
+<FollowupCostByAreaChart
+  data={followCostItems}
+  filterMode={filterMode}
+  selectedYear={selectedYear}
+  selectedMonth={selectedMonth}
+  selectedDay={selectedDay}
+  selectedQuarter={selectedQuarter}
+  selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
+  selectedWeekOfYear={selectedWeekOfYear ?? undefined}
+  selectedProject={project?.toLowerCase() || ""}
+/>
+<div className="bg-white rounded-lg shadow-md p-6">
+  <h2 className="text-xl font-semibold mb-2">Coût suivi / Budget PA par Raison de l’initiation</h2>
+  <FollowupCostByReasonChart
+    data={followCostItems}
+    filterMode={filterMode}
     selectedYear={selectedYear}
+    selectedMonth={selectedMonth}
+    selectedDay={selectedDay}
+    selectedQuarter={selectedQuarter}
+    selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
+    selectedWeekOfYear={selectedWeekOfYear ?? undefined}
+    selectedProject={project?.toLowerCase() || ""}
+  />
+</div>
+<div className="bg-white/10 backdrop-blur-lg rounded-xl shadow-md p-6">
+  <h2 className="text-xl font-semibold mb-2">Coût suivi / Budget PA par Raison et Zone</h2>
+  <FollowupCostCombinedChart
+    data={followCostItems}
+    filterMode={filterMode}
+    selectedYear={selectedYear}
+    selectedMonth={selectedMonth}
+    selectedDay={selectedDay}
+    selectedQuarter={selectedQuarter}
+    selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
+    selectedWeekOfYear={selectedWeekOfYear ?? undefined}
+    selectedProject={project?.toLowerCase() || ""}
   />
 </div>
 

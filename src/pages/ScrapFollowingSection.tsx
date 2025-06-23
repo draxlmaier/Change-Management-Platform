@@ -5,20 +5,18 @@ import { getAccessToken } from "../auth/getToken";
 import ProjectCarousel from "../components/ProjectCarousel";
 import { msalInstance } from "../auth/msalInstance";
 
-// 1) Project interface from your cmConfigLists
 interface IProject {
   id: string;
   displayName: string;
   logo?: string;
   mapping: {
     feasibility: string;
-    implementation: string; // The list ID for implementation
+    implementation: string;
     feasibilityExtra?: string;
     implementationExtra?: string;
   };
 }
 
-// 2) The shape of your config stored in localStorage
 interface cmConfigLists {
   siteId: string;
   questionsListId: string;
@@ -30,13 +28,12 @@ interface cmConfigLists {
   frequentSites?: string[];
 }
 
-// 3) Fields in your implementation list
 interface IScrapItemFields {
   Processnumber: string;
   processmonth: string;
-  processyear: string; // e.g., "2025-06" or "2025-06-15"
+  processyear: string;
   SheetName: string;
-  Scrap: string;        // "Scrap" or "No Scrap"
+  Scrap: string;
 }
 
 interface IScrapItem {
@@ -57,7 +54,6 @@ const ScrapFollowingSection: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load config from localStorage
   useEffect(() => {
     const raw = localStorage.getItem(LISTS_CONFIG_KEY);
     if (raw) {
@@ -71,7 +67,6 @@ const ScrapFollowingSection: React.FC = () => {
     }
   }, []);
 
-  // Fetch implementation items
   useEffect(() => {
     const projectObj = projects.find((p) => p.id === selectedProject);
     if (!siteId || !projectObj) return;
@@ -102,7 +97,6 @@ const ScrapFollowingSection: React.FC = () => {
     loadImplementationItems();
   }, [siteId, selectedProject, projects]);
 
-  // Group by month and year
   const groupedByMonthYear = items.reduce((acc: Record<string, IScrapItem[]>, item) => {
     const { processmonth, processyear } = item.fields;
     const monthKey = processmonth ? processmonth.substring(0, 7) : "UnknownMonth";
@@ -113,14 +107,12 @@ const ScrapFollowingSection: React.FC = () => {
     return acc;
   }, {});
 
-  // Handle individual item selection
   const handleItemSelect = (itemId: string) => {
     setSelectedItems((prev) =>
       prev.includes(itemId) ? prev.filter((x) => x !== itemId) : [...prev, itemId]
     );
   };
 
-  // Handle select all per group
   const handleSelectAllInMonthYear = (monthYearKey: string) => {
     const monthItems = groupedByMonthYear[monthYearKey].map((it) => it.id);
     setSelectedItems((prev) => {
@@ -132,7 +124,6 @@ const ScrapFollowingSection: React.FC = () => {
     });
   };
 
-  // Bulk apply scrap value
   const handleBulkScrap = async (scrapValue: string) => {
     if (selectedItems.length === 0) {
       alert("No items selected.");
@@ -178,102 +169,108 @@ const ScrapFollowingSection: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
-      >
-        Back
-      </button>
+    <div className="relative w-full min-h-screen bg-cover bg-center text-white">
+      <div className="relative z-20 max-w-6xl mx-auto p-4 flex items-center space-x-4">
+        <button
+          onClick={() => navigate("/tool-selection")}
+          className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+        >
+          ← Back
+        </button>
+      </div>
 
-      {projects.length > 0 ? (
-        <ProjectCarousel
-          projects={projects}
-          selectedProject={selectedProject}
-          onProjectSelect={setSelectedProject}
-        />
-      ) : (
-        <p className="text-gray-600">No projects found in config.</p>
-      )}
+      <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
+        <h2 className="text-2xl font-semibold mb-4 text-white/80">Scrap Following</h2>
 
-      {error && <p className="text-red-600">{error}</p>}
-      {loading && <p>Loading items...</p>}
+        {projects.length > 0 ? (
+          <ProjectCarousel
+            projects={projects}
+            selectedProject={selectedProject}
+            onProjectSelect={setSelectedProject}
+          />
+        ) : (
+          <p className="text-gray-600">No projects found in config.</p>
+        )}
 
-      {!selectedProject && (
-        <p className="mt-4 text-gray-600">Please select a project to see scrap items.</p>
-      )}
+        {error && <p className="text-red-600">{error}</p>}
+        {loading && <p>Loading items...</p>}
 
-      {selectedProject && (
-        <div className="mt-4 space-x-2">
-          <button
-            onClick={() => handleBulkScrap("Scrap")}
-            className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
-          >
-            Mark as Scrap
-          </button>
-          <button
-            onClick={() => handleBulkScrap("No Scrap")}
-            className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
-          >
-            Mark as No Scrap
-          </button>
-        </div>
-      )}
+        {!selectedProject && (
+          <p className="mt-4 text-gray-600">Please select a project to see scrap items.</p>
+        )}
 
-      {Object.keys(groupedByMonthYear).length === 0 && !loading && selectedProject && (
-        <p className="mt-4 text-gray-600">No items found for this project’s implementation list.</p>
-      )}
-
-      {Object.keys(groupedByMonthYear).sort().map((monthYearKey) => {
-        const itemsInGroup = groupedByMonthYear[monthYearKey];
-        const [month, year] = monthYearKey.split(" | ");
-
-        return (
-          <div className="border border-gray-300 p-4 mt-4" key={monthYearKey}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Month: {month} | Year: {year}</h3>
-              <button
-                className="text-sm px-3 py-1 bg-gray-200 rounded"
-                onClick={() => handleSelectAllInMonthYear(monthYearKey)}
-              >
-                {itemsInGroup.every((x) => selectedItems.includes(x.id))
-                  ? "Unselect All"
-                  : "Select All"}
-              </button>
-            </div>
-
-            <table className="min-w-full border border-gray-300 text-sm">
-              <thead>
-                <tr>
-                  <th className="p-2 border w-8"></th>
-                  <th className="p-2 border">Processnumber</th>
-                  <th className="p-2 border">SheetName</th>
-                  <th className="p-2 border">Scrap</th>
-                </tr>
-              </thead>
-              <tbody>
-                {itemsInGroup.map((item) => {
-                  const isChecked = selectedItems.includes(item.id);
-                  return (
-                    <tr key={item.id}>
-                      <td className="p-2 border">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleItemSelect(item.id)}
-                        />
-                      </td>
-                      <td className="p-2 border">{item.fields.Processnumber}</td>
-                      <td className="p-2 border">{item.fields.SheetName}</td>
-                      <td className="p-2 border">{item.fields.Scrap || ""}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {selectedProject && (
+          <div className="mt-4 space-x-2">
+            <button
+              onClick={() => handleBulkScrap("Scrap")}
+              className="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+            >
+              Mark as Scrap
+            </button>
+            <button
+              onClick={() => handleBulkScrap("No Scrap")}
+              className="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+            >
+              Mark as No Scrap
+            </button>
           </div>
-        );
-      })}
+        )}
+
+        {Object.keys(groupedByMonthYear).length === 0 && !loading && selectedProject && (
+          <p className="mt-4 text-gray-600">No items found for this project’s implementation list.</p>
+        )}
+
+        {Object.keys(groupedByMonthYear).sort().map((monthYearKey) => {
+          const itemsInGroup = groupedByMonthYear[monthYearKey];
+          const [month, year] = monthYearKey.split(" | ");
+
+          return (
+            <div className="border border-gray-300 p-4 mt-4 bg-white/10 rounded-xl" key={monthYearKey}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-white">Month: {month} | Year: {year}</h3>
+                <button
+                  className="text-sm px-3 py-1 bg-gray-200 rounded"
+                  onClick={() => handleSelectAllInMonthYear(monthYearKey)}
+                >
+                  {itemsInGroup.every((x) => selectedItems.includes(x.id))
+                    ? "Unselect All"
+                    : "Select All"}
+                </button>
+              </div>
+
+              <table className="min-w-full border border-white/20 text-sm text-white">
+                <thead>
+                  <tr>
+                    <th className="p-2 border">✓</th>
+                    <th className="p-2 border">Processnumber</th>
+                    <th className="p-2 border">SheetName</th>
+                    <th className="p-2 border">Scrap</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemsInGroup.map((item) => {
+                    const isChecked = selectedItems.includes(item.id);
+                    return (
+                      <tr key={item.id} className="bg-white/5">
+                        <td className="p-2 border text-center">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleItemSelect(item.id)}
+                          />
+                        </td>
+                        <td className="p-2 border">{item.fields.Processnumber}</td>
+                        <td className="p-2 border">{item.fields.SheetName}</td>
+                        <td className="p-2 border">{item.fields.Scrap || ""}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

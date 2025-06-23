@@ -1,3 +1,5 @@
+// File: src/components/DetailsPage.tsx
+
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -7,6 +9,7 @@ import harnessBg from "../assets/images/harness-bg.png";
 import { PROJECT_LOGO_MAP } from "../constants/projects";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import TopMenu from "./TopMenu";
 
 interface FieldEntry {
   label: string;
@@ -101,25 +104,14 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
     })();
   }, [projectKey, itemId]);
 
+  const f = item?.fields || {};
   if (error) return <div className="p-8 text-red-600">{error}</div>;
   if (!item || !project || !config) return null;
-
-  const f = item.fields;
-
-  const filledEditableFields = fieldsConfig.editableFields.filter(
-    (field) => f[field.key] !== undefined && f[field.key] !== null && f[field.key] !== ""
-  ).filter(field => !fieldsConfig.startEndWorkingGroup.some(g => g.key === field.key));
-
-  const emptyEditableFields = fieldsConfig.editableFields.filter(
-    (field) => !filledEditableFields.includes(field) &&
-      !fieldsConfig.startEndWorkingGroup.some(g => g.key === field.key)
-  );
 
   const getInputType = (key: string) => {
     const k = key.toLowerCase();
     if (k.includes("date")) return "date";
-    if (k.includes("cost") || k.includes("downtime") || k.includes("workingdays") || k.includes("scrap"))
-      return "number";
+    if (k.includes("cost") || k.includes("downtime") || k.includes("workingdays") || k.includes("scrap")) return "number";
     return "text";
   };
 
@@ -146,7 +138,9 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setItem((prev) => prev ? ({ ...prev, fields: { ...prev.fields, [fieldKey]: newValue } }) : prev);
+      setItem((prev) =>
+        prev ? { ...prev, fields: { ...prev.fields, [fieldKey]: newValue } } : prev
+      );
       toast.success("Saved");
     } catch (e: any) {
       toast.error("Save failed");
@@ -170,7 +164,9 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
             value={editedValue}
             onChange={(e) => setEditedValue(e.target.value)}
             onBlur={() => handleSave(field.key, editedValue)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(field.key, editedValue); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave(field.key, editedValue);
+            }}
           />
         ) : (
           <div
@@ -184,9 +180,32 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
     );
   };
 
+  const groupFields = (keys: string[]) => fieldsConfig.editableFields.filter(f => keys.includes(f.key));
+
+  const section = (title: string, dateKeys: string[], contentKeys: string[]) => (
+    <div className="mb-12">
+      <div className="flex justify-between items-start">
+        <h3 className="text-2xl font-bold mb-4">{title}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-right">
+          {groupFields(dateKeys).map(renderEditable)}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {groupFields(contentKeys).map(renderEditable)}
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative w-full min-h-screen bg-cover bg-center" style={{ backgroundImage: `url(${harnessBg})` }}>
       <ToastContainer />
+      <TopMenu />
+      <button
+  onClick={() => navigate(`/send-email/${projectKey}/implementation/${itemId}`)}
+  className="absolute top-4 right-4 z-20 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md transition"
+>
+  📧 Send Email
+</button>
       <button
         onClick={() => navigate(-1)}
         className="absolute top-4 left-4 z-20 flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
@@ -194,32 +213,39 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
         ← Back
       </button>
 
-      <div className="relative z-20 flex flex-col lg:flex-row mx-auto max-w-7xl p-4 gap-6">
-        {/* LEFT PANEL */}
-        <div className="w-full lg:w-5/12 bg-black/50 rounded-2xl p-6 text-white">
-          {project?.logo && <img src={project.logo} alt="logo" className="w-32 h-auto mb-6 mx-auto" />}
-          <h1 className="text-3xl font-bold mb-6 text-center">Change Details</h1>
-
-          {fieldsConfig.generalFields.map(field => (
-            <div key={field.key} className="mb-4">
-              <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
-              <div className="bg-white/10 px-3 py-2 rounded text-white">{f[field.key] ?? "—"}</div>
-            </div>
-          ))}
+      <div className="relative z-20 max-w-6xl mx-auto p-4 text-white">
+        <div className="text-center mb-6">
+          {project?.logo && <img src={project.logo} alt="logo" className="w-32 h-auto mx-auto mb-4" />}
+          <h1 className="text-3xl font-bold">Change Details</h1>
         </div>
 
-        {/* RIGHT PANEL */}
-        <div className="w-full lg:w-7/12 bg-black/50 rounded-2xl p-6 text-white">
-          <h2 className="text-2xl font-bold mb-6">Edit Fields</h2>
+        {/* PROCESS INFORMATION */}
+        {section("Process Information",
+          ["StartdateProcessinfo", "EnddateProcessinfo", "WorkingDaysProcess"],
+          fieldsConfig.generalFields.map(f => f.key)
+        )}
 
-          {filledEditableFields.map(renderEditable)}
-          {emptyEditableFields.map(renderEditable)}
+        {/* PHASE 4 */}
+        {section("Phase 4",
+          ["StartdatePhase4", "EnddatePhase4", "WorkingDaysPhase4"],
+          []
+        )}
 
-          <h2 className="text-2xl font-semibold my-8 text-center">Timeline Summary</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {fieldsConfig.startEndWorkingGroup.map(renderEditable)}
-          </div>
-        </div>
+        {/* PAV SUBSECTION */}
+        {section("PAV Subsection",
+          ["StartdatePAVPhase4", "EnddatePAVPhase4", "WorkingDaysPAVPhase4"],
+          [
+            "EstimatedcostsPAVPhase4", "ToolsutilitiesavailablePAVPhase4", "ProcessFMEAPAVPhase4",
+            "PLPRelevantPAVPhase4", "RisklevelactualPAVPhase4",
+            "Estimatedscrap", "Estimatedcost", "Estimateddowntime", "estimatedchangedate"
+          ]
+        )}
+
+        {/* PHASE 8 */}
+        {section("Phase 8",
+          ["StartdatePhase8", "EnddatePhase8", "WorkingDaysPAVPhase8"],
+          ["Changepackages", "Scrap", "Actualcost", "Actualdowntime", "Changedate"]
+        )}
       </div>
     </div>
   );

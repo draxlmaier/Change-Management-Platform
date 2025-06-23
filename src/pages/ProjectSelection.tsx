@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
 import { IProject } from "../services/configService";
 import { getProjectLogo } from "../utils/getProjectLogo";
+import TopMenu from "../components/TopMenu";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
@@ -40,6 +41,7 @@ const ProjectSelection: React.FC = () => {
       className="relative w-full h-screen bg-cover bg-center overflow-hidden m-0 p-0"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
+      <TopMenu />
       {/* Back button */}
       <button
         onClick={() => navigate("/tool-selection")}

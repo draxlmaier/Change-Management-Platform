@@ -38,7 +38,7 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
         const match = regex.exec(list.displayName);
         if (!match) return;
 
-        const [_, rawProjectName, phase, isExtra] = match;
+        const [, rawProjectName, phase, isExtra] = match;
         const projectId = rawProjectName.toLowerCase();
 
         const base = existingProjectsMap.get(projectId) || {

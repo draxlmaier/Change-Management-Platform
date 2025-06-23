@@ -5,6 +5,7 @@ import { getAccessToken } from "../auth/getToken";
 import { graphTokenRequest } from "../authConfig";
 import harnessBg from "../assets/images/harness-bg.png";
 import { msalInstance } from "../auth/msalInstance";
+import TopMenu from "../components/TopMenu";
 
 interface IProject {
   id: string;
@@ -245,6 +246,7 @@ const SendEmailPage: React.FC = () => {
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
       <div className="absolute inset-0 z-10 pointer-events-none" />
+      <TopMenu />
       <button
         onClick={() => navigate(`/details/${projectKey}/implementation/${itemId}`)}
         className="px-3 py-2 bg-white/20 rounded text-white"

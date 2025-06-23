@@ -4,29 +4,27 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../auth/getToken";
-import harnessBg from "../assets/images/harness-bg.png";
 import { msalInstance } from "../auth/msalInstance";
-// ★ 1) Make sure each field can be string OR number if you actually allow that in your UI
-//    If you need strictly numbers for certain fields, keep them as "number" but make sure you
-//    handle them properly where you convert strings from <input> to numbers.
+import harnessBg from "../assets/images/harness-bg.png";
+import ProjectCarousel from "../components/ProjectCarousel";
+import TopMenu from "../components/TopMenu";
+
 interface IFollowCostFields {
   Project: string;
   Area: string;
-  Followupcost_x002f_BudgetPA: number; // adjust if you allow strings
+  Followupcost_x002f_BudgetPA: number;
   InitiationReasons: string;
   BucketID: string;
-  Date: string; // e.g., "YYYY-MM-DD"
+  Date: string;
   BucketResponsible: string;
   Postname_x002f_ID: string;
 }
 
-// Each item returned by Graph
 interface IFollowCostKPIItem {
   id: string;
   fields: IFollowCostFields;
 }
 
-// Inline editing row structure
 interface IEditorRow {
   isEditing: boolean;
   draft: IFollowCostFields;
@@ -37,18 +35,18 @@ const LISTS_CONFIG_KEY = "cmConfigLists";
 const FollowCostKPIEditor: React.FC = () => {
   const [siteId, setSiteId] = useState("");
   const [listId, setListId] = useState("");
+  const [allItems, setAllItems] = useState<IFollowCostKPIItem[]>([]);
   const [items, setItems] = useState<IFollowCostKPIItem[]>([]);
   const [editorState, setEditorState] = useState<Record<string, IEditorRow>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string>("");
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   const navigate = useNavigate();
-
-  // Load site configs
+  // Load site ID and list ID from localStorage
   useEffect(() => {
     const raw = localStorage.getItem(LISTS_CONFIG_KEY);
     if (raw) {
@@ -62,31 +60,23 @@ const FollowCostKPIEditor: React.FC = () => {
     }
   }, []);
 
-  // Load items from the "FollowCostKPI" list
+  // Fetch all items from the SharePoint list
   useEffect(() => {
     if (!siteId || !listId) return;
 
     async function loadItems() {
       setLoading(true);
       setError(null);
-
       try {
         const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
-        if (!token) {
-          throw new Error("Could not get access token.");
-        }
-
         const response = await axios.get(
           `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        setItems(response.data.value || []);
+        setAllItems(response.data.value || []);
       } catch (err: any) {
         console.error("Error loading FollowCostKPI items:", err);
-        setError(err.message || "Failed to load FollowCostKPI items.");
+        setError(err.message || "Failed to load items.");
       } finally {
         setLoading(false);
       }
@@ -95,7 +85,13 @@ const FollowCostKPIEditor: React.FC = () => {
     loadItems();
   }, [siteId, listId]);
 
-  // Enter edit mode
+  // Filter items when the selected project changes
+  useEffect(() => {
+    const filtered = allItems.filter((item) => item.fields.Project === selectedProject);
+    setItems(filtered);
+    setCurrentPage(1);
+  }, [selectedProject, allItems]);
+  // Enter edit mode for a row
   const handleRowDoubleClick = (item: IFollowCostKPIItem) => {
     setEditorState((prev) => ({
       ...prev,
@@ -106,110 +102,7 @@ const FollowCostKPIEditor: React.FC = () => {
     }));
   };
 
-  // Cancel edit
-  const handleCancel = (itemId: string) => {
-    setEditorState((prev) => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], isEditing: false },
-    }));
-  };
-
-  // ★ 2) Save changes: Build a Partial<IFollowCostFields> to keep TS from complaining.
-  const handleSave = async (itemId: string) => {
-  const rowState = editorState[itemId];
-  if (!rowState) return;
-
-  try {
-    const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
-    if (!token) throw new Error("Could not get access token.");
-
-    const allowedFields: (keyof IFollowCostFields)[] = [
-      "Project",
-      "Area",
-      "Followupcost_x002f_BudgetPA",
-      "InitiationReasons",
-      "BucketID",
-      "Date",
-      "BucketResponsible",
-      "Postname_x002f_ID",
-    ];
-
-    const rawDraft = rowState.draft;
-
-    const updatedFields = allowedFields.reduce((acc, field) => {
-      const value = rawDraft[field];
-      if (value !== undefined) {
-        (acc as any)[field] = value;
-      }
-      return acc;
-    }, {} as Partial<IFollowCostFields>);
-
-    // Ensure only YYYY-MM-DD for date
-    if (updatedFields.Date && updatedFields.Date.includes("T")) {
-      updatedFields.Date = updatedFields.Date.substring(0, 10);
-    }
-
-    // Send PATCH request to update item
-    await axios.patch(
-      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items/${itemId}/fields`,
-      updatedFields,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    // Update local state
-    setItems((prev) =>
-      prev.map((itm) =>
-        itm.id === itemId
-          ? { ...itm, fields: { ...itm.fields, ...updatedFields } }
-          : itm
-      )
-    );
-
-    // Exit edit mode
-    setEditorState((prev) => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], isEditing: false },
-    }));
-  } catch (err: any) {
-    alert("Error saving changes: " + (err.response?.data?.error?.message || err.message));
-  }
-};
-
-
-
-  // Delete item
-  const handleDelete = async (itemId: string) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
-
-    try {
-      const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
-      if (!token) throw new Error("Could not get access token.");
-
-      await axios.delete(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items/${itemId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Remove from local state
-      setItems((prev) => prev.filter((itm) => itm.id !== itemId));
-      setEditorState((prev) => {
-        const newState = { ...prev };
-        delete newState[itemId];
-        return newState;
-      });
-    } catch (err: any) {
-      alert("Error deleting item: " + (err.response?.data?.error?.message || err.message));
-    }
-  };
-
-  // Handle field changes while editing
+  // Handle input changes while editing
   const handleEditFieldChange = (
     itemId: string,
     field: keyof IFollowCostFields,
@@ -225,8 +118,6 @@ const FollowCostKPIEditor: React.FC = () => {
           ...row,
           draft: {
             ...row.draft,
-            // If you want certain fields to always be numbers, parse them here:
-            // [field]: typeof value === "string" ? parseFloat(value) : value,
             [field]: value,
           },
         },
@@ -234,7 +125,99 @@ const FollowCostKPIEditor: React.FC = () => {
     });
   };
 
-  // Pagination
+  // Cancel editing for a row
+  const handleCancel = (itemId: string) => {
+    setEditorState((prev) => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], isEditing: false },
+    }));
+  };
+
+  // Save edits
+  const handleSave = async (itemId: string) => {
+    const rowState = editorState[itemId];
+    if (!rowState) return;
+
+    try {
+      const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
+      if (!token) throw new Error("Could not get access token.");
+
+      const allowedFields: (keyof IFollowCostFields)[] = [
+        "Project",
+        "Area",
+        "Followupcost_x002f_BudgetPA",
+        "InitiationReasons",
+        "BucketID",
+        "Date",
+        "BucketResponsible",
+        "Postname_x002f_ID",
+      ];
+
+      const rawDraft = rowState.draft;
+      const updatedFields = allowedFields.reduce((acc, field) => {
+        const value = rawDraft[field];
+        if (value !== undefined) {
+          (acc as any)[field] = value;
+        }
+        return acc;
+      }, {} as Partial<IFollowCostFields>);
+
+      if (updatedFields.Date?.includes("T")) {
+        updatedFields.Date = updatedFields.Date.substring(0, 10);
+      }
+
+      await axios.patch(
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items/${itemId}/fields`,
+        updatedFields,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setItems((prev) =>
+        prev.map((itm) =>
+          itm.id === itemId ? { ...itm, fields: { ...itm.fields, ...updatedFields } } : itm
+        )
+      );
+
+      setEditorState((prev) => ({
+        ...prev,
+        [itemId]: { ...prev[itemId], isEditing: false },
+      }));
+    } catch (err: any) {
+      alert("Error saving changes: " + (err.response?.data?.error?.message || err.message));
+    }
+  };
+
+  // Delete a row
+  const handleDelete = async (itemId: string) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
+
+    try {
+      const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
+      if (!token) throw new Error("Could not get access token.");
+
+      await axios.delete(
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items/${itemId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setItems((prev) => prev.filter((itm) => itm.id !== itemId));
+      setEditorState((prev) => {
+        const newState = { ...prev };
+        delete newState[itemId];
+        return newState;
+      });
+    } catch (err: any) {
+      alert("Error deleting item: " + (err.response?.data?.error?.message || err.message));
+    }
+  };
+  // Pagination calculations
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedItems = items.slice(startIndex, endIndex);
@@ -245,28 +228,33 @@ const FollowCostKPIEditor: React.FC = () => {
       className="relative w-full min-h-screen bg-cover bg-center text-white"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
-      {/* Dark overlay */}
+      {/* Background Overlay */}
       <div className="absolute inset-0 z-10 pointer-events-none" />
 
       {/* Top bar */}
       <div className="relative z-20 max-w-6xl mx-auto p-4 flex items-center space-x-4">
+        <TopMenu />
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition"
+          className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
         >
           ← Back
         </button>
       </div>
 
-      {/* Content container */}
+      {/* Main content */}
       <div className="relative z-20 max-w-6xl mx-auto px-4 pb-8">
-        <h1 className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition">FollowCost KPI Editor</h1>
+        <h1 className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition">
+          FollowCost KPI Editor
+        </h1>
 
-        <div className="bg-white/10 border border-white/20 backdrop-blur-md p-8 rounded-xl shadow-xl">
+        {/* Project selection */}
+        <ProjectCarousel
+          projects={(JSON.parse(localStorage.getItem(LISTS_CONFIG_KEY) || '{}').projects || [])}
+          selectedProject={selectedProject}
+          onProjectSelect={setSelectedProject}
+        />
+        <div className="bg-white/10 border border-white/20 backdrop-blur-md p-8 rounded-xl shadow-xl mt-4">
           {loading && <p>Loading items...</p>}
           {error && <p className="text-red-400">{error}</p>}
           {!loading && !error && items.length === 0 && <p>No FollowCostKPI items found.</p>}
@@ -305,9 +293,7 @@ const FollowCostKPIEditor: React.FC = () => {
                                 e.stopPropagation();
                                 handleSave(itm.id);
                               }}
-                              className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition"
+                              className="px-2 py-1 bg-green-500/70 hover:bg-green-500 rounded text-sm"
                             >
                               Save
                             </button>
@@ -316,9 +302,7 @@ const FollowCostKPIEditor: React.FC = () => {
                                 e.stopPropagation();
                                 handleCancel(itm.id);
                               }}
-                              className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition"
+                              className="ml-2 px-2 py-1 bg-gray-500/70 hover:bg-gray-500 rounded text-sm"
                             >
                               Cancel
                             </button>
@@ -330,9 +314,7 @@ const FollowCostKPIEditor: React.FC = () => {
                                 e.stopPropagation();
                                 handleRowDoubleClick(itm);
                               }}
-                              className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition"
+                              className="px-2 py-1 bg-blue-500/70 hover:bg-blue-500 rounded text-sm"
                             >
                               Edit
                             </button>
@@ -341,16 +323,13 @@ const FollowCostKPIEditor: React.FC = () => {
                                 e.stopPropagation();
                                 handleDelete(itm.id);
                               }}
-                              className="flex items-center space-x-2
-                     px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur
-                     rounded-2xl shadow-md text-white text-sm transition"
+                              className="ml-2 px-2 py-1 bg-red-500/70 hover:bg-red-500 rounded text-sm"
                             >
                               Delete
                             </button>
                           </>
                         )}
                       </td>
-
                       {/* Project */}
                       <td className="p-2 border border-white/20">
                         {isEditing ? (
@@ -480,10 +459,9 @@ const FollowCostKPIEditor: React.FC = () => {
               </tbody>
             </table>
           )}
-
           {/* Pagination Controls */}
           {pageCount > 1 && (
-            <div className="flex mt-4 space-x-2">
+            <div className="flex mt-4 space-x-2 justify-center">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}

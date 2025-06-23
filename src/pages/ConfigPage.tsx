@@ -11,6 +11,7 @@ import { AVAILABLE_PROJECTS } from "../constants/projects";
 import { msalInstance } from "../auth/msalInstance";
 import { getAccessToken } from "../auth/getToken";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
+import TopMenu from "../components/TopMenu";
 
 
 const ConfigPage: React.FC = () => {
@@ -128,7 +129,7 @@ const handleSaveCarName = async () => {
       listsResp.data.value.forEach((list: any) => {
         const match = regex.exec(list.displayName);
         if (!match) return;
-        const [_, rawProjectName, phase, isExtra] = match;
+        const [, rawProjectName, phase, isExtra] = match;
         const projectId = rawProjectName.toLowerCase();
         const existing = newProjectsMap[projectId] || projects.find(p => p.id === projectId);
 
@@ -289,6 +290,7 @@ const handleSaveCarName = async () => {
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
       <div className="absolute inset-0 bg-opacity-50" />
+      <TopMenu />
       <button
         onClick={() => navigate("/tool-selection")}
         className="absolute top-4 left-4 z-20 px-3 py-2 bg-white/30 rounded text-white hover:bg-white/50 transition"
