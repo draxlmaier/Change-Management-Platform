@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.bed97a85.css",
-    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.8021ce5c.js",
+    "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.520e43cd.css",
+    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.5311e52c.js",
     "static/media/harness-bg.png": "/Change-Management-Platform-Web-Portal/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "/Change-Management-Platform-Web-Portal/static/media/harness.7c82532dfe02a78cb694.png",
     "static/media/uploadIcon.png": "/Change-Management-Platform-Web-Portal/static/media/uploadIcon.37e055f1ce5f36ba90ba.png",
@@ -10,12 +10,15 @@
     "static/media/feasability2.png": "/Change-Management-Platform-Web-Portal/static/media/feasability2.6fbd2fdcd1d23f0683fb.png",
     "static/media/cmplogoofficialnotext.png": "/Change-Management-Platform-Web-Portal/static/media/cmplogoofficialnotext.acd299c5063e04bfcff9.png",
     "static/media/other.png": "/Change-Management-Platform-Web-Portal/static/media/other.a60036d39c463c241a62.png",
+    "static/media/innenraum.png": "/Change-Management-Platform-Web-Portal/static/media/innenraum.8da5b38efc8c3839266c.png",
     "static/media/dashboard.png": "/Change-Management-Platform-Web-Portal/static/media/dashboard.95709c27ab9ee1d49647.png",
     "static/media/dataToolIcon.png": "/Change-Management-Platform-Web-Portal/static/media/dataToolIcon.a77be357c2de9d1189a4.png",
     "static/media/kpis.png": "/Change-Management-Platform-Web-Portal/static/media/kpis.611cf6d21e0d0f4b7627.png",
+    "static/media/mr.png": "/Change-Management-Platform-Web-Portal/static/media/mr.52a40c1d0df893c723b3.png",
     "static/media/login-bg.png": "/Change-Management-Platform-Web-Portal/static/media/login-bg.fedfb04e2a4f102295cc.png",
+    "static/media/autarke.png": "/Change-Management-Platform-Web-Portal/static/media/autarke.033ef379f0d9c48368c3.png",
+    "static/media/cockpit.png": "/Change-Management-Platform-Web-Portal/static/media/cockpit.b7186115cf29798a8f73.png",
     "static/media/draxlmaier-group.png": "/Change-Management-Platform-Web-Portal/static/media/draxlmaier-group.4ee830f4200dc61defe7.png",
-    "static/media/settings-icon.png": "/Change-Management-Platform-Web-Portal/static/media/settings-icon.cbb6a8636d24f42ded43.png",
     "static/media/rivian.png": "/Change-Management-Platform-Web-Portal/static/media/rivian.852146b667ea8d1b9a11.png",
     "static/media/draxlmaeir slogan.png": "/Change-Management-Platform-Web-Portal/static/media/draxlmaeir slogan.0cccfa27b5ec4db61c18.png",
     "static/media/landrover.png": "/Change-Management-Platform-Web-Portal/static/media/landrover.41f514e6cee4b8c0fca4.png",
@@ -31,11 +34,11 @@
     "static/media/Porsche.png": "/Change-Management-Platform-Web-Portal/static/media/Porsche.0c67baebd1b6381fdf51.png",
     "static/media/revicons.woff": "/Change-Management-Platform-Web-Portal/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "/Change-Management-Platform-Web-Portal/index.html",
-    "main.bed97a85.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.bed97a85.css.map",
-    "main.8021ce5c.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.8021ce5c.js.map"
+    "main.520e43cd.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.520e43cd.css.map",
+    "main.5311e52c.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.5311e52c.js.map"
   },
   "entrypoints": [
-    "static/css/main.bed97a85.css",
-    "static/js/main.8021ce5c.js"
+    "static/css/main.520e43cd.css",
+    "static/js/main.5311e52c.js"
   ]
 }
