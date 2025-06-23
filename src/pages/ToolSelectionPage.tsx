@@ -15,6 +15,7 @@ import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
 import { db } from "./db";
 import { CarImage } from "./types";
+import Footer from "../components/Footer";
 
 interface IProject {
   id: string;
@@ -158,6 +159,7 @@ const ToolSelectionPage: React.FC = () => {
     </Carousel>
   </div>
 </main>
+<Footer />
     </div>
   );
 };

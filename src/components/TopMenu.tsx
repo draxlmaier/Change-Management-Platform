@@ -37,7 +37,7 @@ const TopMenu: React.FC = () => {
           </button>
         </div>
         <nav className="flex flex-col px-4 py-4 space-y-4 text-gray-700">
-          <Link to="/tool-selection" onClick={() => setIsOpen(false)}>Tool Selection</Link>
+          <Link to="/tool-selection" onClick={() => setIsOpen(false)}>Home Page</Link>
           <Link to="/data-extraction" onClick={() => setIsOpen(false)}>Data Extraction</Link>
           <Link to="/config" onClick={() => setIsOpen(false)}>Configuration</Link>
           <Link to="/project-selection" onClick={() => setIsOpen(false)}>Project Selection</Link>

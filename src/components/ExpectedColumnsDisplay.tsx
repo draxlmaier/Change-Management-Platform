@@ -1,48 +1,93 @@
-// src/components/ExpectedColumnsDisplay.tsx
+import React, { useState } from "react";
 
-import React from "react";
+interface Section {
+  title: string;
+  children: (string | Section)[];
+}
 
-const expectedHeadersRaw = [
-  "Status - Process information",
-  "OEM - Process information",
-  "Carline - Process information",
-  "Constructed space - Process information",
-  "Realization planned - Process information",
-  "Approx. realization date - Process information",
-  "Start date - Process information",
-  "End date - Process information",
-  "Process number - Process information",
-  "OEM-Offer-/ Change number - Process information",
-  "Reason for changes - Process information",
-  "Start date - Phase4",
-  "End date - Phase4",
-  "Start date - PAV - Phase4",
-  "End date - PAV - Phase4",
-  "Estimated costs - PAV - Phase4",
-  "Tools / utilities available - PAV - Phase4",
-  "Process - FMEA - PAV - Phase4",
-  "PLP Relevant - PAV - Phase4",
-  "Risk level actual - PAV - Phase4",
-  "Start date - Phase8",
-  "End date - Phase8",
-  "Name - Change packages - Phase8"
-];
+const structure: Section = {
+  title: "Process information",
+  children: [
+    "Status",
+    "OEM",
+    "Carline",
+    "Constructed space",
+    "Realization planned",
+    "Approx. realization date",
+    "Start date",
+    "End date",
+    "Process number",
+    "OEM-Offer-/ Change number",
+    "Reason for changes",
+    {
+      title: "Phase4",
+      children: [
+        "Start date",
+        "End date",
+        {
+          title: "PAV",
+          children: [
+            "Start date",
+            "End date",
+            "Estimated costs",
+            "Tools / utilities available",
+            "Process - FMEA",
+            "PLP Relevant",
+            "Risk level actual",
+          ],
+        },
+      ],
+    },
+    {
+      title: "Phase8",
+      children: [
+        "Start date",
+        "End date",
+        {
+          title: "Change packages",
+          children: ["Name"],
+        },
+      ],
+    },
+  ],
+};
+
+const CollapsibleSection: React.FC<{ section: Section; level?: number }> = ({ section, level = 0 }) => {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className={`pl-${level * 4} mb-2`}>
+      <div
+        className="cursor-pointer font-semibold text-[#00f0cc] hover:underline"
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        {open ? "▼" : "▶"} {section.title}
+      </div>
+      {open && (
+        <div className="mt-2">
+          {section.children.map((child, idx) => {
+            if (typeof child === "string") {
+              return (
+                <div key={idx} className="ml-4 bg-white text-black rounded px-3 py-1 mb-1 shadow">
+                  {child}
+                </div>
+              );
+            }
+            return <CollapsibleSection key={idx} section={child} level={level + 1} />;
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ExpectedColumnsDisplay: React.FC = () => {
   return (
-    <div className="bg-[#014e56] p-6 rounded-lg shadow-lg mb-6">
-      <h3 className="text-xl font-semibold mb-4 text-[#00f0cc]">Required Columns in Excel File</h3>
+    <div className="bg-white/10 border border-white/20 backdrop-blur-md p-6 rounded-xl shadow-xl mb-6 text-white">
+      <h3 className="text-xl font-bold mb-4 text-[#00f0cc]">Required Columns in Excel File</h3>
       <p className="text-sm mb-4 text-white/80">
         Please make sure your Excel file includes the following column headers exactly as shown below:
       </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {expectedHeadersRaw.map((header, idx) => (
-          <div key={idx} className="bg-white text-black rounded p-2 shadow">
-            {header}
-          </div>
-        ))}
-      </div>
+      <CollapsibleSection section={structure} />
     </div>
   );
 };

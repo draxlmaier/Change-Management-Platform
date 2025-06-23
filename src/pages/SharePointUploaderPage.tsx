@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import projectsIcon from "../assets/images/projectsIcon.png";
 import EnsureSharePointLists from "../components/EnsureSharePointLists";
 import harnessBg from "../assets/images/harness-bg.png";
+import TopMenu from "../components/TopMenu";
 
 const SharePointUploaderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,6 +43,19 @@ const SharePointUploaderPage: React.FC = () => {
       <div className="absolute inset-0 z-10 pointer-events-none" />
 
       <div className="relative z-20 max-w-6xl mx-auto py-10 px-6 space-y-8">
+        {/* Top Navigation Row */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigate("/tool-selection")}
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+            >
+              ← Back
+            </button>
+          </div>
+          <TopMenu />
+        </div>
+
         {/* Title */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-[#00f0cc]">Excel → SharePoint List Converter</h2>
