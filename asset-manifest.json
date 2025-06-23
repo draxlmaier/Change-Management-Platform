@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.520e43cd.css",
-    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.5311e52c.js",
+    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.fc50aeaa.js",
     "static/media/harness-bg.png": "/Change-Management-Platform-Web-Portal/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "/Change-Management-Platform-Web-Portal/static/media/harness.7c82532dfe02a78cb694.png",
     "static/media/uploadIcon.png": "/Change-Management-Platform-Web-Portal/static/media/uploadIcon.37e055f1ce5f36ba90ba.png",
@@ -35,10 +35,10 @@
     "static/media/revicons.woff": "/Change-Management-Platform-Web-Portal/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "/Change-Management-Platform-Web-Portal/index.html",
     "main.520e43cd.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.520e43cd.css.map",
-    "main.5311e52c.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.5311e52c.js.map"
+    "main.fc50aeaa.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.fc50aeaa.js.map"
   },
   "entrypoints": [
     "static/css/main.520e43cd.css",
-    "static/js/main.5311e52c.js"
+    "static/js/main.fc50aeaa.js"
   ]
 }
