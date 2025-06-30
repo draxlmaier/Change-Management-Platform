@@ -33,6 +33,8 @@ interface IScrapItemFields {
   processyear: string;
   SheetName: string;
   Scrap: string;
+  OEMOfferChangenumber: string;
+  Actualscrap : string
 }
 
 interface IScrapItem {
@@ -179,7 +181,7 @@ const ScrapFollowingSection: React.FC = () => {
       </div>
 
       <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
-        <h2 className="text-2xl font-semibold mb-4 text-white/80">Scrap Following</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-white/80"> Scrap </h2>
 
         {projects.length > 0 ? (
           <ProjectCarousel
@@ -243,7 +245,9 @@ const ScrapFollowingSection: React.FC = () => {
                     <th className="p-2 border">✓</th>
                     <th className="p-2 border">Processnumber</th>
                     <th className="p-2 border">SheetName</th>
-                    <th className="p-2 border">Scrap</th>
+                    <th className="p-2 border">OEM Offer Change number</th>
+                    <th className="p-2 border">Scrap </th>
+                    <th className="p-2 border">Scrap Value in € </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -260,7 +264,9 @@ const ScrapFollowingSection: React.FC = () => {
                         </td>
                         <td className="p-2 border">{item.fields.Processnumber}</td>
                         <td className="p-2 border">{item.fields.SheetName}</td>
+                        <td className="p-2 border">{item.fields.OEMOfferChangenumber}</td>
                         <td className="p-2 border">{item.fields.Scrap || ""}</td>
+                        <td className="p-2 border">{item.fields.Actualscrap}</td>
                       </tr>
                     );
                   })}

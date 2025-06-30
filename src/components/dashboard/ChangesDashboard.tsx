@@ -502,7 +502,6 @@ export const ChangesDashboard: React.FC = () => {
               <option value="4">Q4</option>
             </select>
           )}
-
           {/* Month */}
           {(filterMode === "month" ||
             filterMode === "day" ||
@@ -592,7 +591,7 @@ export const ChangesDashboard: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setSelectedApi(tab.key as any)}
-              className={`flex flex-col items-center justify-center w-48 h-32 rounded-xl font-semibold text-lg transition 
+              className={`flex flex-col items-center justify-center w-48 h-49 rounded-xl font-semibold text-lg transition 
                 shadow
                 ${selectedApi === tab.key
                   ? "bg-yellow-400 text-black shadow-lg"
@@ -600,7 +599,7 @@ export const ChangesDashboard: React.FC = () => {
                 }`}
               style={{ minHeight: "120px" }}
             >
-              <img src={tab.icon} alt={tab.label} className="w-14 h-14 object-contain mb-2" />
+              <img src={tab.icon} alt={tab.label} className="w-24 h-24 object-contain mb-2" />
               <span className="text-center leading-tight">{tab.label}</span>
             </button>
           ))}

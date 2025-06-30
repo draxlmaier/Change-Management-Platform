@@ -32,7 +32,7 @@ const DRXKPIInput: React.FC = () => {
 
       {/* KPI Input Section */}
       <KPIInputWrapper
-        title="Engineering DRX Ideas Tracking"
+        title="Engineering DRX Ideas "
         fields={[
           { label: "DRX Idea submitted Idea", key: "DRXIdeasubmittedIdea" },
           { label: "DRX Idea submitted Idea Goal", key: "DRXIdeasubmittedIdeaGoal" },

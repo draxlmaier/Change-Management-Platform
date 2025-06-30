@@ -117,7 +117,7 @@ const BudgetInputWrapper: React.FC = () => {
   return (
     <div className="relative w-full min-h-screen bg-cover bg-center text-white">
       <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
-        <h2 className="text-2xl font-semibold mb-4 text-white/80">Budget KPIs</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-white/80"> Budget </h2>
         {projects.length > 0 && (
           <ProjectCarousel
             projects={projects}

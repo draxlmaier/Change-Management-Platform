@@ -135,7 +135,7 @@ const FollowUpCostInput: React.FC = () => {
 
       {/* KPI Form Card */}
       <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
-        <h2 className="text-2xl font-semibold mb-4 text-white/80">Follow-up KPI Entry</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-white/80"> Follow-up Cost </h2>
 
         <div className="mb-6 flex space-x-4 justify-center">
           <button

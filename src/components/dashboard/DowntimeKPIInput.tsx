@@ -34,7 +34,7 @@ const DowntimeKPIInput: React.FC = () => {
 
       {/* KPI Input Section */}
       <KPIInputWrapper
-        title="Downtime KPIs"
+        title=" Downtime "
         fields={[
           { label: "Downtime (minutes)", key: "downtime" },
           { label: "Production Minutes", key: "productionminutes" },

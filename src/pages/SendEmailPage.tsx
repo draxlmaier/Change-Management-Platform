@@ -316,138 +316,131 @@ const SendEmailPage: React.FC = () => {
 
   return (
     <div
-      className="relative w-full min-h-screen bg-cover bg-center"
+      className="relative w-full min-h-screen bg-cover bg-center text-white"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
       <TopMenu />
+      <div className="relative z-20 max-w-5xl mx-auto mt-8 p-8 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
 
-      {/* Header Buttons */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4 px-8 pt-6">
-        <button
-          onClick={() =>
-            navigate(`/details/${projectKey}/Feasibility/${itemId}`)
-          }
-          className="px-4 py-2 bg-white/20 text-white rounded hover:bg-white/30"
+        {/* Title */}
+        <h2 className="text-2xl font-semibold mb-4 text-white/90">Send Email for Change Process</h2>
+        
+        {/* Info Row */}
+        <div className="flex flex-wrap gap-6 mb-6">
+          <div className="font-medium">Process Number: <span className="font-bold">{processnumber}</span></div>
+          <div className="font-medium">Carline: <span className="font-bold">{carline}</span></div>
+          <div className="font-medium">Area: <span className="font-bold">{area}</span></div>
+          <div className="font-medium">Logged in as: <span className="font-bold">{userEmail}</span></div>
+        </div>
+
+        {/* Header Buttons */}
+        <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
+          <button
+            onClick={() => navigate(`/details/${projectKey}/Feasibility/${itemId}`)}
+            className="px-4 py-2 bg-white/20 text-white rounded hover:bg-white/30 transition shadow"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={listLast3Emails}
+            className="px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 transition shadow"
+          >
+            Debug: List Last 3 Emails
+          </button>
+        </div>
+
+        {/* Table Header Row */}
+        <div
+          className="
+            grid grid-cols-1
+            md:grid-cols-[2fr_1fr_1fr_3fr_2fr_2fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]
+            gap-4 px-4 py-2 font-semibold
+            bg-black/30 rounded-xl shadow-lg
+          "
         >
-          ← Back
-        </button>
-        <button
-          onClick={listLast3Emails}
-          className="px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700"
-        >
-          Debug: List Last 3 Emails
-        </button>
-      </div>
+          <div>Question</div>
+          <div>Action</div>
+          <div>Responsable Email</div>
+          <div>Responsible’s Role</div>
+          <div>Response</div>
+          <div>Interval</div>
+          <div>Unit</div>
+          <div>Last Sent</div>
+          <div>Response Received</div>
+          <div>Last Checked</div>
+          <div>Edit</div>
+          <div>Check</div>
+        </div>
 
-      {/* Interactive Email‐Sending UI */}
-      <div className="relative z-20 w-full p-8 space-y-6 text-white max-w-6xl mx-auto">
-        <p className="text-lg">
-          Process Number: <strong>{processnumber}</strong>
-        </p>
-        <p className="text-lg">
-          Carline: <strong>{carline}</strong>
-        </p>
-        <p className="text-lg">
-          Area: <strong>{area}</strong>
-        </p>
-        <p className="text-lg">
-          Logged in as: <strong>{userEmail}</strong>
-        </p>
-
-        {/* … */}
-{/* header row */}
-<div
-  className="
-    mt-6 grid grid-cols-1
-    md:grid-cols-[2fr_1fr_1fr_3fr_2fr_2fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]
-    gap-4 px-4 py-2 font-semibold
-    bg-black/30 rounded-xl shadow-lg
-  "
->
-  <div>Question</div>
-  <div>Action</div>
-  <div>Responsable Email</div>
-  <div>Responsible’s Role</div>
-  <div>Response</div>
-  <div>Interval</div>
-  <div>Unit</div>
-  <div>Last Sent</div>
-  <div>Response Received</div>
-  <div>Last Checked</div>
-  <div>Edit</div>
-  <div>Check</div>
-</div>
-
-{/* data rows */}
-{questions.map((q) => (
-  <div
-    key={q.id}
-    className="
-      grid grid-cols-1
-      md:grid-cols-[2fr_1fr_1fr_3fr_2fr_2fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]
-      gap-4 bg-white/20 backdrop-blur-md
-      rounded-2xl shadow-md p-4 text-white
-      hover:shadow-xl transition
-    "
-  >
-    <div>{q.description || "–"}</div>  {/* ← maps to Question */}
-    <div>{q.action || "–"}</div>       {/* ← maps to Action */}
-    <div>{q.responsibleEmail || "–"}</div>
-    <div>{q.responsibleRole || "–"}</div>
-    <div className="flex flex-col gap-1">
-      {["Oui","Non"].map((opt) => (
-        <label key={opt} className="inline-flex items-center space-x-1">
-          <input
-            type="radio"
-            name={`trigger-${q.id}`}
-            value={opt}
-            checked={q.triggerChoice===opt}
-            onChange={async ()=>{
-              setQuestions((curr)=>
-                curr.map(x=> x.id===q.id?{...x,triggerChoice:opt}:x)
-              );
-              if(opt===q.triggerOn) await sendMail(q);
-            }}
-          />
-          <span>{opt}</span>
-        </label>
-      ))}
-    </div>
-    <div>{q.sendIntervalValue}</div>
-    <div>{q.sendIntervalUnit}</div>
-    <div title={q.lastSent||""}>
-      {q.lastSent? new Date(q.lastSent).toLocaleString():"–"}
-    </div>
-    <div className="flex items-center space-x-1">
-      <span className={`text-sm ${q.responseReceived?"text-green-300":"text-yellow-200"}`}>
-        {q.responseReceived?"Yes":"No"}
-      </span>
-      <span className="text-xl">{q.responseReceived?"🟢":"🟡"}</span>
-    </div>
-    <div title={q.lastChecked||""}>
-      {q.lastChecked? new Date(q.lastChecked).toLocaleString():"–"}
-    </div>
-
-    <div>
-      <button
-        onClick={()=>navigate(
-          `/send-email/${projectKey}/implementation/${itemId}/edit-question/${q.id}`
-        )}
-        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 mb-2"
-      >
-        Edit
-      </button>
-    </div>
-    <div>
-      <button
-        onClick={()=>pollInboxForQuestion(q)}
-        className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700"
-      >
-        Check ↻
-      </button>
-    </div>
-  </div>
-))}
+        {/* Data Rows */}
+        {questions.map((q) => (
+          <div
+            key={q.id}
+            className="
+              grid grid-cols-1
+              md:grid-cols-[2fr_1fr_1fr_3fr_2fr_2fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]
+              gap-4 bg-white/20 backdrop-blur-md
+              rounded-2xl shadow-md p-4 text-white
+              hover:shadow-xl transition mt-2
+            "
+          >
+            <div>{q.description || "–"}</div>
+            <div>{q.action || "–"}</div>
+            <div>{q.responsibleEmail || "–"}</div>
+            <div>{q.responsibleRole || "–"}</div>
+            <div className="flex flex-col gap-1">
+              {["Oui","Non"].map((opt) => (
+                <label key={opt} className="inline-flex items-center space-x-1">
+                  <input
+                    type="radio"
+                    name={`trigger-${q.id}`}
+                    value={opt}
+                    checked={q.triggerChoice===opt}
+                    onChange={async ()=>{
+                      setQuestions((curr)=>
+                        curr.map(x=> x.id===q.id?{...x,triggerChoice:opt}:x)
+                      );
+                      if(opt===q.triggerOn) await sendMail(q);
+                    }}
+                  />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+            <div>{q.sendIntervalValue}</div>
+            <div>{q.sendIntervalUnit}</div>
+            <div title={q.lastSent||""}>
+              {q.lastSent? new Date(q.lastSent).toLocaleString():"–"}
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className={`text-sm ${q.responseReceived?"text-green-300":"text-yellow-200"}`}>
+                {q.responseReceived?"Yes":"No"}
+              </span>
+              <span className="text-xl">{q.responseReceived?"🟢":"🟡"}</span>
+            </div>
+            <div title={q.lastChecked||""}>
+              {q.lastChecked? new Date(q.lastChecked).toLocaleString():"–"}
+            </div>
+            <div>
+              <button
+                onClick={()=>navigate(
+                  `/send-email/${projectKey}/implementation/${itemId}/edit-question/${q.id}`
+                )}
+                className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 shadow mb-2"
+              >
+                Edit
+              </button>
+            </div>
+            <div>
+              <button
+                onClick={()=>pollInboxForQuestion(q)}
+                className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 shadow"
+              >
+                Check ↻
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

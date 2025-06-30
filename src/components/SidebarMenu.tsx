@@ -39,7 +39,7 @@ const SidebarMenu: React.FC = () => {
                 }`}
               style={{ minHeight: "110px" }}
             >
-              <img src={icon} alt={label} className="w-14 h-14 object-contain mb-1" />
+              <img src={icon} alt={label} className="w-20 h-20 object-contain" />
               <span className="text-center leading-tight">{label}</span>
             </Link>
           );

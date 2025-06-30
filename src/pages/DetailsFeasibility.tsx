@@ -39,9 +39,9 @@ export default function DetailsFeasibility() {
       { label: "PAV Phase4 Risk level actual", key: "RisklevelactualPAVPhase4" },
 
       // Phase 4 additional
-      { label: "Estimated Scrap", key: "Estimatedscrap" },
-      { label: "Estimated Cost", key: "Estimatedcost" },
-      { label: "Estimated Downtime", key: "Estimateddowntime" },
+      { label: "Estimated Scrap in € ", key: "Estimatedscrap" }, 
+      { label: "Estimated Cost in € ", key: "Estimatedcost" },
+      { label: "Estimated Downtime in minutes ", key: "Estimateddowntime" },
       { label: "Estimated Change Date", key: "estimatedchangedate" },
     ],
     startEndWorkingGroup: [], // moved all relevant fields to above sections
