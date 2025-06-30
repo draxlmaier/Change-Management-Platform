@@ -1,5 +1,3 @@
-// File: src/pages/DRXKPIInput.tsx
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import KPIInputWrapper from "../../pages/shared/KPIInputWrapper";
@@ -39,10 +37,10 @@ const DRXKPIInput: React.FC = () => {
           { label: "DRX Idea submitted Idea", key: "DRXIdeasubmittedIdea" },
           { label: "DRX Idea submitted Idea Goal", key: "DRXIdeasubmittedIdeaGoal" },
         ]}
+        fixedProject="draxlmaeir"    // <-- Add this line!
       />
     </div>
   );
 };
 
 export default DRXKPIInput;
-

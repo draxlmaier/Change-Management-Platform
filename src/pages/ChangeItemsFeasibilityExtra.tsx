@@ -12,7 +12,6 @@ interface IProject {
   displayName: string;
   logo?: string;
   mapping: {
-    feasibility: string;
     implementation: string;
     feasibilityExtra?: string;
     implementationExtra?: string;

@@ -27,7 +27,6 @@ interface IProject {
   displayName: string;
   logo?: string;
   mapping: {
-    feasibility: string;
     implementation: string;
     feasibilityExtra?: string;
     implementationExtra?: string;
@@ -56,7 +55,7 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   const [project, setProject] = useState<IProject | null>(null);
   const [config, setConfig] = useState<SavedConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [, setIsSaving] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editedValue, setEditedValue] = useState<string>("");
 
@@ -207,7 +206,7 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   📧 Send Email
 </button>
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(`/changes/${projectKey}/implementation`)}
         className="absolute top-4 left-4 z-20 flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
       >
         ← Back

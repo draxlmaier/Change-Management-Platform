@@ -1,15 +1,20 @@
-import React, { useState } from "react";
+import React, { useState} from "react";
 import ExcelParser from "../components/ExcelParser";
 import SiteResolver from "../components/SiteResolver";
 import SharePointUploader from "../components/SharePointUploader";
 import LogsViewer from "../components/LogsViewer";
 import ExpectedColumnsDisplay from "../components/ExpectedColumnsDisplay";
 import ColumnValidator from "../components/ColumnValidator";
+import UploadQuestionTemplates from "../components/UploadQuestionTemplates";
 import { useNavigate } from "react-router-dom";
 import projectsIcon from "../assets/images/projectsIcon.png";
 import EnsureSharePointLists from "../components/EnsureSharePointLists";
 import harnessBg from "../assets/images/harness-bg.png";
 import TopMenu from "../components/TopMenu";
+import { getAccessToken } from "../auth/getToken";
+import { msalInstance } from "../auth/msalInstance";
+import { getConfig } from "../services/configService";
+import axios from "axios";
 
 const SharePointUploaderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +29,8 @@ const SharePointUploaderPage: React.FC = () => {
   const [columnsCleaned, setColumnsCleaned] = useState<string[]>([]);
   const [columnsRaw, setColumnsRaw] = useState<string[]>([]);
   const [columnsValid, setColumnsValid] = useState(false);
+  const [, setQuestionsUploaded] = useState(false);
+  const [questionTemplatesExist, setQuestionTemplatesExist] = useState(false);
 
   const log = (msg: string) => setLogs((prev) => [...prev, msg]);
 
@@ -32,10 +39,26 @@ const SharePointUploaderPage: React.FC = () => {
     log("✅ Upload complete.");
   };
 
-  const handleSiteResolved = (id: string, resolvedUrl: string) => {
+  const handleSiteResolved = async (id: string, resolvedUrl: string) => {
     setSiteId(id);
     setSiteUrl(resolvedUrl);
     log(`✅ Using SharePoint Site ID: ${id}`);
+
+    try {
+      const token = await getAccessToken(msalInstance, ["Sites.Read.All"]);
+      const config = getConfig();
+      const questionsListId = config.questionsListId;
+
+      const res = await axios.get(
+        `https://graph.microsoft.com/v1.0/sites/${id}/lists/${questionsListId}/items?$top=1`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setQuestionTemplatesExist(res.data.value.length > 0);
+    } catch (err) {
+      log("⚠️ Unable to verify QuestionTemplates list content.");
+      setQuestionTemplatesExist(false);
+    }
   };
 
   return (
@@ -64,9 +87,29 @@ const SharePointUploaderPage: React.FC = () => {
 
         <ExpectedColumnsDisplay />
 
-        {/* Excel Upload and Parse */}
+        {/* Step 1: Ensure Lists */}
+        {siteId && <EnsureSharePointLists siteId={siteId} onLog={log} />}
+
+        {/* Step 2: Resolve Site */}
         <section className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/20">
-          <h3 className="text-xl font-semibold mb-4">1. Upload Excel File</h3>
+          <h3 className="text-xl font-semibold mb-4">2. Resolve SharePoint Site</h3>
+          <SiteResolver onResolved={handleSiteResolved} onLog={log} />
+          {!siteId && (
+            <p className="mt-2 text-sm text-yellow-100 italic">Please resolve the site before continuing.</p>
+          )}
+        </section>
+
+        {/* Step 3: Upload Question Templates */}
+        {siteId && !questionTemplatesExist && (
+          <section className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/20">
+            <h3 className="text-xl font-semibold mb-4">3. Upload Question Templates</h3>
+            <UploadQuestionTemplates siteId={siteId} onLog={log} onComplete={() => setQuestionsUploaded(true)} />
+          </section>
+        )}
+
+        {/* Step 4: Excel Upload */}
+        <section className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/20">
+          <h3 className="text-xl font-semibold mb-4">4. Upload Excel File with Changes</h3>
           <ExcelParser
             onDataParsed={(parsed, cleaned, raw) => {
               setData(parsed);
@@ -87,21 +130,10 @@ const SharePointUploaderPage: React.FC = () => {
           )}
         </section>
 
-        {/* SharePoint Site Resolver */}
-        <section className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/20">
-          <h3 className="text-xl font-semibold mb-4">2. Resolve SharePoint Site</h3>
-          <SiteResolver onResolved={handleSiteResolved} onLog={log} />
-          {!siteId && (
-            <p className="mt-2 text-sm text-yellow-100 italic">Please resolve the site before continuing.</p>
-          )}
-        </section>
-
-        {siteId && <EnsureSharePointLists siteId={siteId} onLog={log} />}
-
-        {/* Upload + Redirect Buttons */}
+        {/* Step 5: Upload to SharePoint */}
         {data.length > 0 && projectName && siteId && (
           <section className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/20">
-            <h3 className="text-xl font-semibold mb-4">3. Upload to SharePoint</h3>
+            <h3 className="text-xl font-semibold mb-4">5. Upload Changes to SharePoint</h3>
 
             {!columnsValid ? (
               <p className="text-red-400 font-medium">

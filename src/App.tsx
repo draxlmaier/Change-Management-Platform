@@ -10,8 +10,6 @@ import ChangeItemsImplementation from "./pages/ChangeItemsImplementation";
 import ChangeItemsFeasibility    from "./pages/ChangeItemsFeasibility";
 import DetailsImplementation     from "./pages/DetailsImplementation";
 import DetailsFeasibility        from "./pages/DetailsFeasibility";
-import UpdateImplementation      from "./pages/UpdateImplementation";
-import UpdateFeasibility         from "./pages/UpdateFeasibility";
 import SendEmailPage             from "./pages/SendEmailPage";
 import NotFoundPage              from "./pages/NotFoundPage";
 import KPIInputPage              from "./pages/KPIInputPage";
@@ -55,10 +53,8 @@ const App: React.FC = () => (
     <Route path="/changes/:projectKey" element={<PhaseSelectionPage />} />
     <Route path="/changes/:projectKey/implementation" element={<ChangeItemsImplementation />} />
     <Route path="/details/:projectKey/implementation/:itemId" element={<DetailsImplementation />} />
-    <Route path="/update/:projectKey/implementation/:itemId" element={<UpdateImplementation />} />
     <Route path="/changes/:projectKey/feasibility" element={<ChangeItemsFeasibility />} />
     <Route path="/details/:projectKey/feasibility/:itemId" element={<DetailsFeasibility />} />
-    <Route path="/update/:projectKey/feasibility/:itemId" element={<UpdateFeasibility />} />
     <Route path="/send-email/:projectKey/:phase/:itemId" element={<SendEmailPage />} />
 
     <Route path="/send-email/:projectKey/:phase/:itemId/add-question" element={<AddQuestionPage />} />

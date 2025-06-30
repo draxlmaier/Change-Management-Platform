@@ -97,13 +97,14 @@ const PhaseSelectionPage: React.FC = () => {
     >
       {/* back button */}
       <div className="p-4">
-        <button
-          onClick={() => navigate("/project-selection")}
-          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-        >
-          ← Back to Projects
-        </button>
-      </div>
+  <button
+    onClick={() => navigate("/project-selection")}
+    className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
+  >
+    ← Back to Projects
+  </button>
+</div>
+
 
       {/* content */}
       <div className="flex flex-col items-center justify-center text-center space-y-10 px-4">
@@ -119,47 +120,44 @@ const PhaseSelectionPage: React.FC = () => {
           Choose Phase for <span className="uppercase">{project.displayName}</span>
         </h1>
 
-        <div className="flex flex-col sm:flex-row gap-6 items-center">
-          {project.mapping.implementation && (
-          <div
-            onClick={() => navigate(`/changes/${project.id}/feasibility`)}
-            className="
-              flex flex-col items-center justify-center
-              w-56 sm:w-80
-              p-10
-              bg-[#1cb3d2]/30 
-              backdrop-blur-md
-              rounded-2xl
-              cursor-pointer
-              hover:scale-105
-              transition-transform
-            "
-          >
-            <img src={feasibilityBtn} alt="Feasibility" className="h-24 sm:h-32 mb-6" />
-            <span className="text-white text-lg font-semibold">Feasibility</span>
-          </div>
-        )}
+  <div className="flex flex-col sm:flex-row gap-6 items-center">
+  {project.mapping.implementation && (
+    <div
+      onClick={() => navigate(`/changes/${project.id}/feasibility`)}
+      className="group flex flex-col items-center justify-center
+        w-56 sm:w-80 p-10
+        bg-white/20 backdrop-blur-md
+        rounded-2xl shadow-lg
+        cursor-pointer
+        hover:bg-white/30 hover:scale-105
+        transition transform duration-300 ease-in-out
+      "
+    >
+      <img src={feasibilityBtn} alt="Feasibility" className="h-24 sm:h-32 mb-4 object-contain" />
+      <span className="text-white text-lg font-semibold">Feasibility</span>
+      <span className="mt-2 h-1 w-12 bg-yellow-400 scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
+    </div>
+  )}
 
-        {project.mapping.implementation && (
-          <div
-            onClick={() => navigate(`/changes/${project.id}/implementation`)}
-            className="
-              flex flex-col items-center justify-center
-              w-56 sm:w-80
-              p-10
-              bg-[#1cb3d2]/30 
-              backdrop-blur-md
-              rounded-2xl
-              cursor-pointer
-              hover:scale-105
-              transition-transform
-            "
-          >
-            <img src={implementationBtn} alt="Implementation" className="h-24 sm:h-32 mb-6" />
-            <span className="text-white text-lg font-semibold">Implementation</span>
-          </div>
-        )}
-        </div>
+  {project.mapping.implementation && (
+    <div
+      onClick={() => navigate(`/changes/${project.id}/implementation`)}
+      className="group flex flex-col items-center justify-center
+        w-56 sm:w-80 p-10
+        bg-white/20 backdrop-blur-md
+        rounded-2xl shadow-lg
+        cursor-pointer
+        hover:bg-white/30 hover:scale-105
+        transition transform duration-300 ease-in-out
+      "
+    >
+      <img src={implementationBtn} alt="Implementation" className="h-24 sm:h-32 mb-4 object-contain" />
+      <span className="text-white text-lg font-semibold">Implementation</span>
+      <span className="mt-2 h-1 w-12 bg-yellow-400 scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
+    </div>
+  )}
+</div>
+
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+// src/pages/EditQuestionPage.tsx
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,148 +11,245 @@ import TopMenu from "../components/TopMenu";
 
 interface QuestionState {
   id: string;
-  description: string;        // field_0
-  action: string;             // field_7
-  triggerOn: string;          // field_2
-  receiverEmail: string;      // field_3
-  responsibleEmail: string;   // field_4
-  responsibleRole: string;    // field_8
-  sendIntervalValue: number;  // field_5
-  sendIntervalUnit: string;   // field_6
-  customSubject?: string;     // emailsubject
-  customBody?: string;        // emailbody
+  changeNumber: string;
+  area: string;
+  questionId: string;
+  description: string;
+  action: string;
+  triggerOn: string;
+  responsibleEmail: string;
+  responsibleRole: string;
+  sendIntervalValue: number;
+  sendIntervalUnit: string;
+  emailsubject?: string;
+  emailbody?: string;
 }
 
 interface ListsConfig {
   siteId: string;
   questionsListId: string;
+  projects: {
+    id: string;
+    displayName: string;
+    logo?: string;
+    mapping: {
+      feasibility: string;
+      implementation: string;
+      changeQuestionStatusListId?: string;
+    };
+  }[];
 }
 
 export default function EditQuestionPage() {
-  const { questionId } = useParams<{ questionId: string }>();
+  const { projectKey, itemId, questionId } = useParams<{
+    projectKey: string;
+    itemId: string;
+    questionId: string;
+  }>();
   const navigate = useNavigate();
 
+  // form state
   const [question, setQuestion] = useState<QuestionState | null>(null);
-
-  // Local form state
   const [description, setDescription] = useState("");
   const [action, setAction] = useState("");
   const [triggerOn, setTriggerOn] = useState("Oui");
-  const [receiverEmail, setReceiverEmail] = useState("");
   const [responsibleEmail, setResponsibleEmail] = useState("");
   const [responsibleRole, setResponsibleRole] = useState("");
   const [sendIntervalValue, setSendIntervalValue] = useState<number>(3);
   const [sendIntervalUnit, setSendIntervalUnit] = useState("Days");
-  const [customSubject, setCustomSubject] = useState("");
-  const [customBody, setCustomBody] = useState("");
+  const [emailsubject, setEmailsubject] = useState("");
+  const [emailbody, setEmailbody] = useState("");
 
-  // Load existing question
+  // change/item context & user
+  const [processNumber, setProcessNumber] = useState("");
+  const [carline, setCarline] = useState("");
+  const [area, setArea] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  const [, setLoading] = useState(true);
+  const [, setError] = useState<string | null>(null);
+
   useEffect(() => {
+    let mounted = true;
     (async () => {
-      if (!questionId) return;
       try {
+        setLoading(true);
+        // 1️⃣ Load config
         const raw = localStorage.getItem("cmConfigLists");
-        if (!raw) throw new Error("Configuration missing in localStorage");
+        if (!raw) throw new Error("Configuration missing");
         const config: ListsConfig = JSON.parse(raw);
+        const proj = config.projects.find((p) => p.id === projectKey);
+        if (!proj) throw new Error(`No project for key "${projectKey}"`);
 
-        const token = await getAccessToken(msalInstance, graphTokenRequest.scopes);
-
-        if (!token) throw new Error("No Graph token acquired");
-
-        const itemResp = await axios.get(
-          `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${config.questionsListId}/items/${questionId}?expand=fields`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        // 2️⃣ Get Graph token + headers
+        const token = await getAccessToken(
+          msalInstance,
+          graphTokenRequest.scopes
         );
+        if (!token) throw new Error("No Graph token acquired");
+        const headers = { Authorization: `Bearer ${token}` };
 
-        const f = itemResp.data.fields;
+        // 3️⃣ Fetch the change item (to grab Processnumber, Carline & Area)
+        const implListId = proj.mapping.implementation;
+        const changeResp = await axios.get(
+          `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
+            `/lists/${implListId}/items/${itemId}?expand=fields`,
+          { headers }
+        );
+        const f = changeResp.data.fields;
+        if (mounted) {
+          setProcessNumber(f["Processnumber"] || "");
+          setCarline(f["Carline"] || "");
+          setArea(f["SheetName"] || "");
+        }
+
+        // 4️⃣ Fetch the CQS item
+        const cqsListId = proj.mapping.changeQuestionStatusListId;
+        if (!cqsListId) throw new Error("Missing ChangeQuestionStatus mapping");
+        const cqsResp = await axios.get(
+          `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
+            `/lists/${cqsListId}/items/${questionId}?expand=fields`,
+          { headers }
+        );
+        const qf = cqsResp.data.fields;
         const loaded: QuestionState = {
-          id: questionId,
-          description: f["field_0"] || "",
-          action: f["field_7"] || "",
-          triggerOn: f["field_2"] || "Oui",
-          receiverEmail: f["field_3"] || "",
-          responsibleEmail: f["field_4"] || "",
-          responsibleRole: f["field_8"] || "",
-          sendIntervalValue: f["field_5"] ?? 3,
-          sendIntervalUnit: f["field_6"] || "Days",
-          customSubject: f["emailsubject"] || "",
-          customBody: f["emailbody"] || "",
+          id: questionId!,
+          changeNumber:       qf["ChangeNumber"]       || "",
+          area:               qf["Area"]               || "",
+          questionId:         qf["QuestionId"]         || "",
+          description:        qf["Question"]           || "",
+          action:             qf["Action"]             || "",
+          triggerOn:          qf["TriggerOn"]          || "Oui",
+          responsibleEmail:   qf["ResponsableEmail"]   || "",
+          responsibleRole:    qf["Responsiblerole"]    || "",
+          sendIntervalValue:  Number(qf["SendIntervalValue"]) || 3,
+          sendIntervalUnit:   qf["SendIntervalUnit"]   || "Days",
+          emailsubject:       qf["emailsubject"]       || "",
+          emailbody:          qf["emailbody"]          || "",
         };
+        if (mounted) {
+          setQuestion(loaded);
+          setDescription(loaded.description);
+          setAction(loaded.action);
+          setTriggerOn(loaded.triggerOn);
+          setResponsibleEmail(loaded.responsibleEmail);
+          setResponsibleRole(loaded.responsibleRole);
+          setSendIntervalValue(loaded.sendIntervalValue);
+          setSendIntervalUnit(loaded.sendIntervalUnit);
+          setEmailsubject(loaded.emailsubject || "");
+          setEmailbody(loaded.emailbody || "");
+        }
 
-        setQuestion(loaded);
-        // populate form
-        setDescription(loaded.description);
-        setAction(loaded.action);
-        setTriggerOn(loaded.triggerOn);
-        setReceiverEmail(loaded.receiverEmail);
-        setResponsibleEmail(loaded.responsibleEmail);
-        setResponsibleRole(loaded.responsibleRole);
-        setSendIntervalValue(loaded.sendIntervalValue);
-        setSendIntervalUnit(loaded.sendIntervalUnit);
-        setCustomSubject(loaded.customSubject || "");
-        setCustomBody(loaded.customBody || "");
+        // 5️⃣ Fetch user profile (for default email signature)
+        const profile = await axios.get(
+          "https://graph.microsoft.com/v1.0/me",
+          { headers }
+        );
+        if (mounted)
+          setUserEmail(
+            profile.data.mail || profile.data.userPrincipalName
+          );
       } catch (err: any) {
         console.error(err);
-        alert(err.message || "Could not load question");
+        if (mounted) setError(err.message);
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
-  }, [questionId]);
+    return () => {
+      mounted = false;
+    };
+  }, [projectKey, itemId, questionId]);
 
-  // Save & optionally send email
+  if (!question) return <div className="p-4">Loading question…</div>;
+
+  // Defaults for email previews
+  const defaultSubject = `Update – ${processNumber}`;
+  const defaultBody = `Hello,\n\n${description}\nCarline: ${carline}\n\nRegards,\n${userEmail}`;
+
+  // 🔧 Save back to the CQS list AND sync to QuestionTemplates
+  // …
   const handleSave = async () => {
-    if (!questionId) return;
     try {
       const raw = localStorage.getItem("cmConfigLists");
-      if (!raw) throw new Error("Configuration missing in localStorage");
+      if (!raw) throw new Error("Configuration missing");
       const config: ListsConfig = JSON.parse(raw);
 
-      const token = await getAccessToken(msalInstance, graphTokenRequest.scopes);
+      const proj = config.projects.find((p) => p.id === projectKey)!;
+      const cqsListId = proj.mapping.changeQuestionStatusListId!;
+      const qtplListId = config.questionsListId;
 
+      const token = await getAccessToken(
+        msalInstance,
+        graphTokenRequest.scopes
+      );
       if (!token) throw new Error("No Graph token acquired");
+      const headers = { Authorization: `Bearer ${token}` };
 
-      // Patch fields
-      const patchPayload: Record<string, any> = {
-        field_0: description,
-        field_7: action,
-        field_2: triggerOn,
-        field_4: responsibleEmail,
-        field_8: responsibleRole,
-        field_5: sendIntervalValue,
-        field_6: sendIntervalUnit,
-        emailsubject: customSubject,
-        emailbody: customBody,
+      // 1️⃣ Patch the per-project ChangeQuestionStatus
+      const cqsPayload: Record<string, any> = {
+        Question:          description,
+        Action:            action,
+        TriggerOn:         triggerOn,
+        ResponsableEmail:  responsibleEmail,
+        Responsiblerole:   responsibleRole,
+        SendIntervalValue: sendIntervalValue,
+        SendIntervalUnit:  sendIntervalUnit,
+        emailsubject,
+        emailbody,
       };
-
       await axios.patch(
-        `https://graph.microsoft.com/v1.0/sites/${config.siteId}/lists/${config.questionsListId}/items/${questionId}/fields`,
-        patchPayload,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
+          `/lists/${cqsListId}/items/${questionId}/fields`,
+        cqsPayload,
+        { headers }
       );
 
-      // Optionally send a preview email immediately
-      if (customSubject && customBody) {
-        await axios.post(
-          "https://graph.microsoft.com/v1.0/me/sendMail",
-          {
-            message: {
-              subject: customSubject,
-              body: { contentType: "text", content: customBody },
-              toRecipients: [{ emailAddress: { address: responsibleEmail } }],
-            },
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
+      // 2️⃣ Sync back into central QuestionTemplates **without a $filter**
+      if (qtplListId) {
+        // fetch all templates once
+        const tplRes = await axios.get(
+          `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
+            `/lists/${qtplListId}/items?$top=5000&expand=fields`,
+          { headers }
         );
+        const allTpls = tplRes.data.value;
+
+        // find matching template by its Questionid field
+        const match = allTpls.find(
+          (it: any) =>
+            String(it.fields.Questionid).toLowerCase() ===
+            question!.questionId.toLowerCase()
+        );
+        if (match) {
+          const tmplId = match.id;
+          const tplPayload: Record<string, any> = {
+            Question:          description,
+            Action:            action,
+            ResponsableEmail:  responsibleEmail,
+            Responsiblerole:   responsibleRole,
+            TriggerOn:         triggerOn,
+            SendIntervalValue: sendIntervalValue,
+            SendIntervalUnit:  sendIntervalUnit,
+            emailsubject,
+            emailbody,
+          };
+          await axios.patch(
+            `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
+              `/lists/${qtplListId}/items/${tmplId}/fields`,
+            tplPayload,
+            { headers }
+          );
+        }
       }
 
       alert("Question updated successfully");
       navigate(-1);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Edit question failed");
+      alert(err.message || "Update failed");
     }
   };
-
-  if (!question) return <div className="p-4">Loading question...</div>;
 
   return (
     <div
@@ -158,23 +257,21 @@ export default function EditQuestionPage() {
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
       <div className="absolute inset-0 z-10 pointer-events-none" />
-      <div className="relative z-20 w-full p-8 space-y-6 text-white max-w-2xl mx-auto">
-        {/* Back button */}
+      <div className="relative z-20 w-full p-8 space-y-6 text-white max-w-3xl mx-auto">
         <TopMenu />
         <button
           onClick={() => navigate(-1)}
-          className="px-3 py-1 bg-gray-300 hover:bg-gray-400 rounded text-black"
+          className="px-3 py-1 bg-gray-300 rounded text-black hover:bg-gray-400"
         >
           ← Back
         </button>
-
         <h2 className="text-2xl font-bold text-center">Edit Question</h2>
 
         <div className="space-y-4">
           <label className="block font-semibold">Question</label>
           <input
             type="text"
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+            className="w-full p-2 rounded-lg text-black bg-white"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -182,14 +279,14 @@ export default function EditQuestionPage() {
           <label className="block font-semibold">Action</label>
           <input
             type="text"
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+            className="w-full p-2 rounded-lg text-black bg-white"
             value={action}
             onChange={(e) => setAction(e.target.value)}
           />
 
           <label className="block font-semibold">Trigger On</label>
           <select
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+            className="w-full p-2 rounded-lg text-black bg-white"
             value={triggerOn}
             onChange={(e) => setTriggerOn(e.target.value)}
           >
@@ -200,7 +297,7 @@ export default function EditQuestionPage() {
           <label className="block font-semibold">Responsible Email</label>
           <input
             type="email"
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+            className="w-full p-2 rounded-lg text-black bg-white"
             value={responsibleEmail}
             onChange={(e) => setResponsibleEmail(e.target.value)}
           />
@@ -208,7 +305,7 @@ export default function EditQuestionPage() {
           <label className="block font-semibold">Responsible's Role</label>
           <input
             type="text"
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+            className="w-full p-2 rounded-lg text-black bg-white"
             value={responsibleRole}
             onChange={(e) => setResponsibleRole(e.target.value)}
           />
@@ -218,15 +315,17 @@ export default function EditQuestionPage() {
               <label className="block font-semibold">Interval Value</label>
               <input
                 type="number"
-                className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+                className="w-full p-2 rounded-lg text-black bg-white"
                 value={sendIntervalValue}
-                onChange={(e) => setSendIntervalValue(parseInt(e.target.value, 10) || 0)}
+                onChange={(e) =>
+                  setSendIntervalValue(parseInt(e.target.value, 10) || 0)
+                }
               />
             </div>
             <div>
               <label className="block font-semibold">Interval Unit</label>
               <select
-                className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
+                className="w-full p-2 rounded-lg text-black bg-white"
                 value={sendIntervalUnit}
                 onChange={(e) => setSendIntervalUnit(e.target.value)}
               >
@@ -239,22 +338,26 @@ export default function EditQuestionPage() {
 
           <hr className="border-gray-400" />
 
-          <label className="block font-semibold">Custom Email Subject</label>
+          <label className="block font-semibold">Email Subject</label>
           <input
             type="text"
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
-            value={customSubject}
-            onChange={(e) => setCustomSubject(e.target.value)}
-            placeholder="Optional custom subject"
+            className="w-full p-2 rounded-lg text-black bg-white"
+            value={emailsubject}
+            onChange={(e) => setEmailsubject(e.target.value)}
+            placeholder="Custom subject"
           />
+          <p className="text-sm text-white">Default: {defaultSubject}</p>
 
-          <label className="block font-semibold">Custom Email Body</label>
+          <label className="block font-semibold">Email Body</label>
           <textarea
-            className="w-full p-2 rounded-lg text-black bg-white placeholder-gray-500"
-            value={customBody}
-            onChange={(e) => setCustomBody(e.target.value)}
-            placeholder="Write your personalized email body here..."
+            className="w-full h-40 p-2 rounded-lg text-black bg-white"
+            value={emailbody}
+            onChange={(e) => setEmailbody(e.target.value)}
+            placeholder="Custom body"
           />
+          <p className="text-sm text-white whitespace-pre-line">
+            Default: {defaultBody}
+          </p>
 
           <button
             onClick={handleSave}

@@ -1,26 +1,34 @@
 import * as XLSX from "xlsx";
 import { IPublicClientApplication } from "@azure/msal-browser";
+import axios from "axios";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
-
+/** Split an array into chunks of up to `size` */
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
 export async function findListIdByName(
   siteId: string,
   listName: string,
   token: string
 ): Promise<string | null> {
   const url = `${GRAPH_BASE}/sites/${siteId}/lists?$filter=displayName eq '${listName}'`;
-  const resp = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (resp.ok) {
-    const data = await resp.json();
-    return data?.value?.[0]?.id || null;
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!resp.ok) {
+    console.error("[LIST_FIND_FAIL]", await resp.text());
+    return null;
   }
-  console.error("[LIST_FIND_FAIL]", await resp.text());
-  return null;
+  const data = await resp.json();
+  return data?.value?.[0]?.id || null;
 }
 
-export async function getAccessToken(msalInstance: IPublicClientApplication): Promise<string | null> {
+export async function getAccessToken(
+  msalInstance: IPublicClientApplication
+): Promise<string | null> {
   const accounts = msalInstance.getAllAccounts();
   if (!accounts.length) return null;
   const response = await msalInstance.acquireTokenSilent({
@@ -36,10 +44,7 @@ export async function createSpList(
   token: string
 ): Promise<string | null> {
   const url = `${GRAPH_BASE}/sites/${siteId}/lists`;
-  const body = {
-    displayName: listName,
-    list: { template: "genericList" }
-  };
+  const body = { displayName: listName, list: { template: "genericList" } };
   const resp = await fetch(url, {
     method: "POST",
     headers: {
@@ -48,12 +53,12 @@ export async function createSpList(
     },
     body: JSON.stringify(body)
   });
-  if (resp.ok) {
-    const data = await resp.json();
-    return data.id;
+  if (!resp.ok) {
+    console.error("[LIST_CREATE_FAIL]", await resp.text());
+    return null;
   }
-  console.error("[LIST_CREATE_FAIL]", await resp.text());
-  return null;
+  const data = await resp.json();
+  return data.id;
 }
 
 export async function getAllListItems(
@@ -64,9 +69,7 @@ export async function getAllListItems(
   let items: any[] = [];
   let next = `${GRAPH_BASE}/sites/${siteId}/lists/${listId}/items`;
   while (next) {
-    const resp = await fetch(next, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const resp = await fetch(next, { headers: { Authorization: `Bearer ${token}` } });
     if (!resp.ok) {
       console.error("[GET_ALL_ITEMS_FAIL]", await resp.text());
       break;
@@ -85,11 +88,10 @@ export async function deleteAllItems(
 ): Promise<void> {
   const items = await getAllListItems(siteId, listId, token);
   for (const item of items) {
-    const delUrl = `${GRAPH_BASE}/sites/${siteId}/lists/${listId}/items/${item.id}`;
-    await fetch(delUrl, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await fetch(
+      `${GRAPH_BASE}/sites/${siteId}/lists/${listId}/items/${item.id}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+    );
   }
   console.log(`[CLEARED_LIST] => ${items.length} items deleted`);
 }
@@ -98,22 +100,18 @@ export async function getExistingColumns(
   siteId: string,
   listId: string,
   token: string
-): Promise<Record<string, string>> {
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/columns`;
-  const resp = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  const out: Record<string, string> = {};
-  if (resp.ok) {
-    const data = await resp.json();
-    for (const col of data.value) {
-      out[col.displayName] = col.name;
-    }
-  } else {
+): Promise<Record<string,string>> {
+  const url = `${GRAPH_BASE}/sites/${siteId}/lists/${listId}/columns`;
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!resp.ok) {
     console.error("[GET_COLUMNS_FAIL]", await resp.text());
+    return {};
   }
-  return out;
+  const data = await resp.json();
+  return data.value.reduce((map: Record<string,string>, col: any) => {
+    map[col.displayName] = col.name;
+    return map;
+  }, {});
 }
 
 export async function createTextColumn(
@@ -122,12 +120,8 @@ export async function createTextColumn(
   displayName: string,
   token: string
 ): Promise<string | null> {
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/columns`;
-  const body = {
-    name: displayName,
-    displayName: displayName,
-    text: {}
-  };
+  const url = `${GRAPH_BASE}/sites/${siteId}/lists/${listId}/columns`;
+  const body = { name: displayName, displayName, text: {} };
   const resp = await fetch(url, {
     method: "POST",
     headers: {
@@ -136,15 +130,13 @@ export async function createTextColumn(
     },
     body: JSON.stringify(body)
   });
-
-  if (resp.ok) {
-    const data = await resp.json();
-    console.log(`[TEXT_COLUMN_CREATED] '${displayName}' => InternalName: ${data.name}`);
-    return data.name;
-  } else {
+  if (!resp.ok) {
     console.error(`[TEXT_COLUMN_FAIL] '${displayName}' =>`, await resp.text());
     return null;
   }
+  const data = await resp.json();
+  console.log(`[TEXT_COLUMN_CREATED] '${displayName}' => ${data.name}`);
+  return data.name;
 }
 
 export async function createTextColumnWithRetry(
@@ -157,24 +149,86 @@ export async function createTextColumnWithRetry(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const name = await createTextColumn(siteId, listId, displayName, token);
     if (name) return name;
-
-    console.warn(`[RETRY ${attempt}/${maxRetries}] Failed to create column '${displayName}'. Retrying...`);
+    console.warn(`[RETRY ${attempt}/${maxRetries}] creating column '${displayName}'`);
     await new Promise(res => setTimeout(res, 2000));
   }
   console.error(`[GIVE UP] Could not create column '${displayName}'`);
   return null;
 }
+interface BatchReq {
+  id: string;
+  method: "POST" | "PATCH" | "DELETE";
+  url: string;
+  headers: Record<string,string>;
+  body?: any;
+}
 
+async function uploadBatch(batch: BatchReq[], token: string) {
+  const maxTries = 5;
+  let attempt = 0;
+  while (attempt++ < maxTries) {
+    try {
+      await axios.post(
+        `${GRAPH_BASE}/$batch`,
+        { requests: batch },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return;
+    } catch (e: any) {
+      const status = e.response?.status;
+      if ([429, 503, 500].includes(status)) {
+        const retryAfter = parseInt(e.response?.headers["retry-after"] || "5", 10);
+        await new Promise(r => setTimeout(r, retryAfter * 1000 * attempt));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error("Batch permanently failed after retries");
+}
+
+async function limitedMap<T>(
+  batches: T[][],
+  concurrency: number,
+  fn: (batch: T[]) => Promise<void>
+) {
+  let idx = 0;
+  const workers = Array(concurrency).fill(0).map(async () => {
+    while (idx < batches.length) {
+      const i = idx++;
+      await fn(batches[i]);
+    }
+  });
+  await Promise.all(workers);
+}
+
+export async function bulkCreateItems(
+  siteId: string,
+  listId: string,
+  token: string,
+  items: Array<{fields: Record<string, any>}>,
+  concurrency = 2
+) {
+  const reqs: BatchReq[] = items.map((it, i) => ({
+    id: `${i}`,
+    method: "POST",
+    url: `/sites/${siteId}/lists/${listId}/items`,
+    headers: { "Content-Type": "application/json" },
+    body: { fields: it.fields }
+  }));
+
+  const batches = chunkArray(reqs, 20);
+  await limitedMap(batches, concurrency, batch => uploadBatch(batch, token));
+}
 export async function insertItem(
   siteId: string,
   listId: string,
-  fieldsMap: Record<string, string>,
+  fieldsMap: Record<string,string>,
   token: string,
   rowNum = 0
 ): Promise<string | null> {
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items`;
+  const url = `${GRAPH_BASE}/sites/${siteId}/lists/${listId}/items`;
   const body = { fields: { Title: `Row_${rowNum}`, ...fieldsMap } };
-
   const resp = await fetch(url, {
     method: "POST",
     headers: {
@@ -183,17 +237,14 @@ export async function insertItem(
     },
     body: JSON.stringify(body)
   });
-
-  if (resp.ok) {
-    const js = await resp.json();
-    console.log(`[ITEM_CREATED] ID: ${js.id}`);
-    return js.id;
-  } else {
+  if (!resp.ok) {
     console.error(`[ITEM_CREATE_FAIL]`, await resp.text());
     return null;
   }
+  const js = await resp.json();
+  console.log(`[ITEM_CREATED] ID: ${js.id}`);
+  return js.id;
 }
-
 export async function processDataframe(
   df: any,
   projectName: string,
@@ -207,7 +258,7 @@ export async function processDataframe(
   let listId = await findListIdByName(siteId, listName, token);
   if (!listId) {
     listId = await createSpList(siteId, listName, token);
-    if (!listId) return console.error(`[ERROR] Failed to create list ${listName}`);
+    if (!listId) throw new Error(`Failed to create list ${listName}`);
     console.log(`[NEW LIST CREATED] ${listName}`);
   } else {
     console.log(`[EXISTING LIST FOUND] ${listName}`);
@@ -216,74 +267,60 @@ export async function processDataframe(
 
   const existingCols = await getExistingColumns(siteId, listId, token);
   const finalCols: string[] = [];
-
   for (const col of df.columns) {
     if (existingCols[col]) {
       finalCols.push(col);
     } else {
-      const internal = await createTextColumnWithRetry(siteId, listId, col, token);
-      if (internal) finalCols.push(col);
+      const intName = await createTextColumnWithRetry(siteId, listId, col, token);
+      if (intName) finalCols.push(col);
     }
   }
 
   const worksheet = XLSX.utils.json_to_sheet(df);
-  const jsonData = XLSX.utils.sheet_to_json(worksheet);
+  const jsonData: Record<string, any>[] = XLSX.utils.sheet_to_json(worksheet);
 
-  let inserted = 0;
-  for (let i = 0; i < jsonData.length; i++) {
-    const row = jsonData[i] as Record<string, any>;
-    const fieldsMap: Record<string, string> = {};
+  const items = jsonData.map((row, idx) => {
+    const fieldsMap: Record<string, any> = {};
     for (const col of finalCols) {
       let val = row[col];
       if (val === undefined || val === null || val === "---") val = "";
       fieldsMap[col] = String(val);
     }
-    const id = await insertItem(siteId, listId, fieldsMap, token, i + 1);
-    if (id) inserted++;
-  }
+    return { fields: fieldsMap };
+  });
 
-  console.log(`[DONE] Inserted ${inserted}/${jsonData.length} rows into '${listName}'`);
+  await bulkCreateItems(siteId, listId, token, items, 2);
+  console.log(`[DONE] Bulk‐uploaded ${items.length} rows to '${listName}'`);
 }
-
 export async function resolveSiteIdFromUrl(
   siteUrl: string,
   token: string
-): Promise<{ siteId: string | null, isPersonal: boolean }> {
+): Promise<{ siteId: string | null; isPersonal: boolean }> {
   try {
-    const parsedUrl = new URL(siteUrl);
-    const hostname = parsedUrl.hostname;
-    let path = parsedUrl.pathname.replace(/^\/+|\/+$/g, "");
+    const parsed = new URL(siteUrl);
+    const hostname = parsed.hostname;
+    let path = parsed.pathname.replace(/^\/+|\/+$/g, "");
 
     let graphUrl = "";
     let isPersonal = false;
-
     if (path.startsWith("sites/")) {
       path = path.replace(/^sites\//, "");
-      graphUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
-    } else if (path.startsWith("personal/")) {
-      path = path.replace(/^personal\//, "");
-      graphUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/personal/${path}`;
-      isPersonal = true;
+      graphUrl = `${GRAPH_BASE}/sites/${hostname}:/sites/${path}`;
     } else {
-      console.error(`[SITE_ID_FAIL] Unsupported URL format: ${siteUrl}`);
+      console.error(`[SITE_ID_FAIL] Unsupported URL: ${siteUrl}`);
       return { siteId: null, isPersonal: false };
     }
 
-    const resp = await fetch(graphUrl, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (resp.ok) {
-      const data = await resp.json();
-      console.log(`[SITE_ID_RESOLVED] => ${data.id}`);
-      return { siteId: data.id, isPersonal };
-    } else {
+    const resp = await fetch(graphUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) {
       console.error("[SITE_ID_FAIL]", await resp.text());
       return { siteId: null, isPersonal: false };
     }
+    const data = await resp.json();
+    console.log(`[SITE_ID_RESOLVED] => ${data.id}`);
+    return { siteId: data.id, isPersonal };
   } catch (err: any) {
     console.error("[SITE_ID_FAIL]", err.message);
     return { siteId: null, isPersonal: false };
   }
 }
-

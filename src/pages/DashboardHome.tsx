@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import TopMenu from "../components/TopMenu";
 
 export default function DashboardHome() {
   const navigate = useNavigate();
@@ -7,6 +8,7 @@ export default function DashboardHome() {
 
   return (
     <div className="flex h-full items-center justify-center bg-gradient-to-br from-teal-700 to-teal-900 text-white">
+      <TopMenu />
       <div className="text-center space-y-8 p-8 rounded-lg bg-black/20 backdrop-blur-md">
         <h1 className="text-5xl font-extrabold">Welcome to the Dashboard</h1>
         <p className="text-lg opacity-80">

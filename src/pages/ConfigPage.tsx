@@ -12,6 +12,7 @@ import { getAccessToken } from "../auth/getToken";
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
 import TopMenu from "../components/TopMenu";
 import { getProjectLogo } from "../utils/getProjectLogo";
+import AreaImageUploadComponent from "../components/AreaImageUploadComponent";
 const ConfigPage: React.FC = () => {
   const navigate = useNavigate();
   const [siteName, setSiteName] = useState("");
@@ -35,7 +36,7 @@ const ConfigPage: React.FC = () => {
   // Dexie-based car images
   const [carList, setCarList] = useState<CarImage[]>([]);
   // Track which tab is active: "lists", "cars", or "roles"
-  const [activeTab, setActiveTab] = useState<"lists" | "cars" | "roles">("lists");
+const [activeTab, setActiveTab] = useState<"lists" | "cars" | "roles" | "areaImages">("lists");
   const [editCarId, setEditCarId] = useState<number | null>(null);
 const [editCarName, setEditCarName] = useState("");
 
@@ -140,20 +141,30 @@ const handleSaveCarName = async () => {
             displayName: rawProjectName,
             logo: getProjectLogo(projectId),
             mapping: {
-              feasibility: "",
               implementation: "",
               feasibilityExtra: "",
               implementationExtra: "",
+              changeQuestionStatusListId: ""
             },
           };
 
       if (phase === "4" && isExtra) updatedProject.mapping.feasibilityExtra = list.id;
-      else if (phase === "4") updatedProject.mapping.feasibility = list.id;
       else if (phase === "8" && isExtra) updatedProject.mapping.implementationExtra = list.id;
       else if (phase === "8") updatedProject.mapping.implementation = list.id;
 
       newProjectsMap[projectId] = updatedProject;
     });
+    // ➕ Include ChangeQuestionStatus lists by project name
+fetchedLists.forEach((list: any) => {
+  const cqsMatch = /^ChangeQuestionStatus_([a-zA-Z0-9]+)$/i.exec(list.displayName);
+  if (!cqsMatch) return;
+  const [, rawProjectName] = cqsMatch;
+  const projectId = rawProjectName.toLowerCase();
+
+  if (!newProjectsMap[projectId]) return;
+
+  newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
+});
 
     const finalProjects = Object.values(newProjectsMap);
     setProjects(finalProjects);
@@ -222,10 +233,10 @@ const handleSaveCarName = async () => {
       displayName: chosen.displayName,
       logo: chosen.logo,
       mapping: {
-        feasibility: "",
         implementation: "",
         feasibilityExtra: "",
         implementationExtra: "",
+        changeQuestionStatusListId: ""
       },
     };
     setProjects((prev) => [...prev, newProject]);
@@ -262,7 +273,7 @@ const handleSaveCarName = async () => {
   for (const proj of projects) {
     const hasImplementation = proj.mapping.implementation || proj.mapping.implementationExtra;
     if ( !hasImplementation) {
-      setMessage(`Project "${proj.displayName}" must have at least one mapped list (feasibility or implementation).`);
+      setMessage(`Project "${proj.displayName}" must have at least a mapped list implementation.`);
       return;
     }
   }
@@ -321,6 +332,14 @@ const handleSaveCarName = async () => {
             }`}
           >
             Configure User Roles
+          </button>
+          <button
+            onClick={() => setActiveTab("areaImages")}
+            className={`w-full py-3 rounded-xl text-center font-medium transition ${
+              activeTab === "areaImages" ? "bg-[#1cb3d2] text-white" : "text-white hover:bg-white/30"
+            }`}
+          >
+            Configure Area Images
           </button>
         </aside>
 
@@ -476,6 +495,23 @@ const handleSaveCarName = async () => {
 
                         {/* Feasibility (Phase 8) */}
                        
+                        <label className="block mt-2">
+  <span className="text-sm">Change Question Status List [Optional]</span>
+  <select
+    value={proj.mapping.changeQuestionStatusListId || ""}
+    onChange={(e) =>
+      handleProjectMappingChange(proj.id, "changeQuestionStatusListId", e.target.value)
+    }
+    className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
+  >
+    <option value="">-- Optional --</option>
+    {lists.map((l) => (
+      <option key={l.id} value={l.id}>
+        {l.displayName}
+      </option>
+    ))}
+  </select>
+</label>
 
                         {/* Implementation Extra */}
                         <label className="block mt-2">
@@ -543,96 +579,92 @@ const handleSaveCarName = async () => {
 
           {/* TAB: cars */}
           {activeTab === "cars" && (
-            <CarConfigurationComponent
-              projects={projects}
-              siteId={siteId}
-            />
-          )}
-          <div className="space-y-6">
-    {/* A) RE-USE the CarConfigurationComponent for uploading new cars */}
+  <>
+    {/* Car Upload and Configuration */}
+    <CarConfigurationComponent projects={projects} siteId={siteId} />
 
-    <hr className="my-6 border-gray-600" />
+    {/* Manage Existing Cars section is here */}
+    <div className="space-y-6">
+      <hr className="my-6 border-gray-600" />
 
-    {/* B) Manage Existing Cars */}
-    <h2 className="text-2xl font-semibold">Manage Existing Cars</h2>
-    {carList.length === 0 ? (
-      <p>No car images saved yet.</p>
-    ) : (
-      <div className="grid grid-cols-2 gap-4">
-        {carList.map((car) => (
-          <div key={car.id} className="bg-white/20 p-4 rounded space-y-3">
-            {/* Example: display car’s project */}
-            <div className="flex justify-between items-center">
-              {projects
-                .filter((p) => p.id === car.projectId)
-                .map((proj) => (
-                  <div key={proj.id} className="flex items-center gap-2">
-                    {proj.logo && (
-                      <img
-                        src={proj.logo}
-                        alt={proj.displayName}
-                        className="w-8 h-8 object-contain"
-                      />
-                    )}
-                    <span>{proj.displayName}</span>
-                  </div>
-                ))}
+      <h2 className="text-2xl font-semibold">Manage Existing Cars</h2>
+      {carList.length === 0 ? (
+        <p>No car images saved yet.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          {carList.map((car) => (
+            <div key={car.id} className="bg-white/20 p-4 rounded space-y-3">
+              {/* Project */}
+              <div className="flex justify-between items-center">
+                {projects
+                  .filter((p) => p.id === car.projectId)
+                  .map((proj) => (
+                    <div key={proj.id} className="flex items-center gap-2">
+                      {proj.logo && (
+                        <img
+                          src={proj.logo}
+                          alt={proj.displayName}
+                          className="w-8 h-8 object-contain"
+                        />
+                      )}
+                      <span>{proj.displayName}</span>
+                    </div>
+                  ))}
 
-              <button
-                onClick={() => handleDeleteCar(car.id!)}
-                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Delete
-              </button>
+                <button
+                  onClick={() => handleDeleteCar(car.id!)}
+                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+              {/* Car image */}
+              <img
+                src={car.data}
+                alt={car.name || "Car"}
+                className="w-full h-32 object-contain bg-white/10 rounded"
+              />
+
+              {/* Edit/display car name */}
+              {editCarId === car.id ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={editCarName}
+                    onChange={(e) => setEditCarName(e.target.value)}
+                    className="flex-1 p-2 rounded bg-white/80 text-gray-900"
+                  />
+                  <button
+                    onClick={handleSaveCarName}
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">{car.name || ""}</p>
+                  <button
+                    onClick={() => handleEditCar(car)}
+                    className="text-sm text-blue-300 hover:underline"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+              {/* Carline */}
+              {car.carline && (
+                <p className="text-sm bg-white/10 p-2 rounded">
+                  Carline: {car.carline}
+                </p>
+              )}
             </div>
-
-            {/* Car image */}
-            <img
-              src={car.data}
-              alt={car.name || "Car"}
-              className="w-full h-32 object-contain bg-white/10 rounded"
-            />
-
-            {/* Edit or display car name */}
-            {editCarId === car.id ? (
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={editCarName}
-                  onChange={(e) => setEditCarName(e.target.value)}
-                  className="flex-1 p-2 rounded bg-white/80 text-gray-900"
-                />
-                <button
-                  onClick={handleSaveCarName}
-                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{car.name || `Car_${car.id}`}</p>
-                <button
-                  onClick={() => handleEditCar(car)}
-                  className="text-sm text-blue-300 hover:underline"
-                >
-                  Edit
-                </button>
-              </div>
-            )}
-
-            {/* Display carline if you’ve stored it */}
-            {car.carline && (
-              <p className="text-sm bg-white/10 p-2 rounded">
-                Carline: {car.carline}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-
+          ))}
+        </div>
+      )}
+    </div>
+  </>
+)}
           {/* TAB: roles */}
           {activeTab === "roles" && (
             <>
@@ -696,6 +728,10 @@ const handleSaveCarName = async () => {
               </div>
             </>
           )}
+
+          {activeTab === "areaImages" && (
+  <AreaImageUploadComponent projects={projects} />
+)}
 
           <button
             onClick={handleSave}

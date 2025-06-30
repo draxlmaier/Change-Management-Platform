@@ -16,26 +16,24 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
 
       if (siteUrl.startsWith("https://")) {
         const url = new URL(siteUrl);
-        hostname = url.hostname;  // e.g. draexlmaier.sharepoint.com
-        path = url.pathname.replace(/^\/sites\//, ""); // e.g. ittest
-      } else {
-        hostname = "uittunis.sharepoint.com";  // <-- default fallback
-        path = siteUrl;
-      }
+        hostname = url.hostname;
+        path = url.pathname.replace(/^\/sites\//, "");
+      } 
       const graphSiteUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
-
       const siteResp = await axios.get(graphSiteUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const siteId = siteResp.data.id;
+
       const listsResp = await axios.get(
         `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
 
+      // Detect changes lists
+      const changeListRegex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
       listsResp.data.value.forEach((list: any) => {
-        const match = regex.exec(list.displayName);
+        const match = changeListRegex.exec(list.displayName);
         if (!match) return;
 
         const [, rawProjectName, phase, isExtra] = match;
@@ -46,33 +44,69 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
           displayName: rawProjectName,
           logo: getProjectLogo(projectId),
           mapping: {
-            feasibility: '',
             implementation: '',
             feasibilityExtra: '',
             implementationExtra: '',
+            changeQuestionStatusListId: '',
           },
         };
 
         const updated = { ...base };
 
         if (phase === '4' && isExtra) updated.mapping.feasibilityExtra = list.id;
-        else if (phase === '4') updated.mapping.feasibility = list.id;
         else if (phase === '8' && isExtra) updated.mapping.implementationExtra = list.id;
         else if (phase === '8') updated.mapping.implementation = list.id;
 
         updatedProjectsMap[projectId] = updated;
       });
+
+      // Detect ChangeQuestionStatus lists
+      const cqsRegex = /^ChangeQuestionStatus_([a-zA-Z0-9]+)$/i;
+      listsResp.data.value.forEach((list: any) => {
+        const match = cqsRegex.exec(list.displayName);
+        if (!match) return;
+
+        const rawProjectName = match[1];
+        const projectId = rawProjectName.toLowerCase();
+
+        const base = updatedProjectsMap[projectId] || existingProjectsMap.get(projectId) || {
+          id: projectId,
+          displayName: rawProjectName,
+          logo: getProjectLogo(projectId),
+          mapping: {
+            implementation: '',
+            feasibilityExtra: '',
+            implementationExtra: '',
+            changeQuestionStatusListId: '',
+          },
+        };
+
+        const updated = {
+          ...base,
+          mapping: {
+            ...base.mapping,
+            changeQuestionStatusListId: list.id,
+          },
+        };
+
+        updatedProjectsMap[projectId] = updated;
+      });
+
     } catch (err) {
       console.error('Failed to fetch or parse site:', siteUrl, err);
     }
   }
+
   const merged = Object.values(updatedProjectsMap);
-  const newProjects = Array.from(new Map([...projects, ...merged].map(p => [p.id, { ...p }])).values());
+  const newProjects = Array.from(
+    new Map([...projects, ...merged].map(p => [p.id, { ...p }])).values()
+  );
+
   const updatedConfig: cmConfigLists = {
     ...config,
     projects: newProjects,
   };
-  saveConfig(updatedConfig);
 
+  saveConfig(updatedConfig);
   return newProjects;
 }

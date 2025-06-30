@@ -8,7 +8,6 @@ import { SubAreaPieChart } from "./SubAreaPieChart";
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
 import { UnplannedDowntimeChart } from "./UnplannedDowntimeChart";
-import FilterControls from "./FilterControls";
 import { DRXIdeaProgressChart } from "./DRXIdeaProgressChart";
 import { BudgetDepartmentChart } from "./BudgetDepartmentChart";
 import { BudgetEntriesChart } from "./BudgetEntriesChart";
@@ -16,6 +15,37 @@ import { DRXEntriesChart } from "./DRXEntriesChart";
 import { FollowupCostByAreaChart } from "./FollowupCostByAreaChart";
 import { FollowupCostByReasonChart } from "./FollowupCostByReasonChart";
 import { FollowupCostCombinedChart } from "./FollowupCostCombinedChart";
+import { db } from "../../pages/db";
+import { AreaImage } from "../../pages/types";
+
+import drxIcon from "../../assets/images/drx.png";
+import downtimeIcon from "../../assets/images/downtime.png";
+import budgetIcon from "../../assets/images/budget.png";
+import followupIcon from "../../assets/images/costs.png";
+import scrapIcon from "../../assets/images/scrap.png";
+import changesIcon from "../../assets/images/changes.png";
+import closurePhase4Icon from "../../assets/images/phase4closure.png";
+
+const apiTabs = [
+  { key: "changes", label: "Changes", icon: changesIcon },
+  { key: "unplannedDowntime", label: "Unplanned Downtime", icon: downtimeIcon },
+  { key: "costPA", label: "Cost PA", icon: followupIcon },
+  { key: "drxIdea", label: "DRX Idea", icon: drxIcon },
+  { key: "budget", label: "Budget", icon: budgetIcon },
+  { key: "scrap", label: "Scrap", icon: scrapIcon },
+  { key: "closurePhase4", label: "Closure Phase 4", icon: closurePhase4Icon },
+];
+
+// Filter modes as an array for horizontal button group
+const filterModes: { key: FilterMode; label: string }[] = [
+  { key: "year", label: "Year" },
+  { key: "quarter", label: "Quarter" },
+  { key: "month", label: "Month" },
+  { key: "day", label: "Day" },
+  { key: "weekOfMonth", label: "Week of Month" },
+  { key: "weekOfYear", label: "Week of Year" },
+  { key: "customRange", label: "Custom Range" },
+];
 
 interface IProject {
   id: string;
@@ -48,14 +78,14 @@ interface ChangeItem {
 interface MonthlyKPIItem {
   ID: string;
   year: string;
-  Monthid: string; 
+  Monthid: string;
   Project?: string;
   downtime?: number;
   rateofdowntime?: number;
   Targetdowntime?: number;
   seuildinterventiondowntime?: number;
   DRXIdeasubmittedIdea?: number;
-  DRXIdeasubmittedIdeaGoal?: number; 
+  DRXIdeasubmittedIdeaGoal?: number;
   Budgetdepartment?: number;
   Budgetdepartmentplanified?: number;
 }
@@ -79,18 +109,23 @@ type FilterMode =
   | "weekOfMonth"
   | "weekOfYear"
   | "customRange";
-
 export const ChangesDashboard: React.FC = () => {
   const { project } = useParams<{ project: string }>();
+
+  // API Source button state
+  const [selectedApi, setSelectedApi] = useState<
+    "changes" | "unplannedDowntime" | "costPA" | "drxIdea" | "budget" | "scrap" | "closurePhase4"
+  >("changes");
 
   // Items & error/loading states
   const [allItems, setAllItems] = useState<ChangeItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ChangeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [allMonthlyKPIs, setAllMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
-const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
+  const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
+
   // Filter mode state
   const [filterMode, setFilterMode] = useState<FilterMode>("month");
 
@@ -113,25 +148,32 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
   // State for custom range
   const [fromDay, setFromDay] = useState("01");
   const [fromMonth, setFromMonth] = useState("01");
-  const [fromYear, setFromYear] = useState("2025");
+  const [fromYear, setFromYear] = useState(defaultYear);
   const [toDay, setToDay] = useState("31");
   const [toMonth, setToMonth] = useState("12");
-  const [toYear, setToYear] = useState("2025");
+  const [toYear, setToYear] = useState(defaultYear);
 
+  const [areaImages, setAreaImages] = useState<AreaImage[]>([]);
   const [followCostItems, setFollowCostItems] = useState<FollowCostKPIItem[]>([]);
+
+  useEffect(() => {
+    if (!project) return;
+    db.areaImages
+      .where("projectId")
+      .equals(project)
+      .toArray()
+      .then(setAreaImages);
+  }, [project]);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       setError(null);
-
       try {
         const token = await getAccessToken(msalInstance, ["User.Read"]);
         if (!token) throw new Error("No valid token found. Please log in again.");
-
         const rawConfig = localStorage.getItem("cmConfigLists");
         if (!rawConfig) throw new Error("No config in localStorage (cmConfigLists).");
-
         let config: cmConfigLists;
         try {
           config = JSON.parse(rawConfig);
@@ -198,112 +240,111 @@ const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>
           await fetchListItems(listId);
         }
         setAllItems(accumulated);
-      // 2) Fetch from monthlyListId (if it exists)
-      if (!config.monthlyListId) {
-        console.warn("No monthlyListId in config. Skipping monthly KPI fetch.");
-      } else {
-        const kpiAccumulated: MonthlyKPIItem[] = [];
-        const fetchMonthlyKPIs = async (listId: string) => {
-          let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
-          while (nextLink) {
-            const resp = await axios.get(nextLink, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!Array.isArray(resp.data.value)) {
-              throw new Error("Missing array at resp.data.value from SharePoint.");
+
+        // 2) Fetch Monthly KPI data
+        if (config.monthlyListId) {
+          const kpiAccumulated: MonthlyKPIItem[] = [];
+          const fetchMonthlyKPIs = async (listId: string) => {
+            let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
+            while (nextLink) {
+              const resp = await axios.get(nextLink, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!Array.isArray(resp.data.value)) {
+                throw new Error("Missing array at resp.data.value from SharePoint.");
+              }
+              const pageItems = resp.data.value.map((it: any) => ({
+                ID: it.id,
+                year: it.fields.year,
+                Monthid: it.fields.Monthid,
+                Project: it.fields.Project,
+                downtime: it.fields.downtime,
+                rateofdowntime: it.fields.rateofdowntime,
+                Targetdowntime: it.fields.Targetdowntime,
+                seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
+                DRXIdeasubmittedIdea: it.fields.DRXIdeasubmittedIdea,
+                DRXIdeasubmittedIdeaGoal: it.fields.DRXIdeasubmittedIdeaGoal,
+                Budgetdepartment: it.fields.Budgetdepartment,
+                Budgetdepartmentplanified: it.fields.Budgetdepartmentplanified,
+              }));
+              kpiAccumulated.push(...pageItems);
+              nextLink = resp.data["@odata.nextLink"] || "";
             }
-const pageItems = resp.data.value.map((it: any) => {
-  return {
-  ID: it.id,
-  year: it.fields.year,
-  Monthid: it.fields.Monthid,
-  Project: it.fields.Project,
-  downtime: it.fields.downtime,
-  rateofdowntime: it.fields.rateofdowntime,
-  Targetdowntime: it.fields.Targetdowntime,
-  seuildinterventiondowntime: it.fields.seuildinterventiondowntime,
-  DRXIdeasubmittedIdea: it.fields.DRXIdeasubmittedIdea, 
-  DRXIdeasubmittedIdeaGoal: it.fields.DRXIdeasubmittedIdeaGoal, 
-  Budgetdepartment: it.fields.Budgetdepartment,
-  Budgetdepartmentplanified: it.fields.Budgetdepartmentplanified,
-};
-});
-            kpiAccumulated.push(...pageItems);
-            nextLink = resp.data["@odata.nextLink"] || "";
+          };
+          await fetchMonthlyKPIs(config.monthlyListId);
+          setAllMonthlyKPIs(kpiAccumulated);
+
+          // 3) Fetch FollowCost data
+          if (config.followCostListId) {
+            const followCostAccumulated: FollowCostKPIItem[] = [];
+            const fetchFollowCostKPIs = async (listId: string) => {
+              let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
+              while (nextLink) {
+                const resp = await axios.get(nextLink, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const pageItems = resp.data.value.map((it: any) => ({
+                  ID: it.id,
+                  Project: it.fields.Project,
+                  Area: it.fields.Area,
+                  Followupcost_x002f_BudgetPA: it.fields.Followupcost_x002f_BudgetPA,
+                  InitiationReasons: it.fields.InitiationReasons,
+                  BucketID: it.fields.BucketID,
+                  Date: it.fields.Date,
+                  BucketResponsible: it.fields.BucketResponsible,
+                  Postname_x002f_ID: it.fields.Postname_x002f_ID,
+                }));
+                followCostAccumulated.push(...pageItems);
+                nextLink = resp.data["@odata.nextLink"] || "";
+              }
+            };
+            await fetchFollowCostKPIs(config.followCostListId);
+            setFollowCostItems(followCostAccumulated);
           }
-        };
-        await fetchMonthlyKPIs(config.monthlyListId);
-        setAllMonthlyKPIs(kpiAccumulated);
-
-        if (config.followCostListId) {
-  const followCostAccumulated: FollowCostKPIItem[] = [];
-  const fetchFollowCostKPIs = async (listId: string) => {
-    let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
-    while (nextLink) {
-      const resp = await axios.get(nextLink, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const pageItems = resp.data.value.map((it: any) => ({
-        ID: it.id,
-        Project: it.fields.Project,
-        Area: it.fields.Area,
-        Followupcost_x002f_BudgetPA: it.fields.Followupcost_x002f_BudgetPA,
-        InitiationReasons: it.fields.InitiationReasons,
-        BucketID: it.fields.BucketID,
-        Date: it.fields.Date,
-        BucketResponsible: it.fields.BucketResponsible,
-        Postname_x002f_ID: it.fields.Postname_x002f_ID,
-      }));
-      followCostAccumulated.push(...pageItems);
-      nextLink = resp.data["@odata.nextLink"] || "";
-    }
-  };
-  await fetchFollowCostKPIs(config.followCostListId);
-  setFollowCostItems(followCostAccumulated);
-}
-
+        }
+      } catch (err: any) {
+        console.error("Error:", err);
+        setError(err.message || String(err));
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      console.error("Error:", err);
-      setError(err.message || String(err));
-    } finally {
-      setLoading(false);
+    })();
+  }, [project]);
+  // Monthly KPI Filtering
+  useEffect(() => {
+    if (!allMonthlyKPIs.length) {
+      setFilteredMonthlyKPIs([]);
+      return;
     }
-  })();
-}, [project]);
-useEffect(() => {
-  if (!allMonthlyKPIs.length) {
-    setFilteredMonthlyKPIs([]);
-    return;
-  }
-  const newFiltered = allMonthlyKPIs.filter((item) => {
-    const itemMonthNum = parseInt(item.Monthid, 10);
-if (isNaN(itemMonthNum)) return false;
-    if (itemMonthNum < 1) return false;
+    const newFiltered = allMonthlyKPIs.filter((item) => {
+      const itemMonthNum = parseInt(item.Monthid, 10);
+      if (isNaN(itemMonthNum)) return false;
+      if (itemMonthNum < 1) return false;
 
-    switch (filterMode) {
-      case "month":
-        return item.year === selectedYear && itemMonthNum === parseInt(selectedMonth);
-
-      case "quarter": {
-        if (item.year !== selectedYear) return false;
-        const q = parseInt(selectedQuarter, 10);
-        const minM = (q - 1) * 3 + 1;
-        const maxM = q * 3;
-        return itemMonthNum >= minM && itemMonthNum <= maxM;
+      switch (filterMode) {
+        case "month":
+          return item.year === selectedYear && itemMonthNum === parseInt(selectedMonth);
+        case "quarter": {
+          if (item.year !== selectedYear) return false;
+          const q = parseInt(selectedQuarter, 10);
+          const minM = (q - 1) * 3 + 1;
+          const maxM = q * 3;
+          return itemMonthNum >= minM && itemMonthNum <= maxM;
+        }
+        default:
+          return true;
       }
-      default:
-        return true;
-    }
-  });
-  setFilteredMonthlyKPIs(newFiltered);
-}, [
-  allMonthlyKPIs,
-  filterMode,
-  selectedYear,
-  selectedMonth,
-  selectedQuarter,
-]);
+    });
+    setFilteredMonthlyKPIs(newFiltered);
+  }, [
+    allMonthlyKPIs,
+    filterMode,
+    selectedYear,
+    selectedMonth,
+    selectedQuarter,
+  ]);
+
+  // Change Items Filtering
   useEffect(() => {
     if (!allItems.length) {
       setFilteredItems([]);
@@ -317,10 +358,8 @@ if (isNaN(itemMonthNum)) return false;
       switch (filterMode) {
         case "year":
           return y === selectedYear;
-
         case "month":
           return y === selectedYear && m === selectedMonth;
-
         case "quarter": {
           if (y !== selectedYear) return false;
           const monthNum = parseInt(m, 10);
@@ -335,10 +374,8 @@ if (isNaN(itemMonthNum)) return false;
           const [minMonth, maxMonth] = quarterRanges[q];
           return monthNum >= minMonth && monthNum <= maxMonth;
         }
-
         case "day":
           return y === selectedYear && m === selectedMonth && d === selectedDay;
-
         case "weekOfMonth": {
           if (y !== selectedYear || m !== selectedMonth) return false;
           if (!selectedWeekOfMonth) return true;
@@ -347,14 +384,11 @@ if (isNaN(itemMonthNum)) return false;
           const itemWeek = Math.ceil(dayNum / 7);
           return itemWeek === selectedWeekOfMonth;
         }
-
         case "weekOfYear": {
           if (!selectedWeekOfYear) return true;
           try {
             const itemDate = new Date(+y, +m - 1, +d);
-            // Ensure the item year matches the user’s chosen year
             if (itemDate.getFullYear() !== Number(selectedYear)) return false;
-            // Basic function to get week-of-year
             const getWeekNum = (dt: Date) => {
               const startOfYear = new Date(dt.getFullYear(), 0, 1);
               const diffDays =
@@ -367,7 +401,6 @@ if (isNaN(itemMonthNum)) return false;
             return false;
           }
         }
-
         case "customRange": {
           try {
             const itemDate = new Date(+y, +m - 1, +d);
@@ -378,12 +411,10 @@ if (isNaN(itemMonthNum)) return false;
             return false;
           }
         }
-
         default:
           return true;
       }
     });
-
     setFilteredItems(newFiltered);
   }, [
     allItems,
@@ -405,11 +436,11 @@ if (isNaN(itemMonthNum)) return false;
   if (loading) {
     return <p style={{ padding: 20 }}>Loading…</p>;
   }
-
   if (error) {
     return <p style={{ color: "red", padding: 20 }}>Error: {error}</p>;
   }
-    const totalChanges = filteredItems.length;
+
+  const totalChanges = filteredItems.length;
   const changesByArea: Record<string, number> = {};
   filteredItems.forEach((item) => {
     const area = item.SheetName || "Unknown";
@@ -419,144 +450,311 @@ if (isNaN(itemMonthNum)) return false;
   return (
     <div className="bg-gray-100 min-h-screen p-6">
       <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
-        {/* Dashboard Title */}
-        <h1 className="text-2xl font-bold text-gray-900">
-          {project?.toLowerCase() === "draxlmaeir"
-            ? "Changes Dashboard – Combined – Project: draxlmaeir"
-            : `Changes Dashboard – Implementation – Project: ${project}`}
-        </h1>
-
-        {/* Filter Mode Selector */}
-        <div className="flex space-x-4 items-center mb-4">
-          <div>
-            <FilterControls
-  filterMode={filterMode}
-  setFilterMode={setFilterMode}
-  selectedYear={selectedYear}
-  setSelectedYear={setSelectedYear}
-  selectedMonth={selectedMonth}
-  setSelectedMonth={setSelectedMonth}
-  selectedQuarter={selectedQuarter}
-  setSelectedQuarter={setSelectedQuarter}
-  selectedDay={selectedDay}
-  setSelectedDay={setSelectedDay}
-  selectedWeekOfMonth={selectedWeekOfMonth}
-  setSelectedWeekOfMonth={setSelectedWeekOfMonth}
-  selectedWeekOfYear={selectedWeekOfYear}
-  setSelectedWeekOfYear={setSelectedWeekOfYear}
-  fromDay={fromDay}
-  fromMonth={fromMonth}
-  fromYear={fromYear}
-  toDay={toDay}
-  toMonth={toMonth}
-  toYear={toYear}
-  setFromDay={setFromDay}
-  setFromMonth={setFromMonth}
-  setFromYear={setFromYear}
-  setToDay={setToDay}
-  setToMonth={setToMonth}
-  setToYear={setToYear}
-/>
-          </div>         
+        {/* FILTER MODES (Horizontal Button Group) */}
+        <div className="flex flex-row flex-wrap justify-center items-center gap-3 mb-3">
+          <span className="font-semibold mr-4">Filter Mode:</span>
+          {filterModes.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFilterMode(key)}
+              className={`px-5 py-2 rounded-lg text-base font-medium transition shadow 
+                ${filterMode === key
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-blue-100"
+                }`}
+              style={{ minWidth: 110 }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        {/* Stats Summary */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <StatsCards totalChanges={totalChanges} changesByArea={changesByArea} />
+        {/* SUBFILTER CONTROLS - centered, below filter mode */}
+        <div className="flex flex-row flex-wrap gap-3 justify-center items-center mb-4">
+          {/* Year */}
+          {(filterMode === "year" ||
+            filterMode === "quarter" ||
+            filterMode === "month" ||
+            filterMode === "day" ||
+            filterMode === "weekOfMonth" ||
+            filterMode === "weekOfYear" ||
+            filterMode === "customRange") && (
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(e.target.value)}
+              className="border px-3 py-1 rounded"
+            >
+              {Array.from({ length: 7 }, (_, i) => (2022 + i).toString()).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Quarter */}
+          {filterMode === "quarter" && (
+            <select
+              value={selectedQuarter}
+              onChange={e => setSelectedQuarter(e.target.value)}
+              className="border px-3 py-1 rounded"
+            >
+              <option value="1">Q1</option>
+              <option value="2">Q2</option>
+              <option value="3">Q3</option>
+              <option value="4">Q4</option>
+            </select>
+          )}
+
+          {/* Month */}
+          {(filterMode === "month" ||
+            filterMode === "day" ||
+            filterMode === "weekOfMonth" ||
+            filterMode === "weekOfYear" ||
+            filterMode === "customRange") && (
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="border px-3 py-1 rounded"
+            >
+              {Array.from({ length: 12 }, (_, i) => {
+                const monthValue = (i + 1).toString().padStart(2, "0");
+                return (
+                  <option key={monthValue} value={monthValue}>
+                    {new Date(0, i).toLocaleString("en-US", { month: "long" })}
+                  </option>
+                );
+              })}
+            </select>
+          )}
+
+          {/* Day */}
+          {(filterMode === "day" || filterMode === "customRange") && (
+            <select
+              value={selectedDay}
+              onChange={e => setSelectedDay(e.target.value)}
+              className="border px-3 py-1 rounded"
+            >
+              {Array.from({ length: 31 }, (_, i) => {
+                const dayValue = (i + 1).toString().padStart(2, "0");
+                return <option key={dayValue} value={dayValue}>{dayValue}</option>;
+              })}
+            </select>
+          )}
+
+          {/* Week of Month */}
+          {filterMode === "weekOfMonth" && (
+            <select
+              value={selectedWeekOfMonth ?? ""}
+              onChange={e => setSelectedWeekOfMonth(Number(e.target.value) || null)}
+              className="border px-3 py-1 rounded"
+            >
+              <option value="">All Weeks</option>
+              {[1, 2, 3, 4, 5].map(w => (
+                <option key={w} value={w}>Week {w}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Week of Year */}
+          {filterMode === "weekOfYear" && (
+            <select
+              value={selectedWeekOfYear ?? ""}
+              onChange={e => setSelectedWeekOfYear(Number(e.target.value) || null)}
+              className="border px-3 py-1 rounded"
+            >
+              <option value="">All Weeks</option>
+              {Array.from({ length: 52 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>Week {i + 1}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Custom Range */}
+          {filterMode === "customRange" && (
+            <div className="flex flex-row gap-2 items-center">
+              <div>
+                <label className="block text-xs">From</label>
+                <input type="text" value={fromYear} onChange={e => setFromYear(e.target.value)} className="w-14 border px-2 rounded" placeholder="Year" />
+                <input type="text" value={fromMonth} onChange={e => setFromMonth(e.target.value)} className="w-10 border px-2 rounded ml-1" placeholder="Mo" />
+                <input type="text" value={fromDay} onChange={e => setFromDay(e.target.value)} className="w-10 border px-2 rounded ml-1" placeholder="Day" />
+              </div>
+              <div>
+                <label className="block text-xs">To</label>
+                <input type="text" value={toYear} onChange={e => setToYear(e.target.value)} className="w-14 border px-2 rounded" placeholder="Year" />
+                <input type="text" value={toMonth} onChange={e => setToMonth(e.target.value)} className="w-10 border px-2 rounded ml-1" placeholder="Mo" />
+                <input type="text" value={toDay} onChange={e => setToDay(e.target.value)} className="w-10 border px-2 rounded ml-1" placeholder="Day" />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Visuals */}
+        {/* API SOURCE BUTTONS - Card Style, Same as Sidebar/Area Cards */}
+        <div className="flex flex-row flex-wrap justify-center gap-6 mb-6">
+          {apiTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setSelectedApi(tab.key as any)}
+              className={`flex flex-col items-center justify-center w-48 h-32 rounded-xl font-semibold text-lg transition 
+                shadow
+                ${selectedApi === tab.key
+                  ? "bg-yellow-400 text-black shadow-lg"
+                  : "bg-white/20 text-white hover:bg-white/30"
+                }`}
+              style={{ minHeight: "120px" }}
+            >
+              <img src={tab.icon} alt={tab.label} className="w-14 h-14 object-contain mb-2" />
+              <span className="text-center leading-tight">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+        {/* --- VISUALS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <SubAreaPieChart items={filteredItems} />
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <OpenClosedPieChart items={filteredItems} type="phase4" />
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <OpenClosedPieChart items={filteredItems} type="pav" />
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <OpenClosedPieChart items={filteredItems} type="phase8" />
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <ScrapPieChart items={filteredItems} groupBy="year" />
-          </div>
-          {/*  New chart for unplanned downtime */}
+          {/* --- CHANGES Visuals --- */}
+          {selectedApi === "changes" && (
+            <>
+              <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
+                <StatsCards
+                  totalChanges={totalChanges}
+                  changesByArea={changesByArea}
+                  areaImages={areaImages}
+                />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SubAreaPieChart items={filteredItems} />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <OpenClosedPieChart items={filteredItems} type="phase4" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <OpenClosedPieChart items={filteredItems} type="pav" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <OpenClosedPieChart items={filteredItems} type="phase8" />
+              </div>
+            </>
+          )}
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-2">Unplanned Downtime</h2>
-          <UnplannedDowntimeChart data={filteredMonthlyKPIs} />
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-2">DRX Idea Progress</h2>
-  <DRXIdeaProgressChart
-    data={filteredMonthlyKPIs}
-    filterMode={filterMode as "month" | "quarter" | "year"}
-  />
-</div>
-<div className="bg-white rounded-lg shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-2">Budget Department</h2>
-  <BudgetDepartmentChart
-    data={filteredMonthlyKPIs}
-    filterMode={filterMode as "month" | "quarter" | "year"}
-  />
-</div>
-<div className="bg-white rounded-lg shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-2">Detailed Budget Entries</h2>
-  <BudgetEntriesChart
-    data={filteredMonthlyKPIs}
-    filterMode={filterMode as "month" | "quarter" | "year"}
-  />
-</div>
-<div className="bg-white rounded-lg shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-2">Detailed DRX Idea Entries</h2>
-  <DRXEntriesChart
-    data={filteredMonthlyKPIs}
-    filterMode={filterMode as "month" | "quarter" | "year"}
-  />
-</div>
-<FollowupCostByAreaChart
-  data={followCostItems}
-  filterMode={filterMode}
-  selectedYear={selectedYear}
-  selectedMonth={selectedMonth}
-  selectedDay={selectedDay}
-  selectedQuarter={selectedQuarter}
-  selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
-  selectedWeekOfYear={selectedWeekOfYear ?? undefined}
-  selectedProject={project?.toLowerCase() || ""}
-/>
-<div className="bg-white rounded-lg shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-2">Coût suivi / Budget PA par Raison de l’initiation</h2>
-  <FollowupCostByReasonChart
-    data={followCostItems}
-    filterMode={filterMode}
-    selectedYear={selectedYear}
-    selectedMonth={selectedMonth}
-    selectedDay={selectedDay}
-    selectedQuarter={selectedQuarter}
-    selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
-    selectedWeekOfYear={selectedWeekOfYear ?? undefined}
-    selectedProject={project?.toLowerCase() || ""}
-  />
-</div>
-<div className="bg-white/10 backdrop-blur-lg rounded-xl shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-2">Coût suivi / Budget PA par Raison et Zone</h2>
-  <FollowupCostCombinedChart
-    data={followCostItems}
-    filterMode={filterMode}
-    selectedYear={selectedYear}
-    selectedMonth={selectedMonth}
-    selectedDay={selectedDay}
-    selectedQuarter={selectedQuarter}
-    selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
-    selectedWeekOfYear={selectedWeekOfYear ?? undefined}
-    selectedProject={project?.toLowerCase() || ""}
-  />
-</div>
+          {/* --- SCRAP Visuals --- */}
+          {selectedApi === "scrap" && (
+            <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
+              <ScrapPieChart items={filteredItems} groupBy="year" />
+            </div>
+          )}
 
+          {/* --- CLOSURE PHASE 4 --- */}
+          {selectedApi === "closurePhase4" && (
+            <div className="bg-white rounded-lg shadow-md p-6 col-span-2 flex flex-col items-center justify-center">
+              <h2 className="text-xl font-semibold mb-2">Closure Phase 4</h2>
+              <div className="text-gray-600 italic">
+                No visual available yet.
+              </div>
+            </div>
+          )}
+
+          {/* --- UNPLANNED DOWNTIME --- */}
+          {selectedApi === "unplannedDowntime" && (
+            <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
+              <h2 className="text-xl font-semibold mb-2">Unplanned Downtime</h2>
+              <UnplannedDowntimeChart data={filteredMonthlyKPIs} />
+            </div>
+          )}
+
+          {/* --- COST PA --- */}
+          {selectedApi === "costPA" && (
+            <>
+              <FollowupCostByAreaChart
+                data={followCostItems}
+                filterMode={filterMode}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+                selectedDay={selectedDay}
+                selectedQuarter={selectedQuarter}
+                selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
+                selectedWeekOfYear={selectedWeekOfYear ?? undefined}
+                selectedProject={project?.toLowerCase() || ""}
+              />
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-2">
+                  Coût suivi / Budget PA par Raison de l’initiation
+                </h2>
+                <FollowupCostByReasonChart
+                  data={followCostItems}
+                  filterMode={filterMode}
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  selectedDay={selectedDay}
+                  selectedQuarter={selectedQuarter}
+                  selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
+                  selectedWeekOfYear={selectedWeekOfYear ?? undefined}
+                  selectedProject={project?.toLowerCase() || ""}
+                />
+              </div>
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-2">
+                  Coût suivi / Budget PA par Raison et Zone
+                </h2>
+                <FollowupCostCombinedChart
+                  data={followCostItems}
+                  filterMode={filterMode}
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  selectedDay={selectedDay}
+                  selectedQuarter={selectedQuarter}
+                  selectedWeekOfMonth={selectedWeekOfMonth ?? undefined}
+                  selectedWeekOfYear={selectedWeekOfYear ?? undefined}
+                  selectedProject={project?.toLowerCase() || ""}
+                />
+              </div>
+            </>
+          )}
+
+          {/* --- DRX IDEA --- */}
+          {selectedApi === "drxIdea" && (
+            <>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-2">
+                  Detailed DRX Idea Entries
+                </h2>
+                <DRXEntriesChart
+                  data={filteredMonthlyKPIs}
+                  filterMode={filterMode as "month" | "quarter" | "year"}
+                />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-2">DRX Idea Progress</h2>
+                <DRXIdeaProgressChart
+                  data={filteredMonthlyKPIs}
+                  filterMode={filterMode as "month" | "quarter" | "year"}
+                />
+              </div>
+            </>
+          )}
+
+          {/* --- BUDGET --- */}
+          {selectedApi === "budget" && (
+            <>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-2">
+                  Budget Department
+                </h2>
+                <BudgetDepartmentChart
+                  data={filteredMonthlyKPIs}
+                  filterMode={filterMode as "month" | "quarter" | "year"}
+                />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-2">
+                  Detailed Budget Entries
+                </h2>
+                <BudgetEntriesChart
+                  data={filteredMonthlyKPIs}
+                  filterMode={filterMode as "month" | "quarter" | "year"}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+export default ChangesDashboard;

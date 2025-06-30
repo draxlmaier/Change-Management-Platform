@@ -59,30 +59,32 @@ const ProjectSelection: React.FC = () => {
           <p className="text-white text-lg">Loading projects...</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-            {projects.map((proj) => (
-              <div
-                key={proj.id}
-                onClick={() => navigate(`/changes/${proj.id}`)}
-                className="cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition"
-              >
-                <img
-                  src={getProjectLogo(proj.id)}
-                  alt={`${proj.displayName} logo`}
-                  className="h-24 w-auto"
-                />
-                <h2 className="text-xl font-semibold text-white">
-                  {proj.displayName}
-                </h2>
-                <p className="text-gray-200 text-sm">View changes →</p>
-              </div>
-            ))}
+  {projects.map((proj) => (
+    <div
+      key={proj.id}
+      onClick={() => navigate(`/changes/${proj.id}`)}
+      className="group cursor-pointer flex flex-col items-center justify-center space-y-3 px-6 py-8 bg-white/20 backdrop-blur-md rounded-2xl shadow-lg hover:bg-white/30 hover:scale-105 transition transform duration-300 ease-in-out"
+    >
+      <img
+        src={getProjectLogo(proj.id)}
+        alt={`${proj.displayName} logo`}
+        className="h-20 w-auto object-contain"
+      />
+      <h2 className="text-xl font-semibold text-white">{proj.displayName}</h2>
+      <p className="text-gray-200 text-sm">View changes →</p>
 
-            {projects.length === 0 && (
-              <p className="col-span-full text-center text-gray-300 mt-6">
-                No projects found. Please add some in the Config Page first!
-              </p>
-            )}
-          </div>
+      {/* Hover underline */}
+      <span className="h-1 w-12 bg-yellow-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full" />
+    </div>
+  ))}
+
+  {projects.length === 0 && (
+    <p className="col-span-full text-center text-gray-300 mt-6">
+      No projects found. Please add some in the Config Page first!
+    </p>
+  )}
+</div>
+
         )}
       </div>
     </div>

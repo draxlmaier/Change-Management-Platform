@@ -5,7 +5,16 @@ export interface CmConfig {
   questionsListId: string;
   monthlyListId: string;
   followCostListId: string;
-  projects: Record<string, { mapping?: { feasibility?: string; implementation?: string } }>;
+  projects: Record<
+  string,
+  {
+    mapping?: {
+      implementation?: string;
+      implementationExtra?: string;
+      changeQuestionStatusListId?: string;
+    };
+  }
+>;
 }
 
 /**
@@ -82,6 +91,32 @@ export function saveProjectMapping(
   };
   const existing = cfg.projects[project] || { mapping: {} };
   existing.mapping = { ...existing.mapping, implementation: listId };
+  cfg.projects[project] = existing;
+  localStorage.setItem("cmConfig", JSON.stringify(cfg));
+}
+export function saveImplementationExtra(project: string, listId: string): void {
+  const cfg = readConfig() || {
+    siteId: "",
+    questionsListId: "",
+    monthlyListId: "",
+    followCostListId: "",
+    projects: {},
+  };
+  const existing = cfg.projects[project] || { mapping: {} };
+  existing.mapping = { ...existing.mapping, implementationExtra: listId };
+  cfg.projects[project] = existing;
+  localStorage.setItem("cmConfig", JSON.stringify(cfg));
+}
+export function saveChangeQuestionStatusList(project: string, listId: string): void {
+  const cfg = readConfig() || {
+    siteId: "",
+    questionsListId: "",
+    monthlyListId: "",
+    followCostListId: "",
+    projects: {},
+  };
+  const existing = cfg.projects[project] || { mapping: {} };
+  existing.mapping = { ...existing.mapping, changeQuestionStatusListId: listId };
   cfg.projects[project] = existing;
   localStorage.setItem("cmConfig", JSON.stringify(cfg));
 }

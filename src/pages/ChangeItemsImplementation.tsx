@@ -97,7 +97,7 @@ const countByStatusAndArea = (status: string, area: string) =>
 
 const startDateFrom = fromMatch ? excelSerialDateToJSDate(parseInt(fromMatch[1])) : "";
 const startDateTo = toMatch ? excelSerialDateToJSDate(parseInt(toMatch[1])) : "";
-
+const gridColumns = "2fr 1.5fr 1fr 1fr 1fr 1fr 1fr";
 const areaColors: Record<string, string> = {
   Cockpit: "bg-green-500 text-white",
   MR: "bg-purple-500 text-white",
@@ -222,9 +222,6 @@ const areaColors: Record<string, string> = {
     <div className="relative z-20 w-full flex items-center justify-between px-8 py-4 text-white">
       <TopMenu />
       <button onClick={() => navigate(`/changes/${projectKey}`)} className="flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition">← Back</button>
-      <div className="flex items-center space-x-2">
-        <button onClick={() => navigate(`/changes/${projectKey}/feasibility-extra`)} className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-white text-sm">Go to Feasibility Extra</button>
-      </div>
     </div>
 
     {/* Title */}
@@ -350,12 +347,11 @@ const areaColors: Record<string, string> = {
         <div
           className="grid items-center p-4 bg-white/10 border border-white/20
                      backdrop-blur-md rounded-2xl shadow-md"
-          style={{ gridTemplateColumns: "14rem 14rem 6rem 6rem 6rem 8rem auto" }}
+          style={{ gridTemplateColumns: gridColumns }}
         >
           <span className="font-semibold">Change ID</span>
           <span className="font-semibold">OEM Offer Change</span>
-          <span className="font-semibold text-center">PAV Phase 4 End</span>
-          <span className="font-semibold text-center">Phase 4 End</span>
+          <span className="font-semibold text-center">Phase 8 Start</span>
           <span className="font-semibold text-center">Phase 8 End</span>
           <span className="font-semibold text-center">Process End</span>
           <span className="font-semibold text-center">Area</span>
@@ -366,8 +362,7 @@ const areaColors: Record<string, string> = {
           const f = item.fields;
           const drx = f.Processnumber;
           const risk1 = f.OEMOfferChangenumber;
-          const pav = f.EnddatePAVPhase4;
-          const ph4 = f.EnddatePhase4;
+          const ph82 = f.StartdatePhase8;
           const ph8 = f.EnddatePhase8;
           const pi = f.EnddateProcessinfo;
           const area = f.SheetName;
@@ -377,53 +372,43 @@ const areaColors: Record<string, string> = {
           const areaClasses = getAreaColor(area);
 
           // If no date is found, add a bounce
-          const hasDigit = /[0-9]/.test(pav);
 
           return (
             <div
               key={item.id}
               onClick={() => navigate(`/details/${projectKey}/implementation/${item.id}`)}
-              className={`grid h-20 items-center p-4 bg-white/10 border border-white/20
-                         backdrop-blur-md rounded-2xl shadow-md cursor-pointer
-                         hover:bg-white/20`}
-              style={{
-                gridTemplateColumns: "14rem 14rem 6rem 6rem 6rem 8rem auto",
-              }}
+              className={`group relative grid h-20 items-center p-4 bg-white/10 border border-white/20
+              backdrop-blur-md rounded-2xl shadow-md cursor-pointer
+              hover:bg-white/20 transition`}
+              style={{ gridTemplateColumns: gridColumns }}
             >
               <span className="flex items-center font-semibold">
-                {!hasDigit && (
+                
                   <span className="relative flex items-center justify-center w-5 h-5 mr-2">
   <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
   <span className="relative w-3 h-3 bg-red-500 rounded-full"></span>
 </span>
-                )}
                 {drx || ""}
               </span>
               <span className="font-semibold overflow-hidden whitespace-nowrap text-ellipsis">
                 {risk1 || ""}
               </span>
-              <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${pav ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
-  {pav ? "Closed" : "Open"}
-</span>
-
-<span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${ph4 ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
-  {ph4 ? "Closed" : "Open"}
-</span>
-
+       <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${ph8 ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
+  {ph82 ? "Closed" : "Open"}
+</span>     
 <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${ph8 ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
   {ph8 ? "Closed" : "Open"}
 </span>
-
 <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${pi ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
   {pi ? "Closed" : "Open"}
 </span>
-
               <span
                 className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${areaClasses}`}
                 title={`Area: ${area}`}
               >
                 {area || "—"}
               </span>
+    <span className="absolute bottom-0 left-0 w-full h-1 bg-yellow-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-b-full" />
             </div>
           );
         })}

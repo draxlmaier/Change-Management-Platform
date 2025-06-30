@@ -12,12 +12,18 @@ import TopMenu from "../components/TopMenu";
 interface IFollowCostFields {
   Project: string;
   Area: string;
-  Followupcost_x002f_BudgetPA: number;
+  Carline: string;
+  FollowupcostBudgetPA: number;
   InitiationReasons: string;
   BucketID: string;
   Date: string;
+  Statut: string;
+  Quantity: number;
+  NettValue: number;
+  TotalNettValue: number;
+  Currency: string;
   BucketResponsible: string;
-  Postname_x002f_ID: string;
+  PostnameID: string;
 }
 
 interface IFollowCostKPIItem {
@@ -87,8 +93,12 @@ const FollowCostKPIEditor: React.FC = () => {
 
   // Filter items when the selected project changes
   useEffect(() => {
-    const filtered = allItems.filter((item) => item.fields.Project === selectedProject);
-    setItems(filtered);
+    if (!selectedProject) {
+      setItems(allItems);
+    } else {
+      const filtered = allItems.filter((item) => item.fields.Project === selectedProject);
+      setItems(filtered);
+    }
     setCurrentPage(1);
   }, [selectedProject, allItems]);
   // Enter edit mode for a row
@@ -133,7 +143,7 @@ const FollowCostKPIEditor: React.FC = () => {
     }));
   };
 
-  // Save edits
+  // Save edits to SharePoint
   const handleSave = async (itemId: string) => {
     const rowState = editorState[itemId];
     if (!rowState) return;
@@ -142,15 +152,16 @@ const FollowCostKPIEditor: React.FC = () => {
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
       if (!token) throw new Error("Could not get access token.");
 
+      // Map field names for new schema if needed (see below for details)
       const allowedFields: (keyof IFollowCostFields)[] = [
         "Project",
         "Area",
-        "Followupcost_x002f_BudgetPA",
+        "FollowupcostBudgetPA",
         "InitiationReasons",
         "BucketID",
         "Date",
         "BucketResponsible",
-        "Postname_x002f_ID",
+        "PostnameID",
       ];
 
       const rawDraft = rowState.draft;
@@ -266,12 +277,12 @@ const FollowCostKPIEditor: React.FC = () => {
                   <th className="p-2 border border-white/20">Actions</th>
                   <th className="p-2 border border-white/20">Project</th>
                   <th className="p-2 border border-white/20">Area</th>
-                  <th className="p-2 border border-white/20">Follow up cost / Budget PA</th>
-                  <th className="p-2 border border-white/20">Initiation Reasons</th>
-                  <th className="p-2 border border-white/20">Bucket ID</th>
+                  <th className="p-2 border border-white/20">FollowupcostBudgetPA</th>
+                  <th className="p-2 border border-white/20">InitiationReasons</th>
+                  <th className="p-2 border border-white/20">BucketID</th>
                   <th className="p-2 border border-white/20">Date</th>
-                  <th className="p-2 border border-white/20">Bucket Responsible</th>
-                  <th className="p-2 border border-white/20">Post name / ID</th>
+                  <th className="p-2 border border-white/20">BucketResponsible</th>
+                  <th className="p-2 border border-white/20">PostnameID</th>
                 </tr>
               </thead>
               <tbody>
@@ -358,23 +369,23 @@ const FollowCostKPIEditor: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Followupcost_x002f_BudgetPA */}
+                      {/* FollowupcostBudgetPA */}
                       <td className="p-2 border border-white/20">
                         {isEditing ? (
                           <input
                             type="number"
                             className="border p-1 w-24 text-black"
-                            value={rowState?.draft.Followupcost_x002f_BudgetPA ?? 0}
+                            value={(rowState as any)?.draft.FollowupcostBudgetPA ?? ""}
                             onChange={(e) =>
                               handleEditFieldChange(
                                 itm.id,
-                                "Followupcost_x002f_BudgetPA",
+                                "FollowupcostBudgetPA" as keyof IFollowCostFields,
                                 Number(e.target.value)
                               )
                             }
                           />
                         ) : (
-                          itm.fields.Followupcost_x002f_BudgetPA
+                          (itm.fields as any).FollowupcostBudgetPA
                         )}
                       </td>
 
@@ -438,19 +449,19 @@ const FollowCostKPIEditor: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Postname_x002f_ID */}
+                      {/* PostnameID */}
                       <td className="p-2 border border-white/20">
                         {isEditing ? (
                           <input
                             type="text"
                             className="border p-1 w-28 text-black"
-                            value={rowState?.draft.Postname_x002f_ID || ""}
+                            value={(rowState as any)?.draft.PostnameID || ""}
                             onChange={(e) =>
-                              handleEditFieldChange(itm.id, "Postname_x002f_ID", e.target.value)
+                              handleEditFieldChange(itm.id, "PostnameID" as keyof IFollowCostFields, e.target.value)
                             }
                           />
                         ) : (
-                          itm.fields.Postname_x002f_ID
+                          (itm.fields as any).PostnameID
                         )}
                       </td>
                     </tr>

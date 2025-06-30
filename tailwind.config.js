@@ -5,8 +5,9 @@ module.exports = {
     "./public/index.html",
   ],
   theme: {
-    extend: {},
+    extend: {
+      // custom animation or colors if needed
+    },
   },
-  plugins: [],
+  plugins: [], // ← Leave this empty or put Tailwind plugins only
 };
-

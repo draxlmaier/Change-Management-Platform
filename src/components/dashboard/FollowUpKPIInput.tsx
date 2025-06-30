@@ -21,8 +21,12 @@ interface IProject {
   id: string;
   displayName: string;
   logo?: string;
+  mapping: {
+    implementation: string;
+    feasibilityExtra?: string;
+    implementationExtra?: string;
+  };
 }
-
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const FollowUpCostInput: React.FC = () => {
@@ -252,10 +256,8 @@ const FollowUpCostInput: React.FC = () => {
         {tab === "excel" && (
           <FollowUpExcelUploader
             siteId={siteId}
-            listId={listId}
-            selectedProject={form.project}
-            selectedArea={form.area}
-          />
+            listId={listId} 
+            projects={projects}/>
         )}
       </div>
     </div>

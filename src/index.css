@@ -26,3 +26,25 @@
   animation: ping-once 1.2s ease-out infinite;
   z-index: 0;
 }
+
+/* Reusable glassy icon button */
+.btn-glassy-icon {
+  @apply relative flex items-center justify-center gap-3
+          px-6 py-4 rounded-xl text-white
+          bg-white/20 backdrop-blur-md shadow-lg
+          hover:bg-white/30 hover:scale-105
+          transition transform duration-300 ease-in-out;
+}
+
+/* Yellow underline on hover (appears at bottom of button) */
+.btn-glassy-icon-underline::after {
+  @apply absolute bottom-0 left-0 w-full h-1
+         bg-yellow-400 scale-x-0 group-hover:scale-x-100
+         transition-transform duration-300 origin-left rounded-b-full content-[''];
+}
+html, body, #root {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}

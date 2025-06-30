@@ -1,10 +1,11 @@
 import React from "react";
-import DetailsPage from "../components/DetailsPage";
+import DetailsPage2 from "../components/DetailsPage2";
 
 export default function DetailsFeasibility() {
   const fieldsConfig = {
     generalFields: [
-      { label: "Status", key: "Status" },
+      { label: "Process Number", key: "Processnumber" },
+      { label: "OEM Offer Change number", key: "OEMOfferChangenumber" },
       { label: "OEM", key: "OEM" },
       { label: "Carline", key: "Carline" },
       { label: "Area", key: "SheetName" },
@@ -18,9 +19,8 @@ export default function DetailsFeasibility() {
       { label: "Process Start date", key: "StartdateProcessinfo" },
       { label: "Process End date", key: "EnddateProcessinfo" },
       { label: "Process Working Days", key: "WorkingDaysProcess" },
-      { label: "OEM Offer Change number", key: "OEMOfferChangenumber" },
-      { label: "OEM Change number", key: "OEMChangenumber" },
-      { label: "Reason for changes", key: "Reasonforchanges" },
+        { label: "OEM Change number", key: "OEMChangenumber" },
+        { label: "Reason for changes", key: "Reasonforchanges" },
     ],
     editableFields: [
       // Phase 4
@@ -47,5 +47,5 @@ export default function DetailsFeasibility() {
     startEndWorkingGroup: [], // moved all relevant fields to above sections
   };
 
-  return <DetailsPage fieldsConfig={fieldsConfig} />;
+  return <DetailsPage2 fieldsConfig={fieldsConfig} />;
 }

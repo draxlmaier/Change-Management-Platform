@@ -1,4 +1,3 @@
-
 // services/configService.ts
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
@@ -8,10 +7,10 @@ export interface IProject {
   displayName: string;
   logo?: string;
   mapping: {
-    feasibility: string;
     implementation: string;
-    feasibilityExtra?: string;
     implementationExtra?: string;
+    feasibilityExtra?: string;
+    changeQuestionStatusListId?: string;
   };
 }
 
@@ -21,6 +20,8 @@ export interface cmConfigLists {
   monthlyListId: string;
   followCostListId: string;
   usersListId?: string;
+  budgetsListId?: string;
+  changeQuestionStatusListId?: string;
   projects: IProject[];
   assignedRoles?: { email: string; role: string }[];
   frequentSites?: string[];
@@ -68,19 +69,19 @@ export function upsertProjectMapping(projectId: string, displayName: string, pha
       id: projectId.toLowerCase(),
       displayName,
       mapping: {
-        feasibility: "",
         implementation: "",
-        feasibilityExtra: "",
         implementationExtra: "",
+        feasibilityExtra: "",
+        changeQuestionStatusListId: "",
       },
     };
     config.projects.push(project);
   }
 
-  if (phase === "phase4") project.mapping.feasibility = listId;
-  else if (phase === "phase4extra") project.mapping.feasibilityExtra = listId;
+  if (phase === "phase4extra") project.mapping.feasibilityExtra = listId;
   else if (phase === "phase8") project.mapping.implementation = listId;
   else if (phase === "phase8extra") project.mapping.implementationExtra = listId;
+  else if (phase === "changequestionstatus") project.mapping.changeQuestionStatusListId = listId;
 
   saveConfig(config);
 }

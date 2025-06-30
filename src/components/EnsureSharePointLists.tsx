@@ -1,5 +1,3 @@
-// File: src/components/EnsureSharePointLists.tsx
-
 import React, { useState } from "react";
 import axios from "axios";
 import { getAccessToken } from "../auth/getToken";
@@ -26,6 +24,15 @@ const REQUIRED_LISTS = [
       { name: "rateofdowntime", type: "Number" },
       { name: "Targetdowntime", type: "Number" },
       { name: "seuildinterventiondowntime", type: "Number" },
+    ],
+  },
+  {
+    name: "Budgets",
+    fields: [
+      { name: "Project", type: "Text" },
+      { name: "year", type: "Text" },
+      { name: "Month", type: "Text" },
+      { name: "Category", type: "Text" },
       { name: "Budgetdepartment", type: "Number" },
       { name: "Budgetdepartmentplanified", type: "Number" },
     ],
@@ -33,20 +40,16 @@ const REQUIRED_LISTS = [
   {
     name: "QuestionTemplates",
     fields: [
-      { name: "Questions", type: "Text" },
+      { name: "Questionid", type: "Text" },
+      { name: "Question", type: "Text" },
       { name: "TriggerOn", type: "Text" },
       { name: "ResponsableEmail", type: "Text" },
       { name: "SendIntervalValue", type: "Number" },
       { name: "SendIntervalUnit", type: "Text" },
       { name: "Action", type: "Text" },
-      { name: "Responsible's role", type: "Text" },
-      { name: "lastSent", type: "Text" },
-      { name: "responseReceived", type: "Text" },
+      { name: "Responsiblerole", type: "Text" },
       { name: "emailbody", type: "Text" },
       { name: "emailsubject", type: "Text" },
-      { name: "conversationId", type: "Text" },
-      { name: "internetMessageId", type: "Text" },
-      { name: "lastChecked", type: "Text" },
     ],
   },
   {
@@ -54,12 +57,18 @@ const REQUIRED_LISTS = [
     fields: [
       { name: "Project", type: "Text" },
       { name: "Area", type: "Text" },
-      { name: "Followupcost_x002f_BudgetPA", type: "Number" },
+      { name: "Carline", type: "Text" },
+      { name: "FollowupcostBudgetPA", type: "Number" },
       { name: "InitiationReasons", type: "Text" },
       { name: "BucketID", type: "Text" },
       { name: "Date", type: "Text" },
+      { name: "Statut", type: "Text" },
+      { name: "Quantity", type: "Number" },
+      { name: "NettValue", type: "Number" },
+      { name: "TotalNettValue", type: "Number" },
+      { name: "Currency", type: "Text" },
       { name: "BucketResponsible", type: "Text" },
-      { name: "Postname_x002f_ID", type: "Text" },
+      { name: "PostnameID", type: "Text" },
     ],
   },
   {
@@ -114,6 +123,9 @@ const EnsureSharePointLists: React.FC<Props> = ({ siteId, onLog }) => {
           switch (list.name) {
             case "MonthlyKPIs":
               updatedConfig.monthlyListId = listId;
+              break;
+            case "Budgets":
+              updatedConfig.budgetsListId = listId;
               break;
             case "QuestionTemplates":
               updatedConfig.questionsListId = listId;

@@ -7,3 +7,12 @@ export interface CarImage {
   projectId: string;
   createdAt: string;
 }
+export interface AreaImage {
+  id?: number;
+  projectId: string;
+  area: string;
+  imageData: string;
+  createdAt: string;
+  name?: string; // <-- add this line
+}
+

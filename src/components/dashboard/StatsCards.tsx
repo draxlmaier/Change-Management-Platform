@@ -1,32 +1,21 @@
-// src/components/dashboard/StatsCards.tsx
 import React from "react";
-
-import autarkeImg from "../../assets/images/autarke.png";
-import innenraumImg from "../../assets/images/innenraum.png";
-import cockpitImg from "../../assets/images/cockpit.png";
-import mrImg from "../../assets/images/mr.png";
+import { AreaImage } from "../../pages/types";
 
 export interface StatsCardsProps {
   totalChanges: number;
   changesByArea: Record<string, number>;
+  areaImages: AreaImage[];
 }
 
-const imageForArea = (area: string): string | null => {
-  switch (area) {
-    case "Innenraum":
-      return innenraumImg;
-    case "Autarke":
-      return autarkeImg;
-    case "Cockpit":
-      return cockpitImg;
-    case "MR":
-      return mrImg;
-    default:
-      return null; // fallback
-  }
+// Returns latest uploaded image for an area, or undefined
+const getUploadedAreaImage = (area: string, areaImages: AreaImage[]): string | undefined => {
+  const images = areaImages
+    .filter(img => img.area === area)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return images.length ? images[0].imageData : undefined;
 };
 
-export default function StatsCards({ totalChanges, changesByArea }: StatsCardsProps) {
+export default function StatsCards({ totalChanges, changesByArea, areaImages }: StatsCardsProps) {
   return (
     <div className="space-y-6">
       {/* Total Changes */}
@@ -38,7 +27,7 @@ export default function StatsCards({ totalChanges, changesByArea }: StatsCardsPr
       {/* Area Cards */}
       <div className="flex flex-wrap justify-center gap-6">
         {Object.entries(changesByArea).map(([area, count]) => {
-          const imageSrc = imageForArea(area);
+          const uploadedImgSrc = getUploadedAreaImage(area, areaImages);
 
           return (
             <div
@@ -47,14 +36,16 @@ export default function StatsCards({ totalChanges, changesByArea }: StatsCardsPr
             >
               <div className="text-2xl font-bold text-blue-600">{count}</div>
               <div className="text-sm text-gray-700 mt-1 text-center">{area}</div>
-              {imageSrc && (
+              {uploadedImgSrc ? (
                 <div className="w-full h-40 overflow-hidden rounded">
-  <img
-    src={imageSrc}
-    alt={area}
-    className="w-full h-full object-cover"
-  />
-</div>
+                  <img
+                    src={uploadedImgSrc}
+                    alt={area}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-40" />
               )}
             </div>
           );

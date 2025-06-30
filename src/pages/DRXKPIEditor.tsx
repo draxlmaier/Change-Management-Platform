@@ -1,12 +1,9 @@
-// File: src/pages/DRXKPIEditor.tsx
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
 import harnessBg from "../assets/images/harness-bg.png";
-import ProjectCarousel from "../components/ProjectCarousel";
 import TopMenu from "../components/TopMenu";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
@@ -28,7 +25,6 @@ const DRXKPIEditor: React.FC = () => {
   const [siteId, setSiteId] = useState("");
   const [listId, setListId] = useState("");
   const [items, setItems] = useState<SharePointItem[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string>("");
   const [years, setYears] = useState<string[]>([]);
   const navigate = useNavigate();
 
@@ -46,7 +42,7 @@ const DRXKPIEditor: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!siteId || !listId || !selectedProject) return;
+    if (!siteId || !listId) return;
 
     async function loadItems() {
       try {
@@ -56,14 +52,14 @@ const DRXKPIEditor: React.FC = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const filtered = response.data.value
-          .filter((item: any) => {
-            const f = item.fields;
-            return (
-              f.Project === selectedProject &&
-              (f.DRXIdeasubmittedIdea > 0 || f.DRXIdeasubmittedIdeaGoal > 0)
-            );
-          });
+        const filtered = response.data.value.filter((item: any) => {
+          const f = item.fields;
+          // Project is always "draxlmaeir" for DRX
+          return (
+            f.Project === "draxlmaeir" &&
+            (f.DRXIdeasubmittedIdea > 0 || f.DRXIdeasubmittedIdeaGoal > 0)
+          );
+        });
 
         setItems(filtered);
 
@@ -75,7 +71,7 @@ const DRXKPIEditor: React.FC = () => {
     }
 
     loadItems();
-  }, [siteId, listId, selectedProject]);
+  }, [siteId, listId]);
 
   return (
     <div
@@ -92,12 +88,9 @@ const DRXKPIEditor: React.FC = () => {
         </button>
 
         <h1 className="text-xl mt-4 mb-6 font-bold text-white/90">DRX KPI Editor</h1>
-
-        <ProjectCarousel
-          projects={(JSON.parse(localStorage.getItem(LISTS_CONFIG_KEY) || '{}').projects || [])}
-          selectedProject={selectedProject}
-          onProjectSelect={setSelectedProject}
-        />
+        <div className="mb-2 text-white/80 text-sm">
+          <b>Project:</b> draxlmaeir
+        </div>
 
         {years.map((year) => (
           <div key={year} className="mt-8">

@@ -1,5 +1,3 @@
-// File: src/pages/shared/KPIInputWrapper.tsx
-
 import React, { useEffect, useState } from "react";
 import ProjectCarousel from "../../components/ProjectCarousel";
 import axios from "axios";
@@ -43,13 +41,19 @@ interface SharePointItem {
   [key: string]: any;
 }
 
+interface KPIInputWrapperProps {
+  title: string;
+  fields: FieldDef[];
+  fixedProject?: string; // <-- Added prop
+}
+
 const formatter = new Intl.NumberFormat(undefined, {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
   useGrouping: false,
 });
 
-const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ title, fields }) => {
+const KPIInputWrapper: React.FC<KPIInputWrapperProps> = ({ title, fields, fixedProject }) => {
   const [projects, setProjects] = useState<IProject[]>([]);
   const [monthlyListId, setMonthlyListId] = useState<string | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
@@ -63,7 +67,7 @@ const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ titl
   const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
 
   const [form, setForm] = useState<MonthlyForm>({
-    Project: "",
+    Project: fixedProject || "",
     year: defaultYear,
     Month: defaultMonth,
     Monthid: String(now.getMonth() + 1),
@@ -78,6 +82,13 @@ const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ titl
     Budgetdepartment: 0,
     Budgetdepartmentplanified: 0,
   });
+
+  // Update form.Project if fixedProject changes (or on mount)
+  useEffect(() => {
+    if (fixedProject) {
+      setForm((prev) => ({ ...prev, Project: fixedProject }));
+    }
+  }, [fixedProject]);
 
   useEffect(() => {
     const raw = localStorage.getItem(LISTS_CONFIG_KEY);
@@ -103,10 +114,9 @@ const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ titl
       let nextLink: string | null = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${monthlyListId}/items?$expand=fields&$top=5000`;
 
       while (nextLink) {
-       const res: { data: { value: any[]; "@odata.nextLink"?: string } } = await axios.get(nextLink, {
-  headers: { Authorization: `Bearer ${token}` }
-});
-
+        const res: { data: { value: any[]; "@odata.nextLink"?: string } } = await axios.get(nextLink, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         const batch = res.data.value.map((item: any) => ({
           id: item.id,
@@ -136,8 +146,11 @@ const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ titl
       if (!siteId || !monthlyListId) throw new Error("Missing site or list config.");
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
 
-      const uniqueKey = `${form.Project}_${form.Monthid}_${form.year}`;
-      setForm((prev) => ({ ...prev, uniqueKey }));
+      // Ensure Project is set (either via picker or fixedProject)
+      const projectValue = fixedProject || form.Project;
+
+      const uniqueKey = `${projectValue}_${form.Monthid}_${form.year}`;
+      setForm((prev) => ({ ...prev, uniqueKey, Project: projectValue }));
 
       let currentItemId = itemId;
       if (!currentItemId) {
@@ -151,7 +164,7 @@ const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ titl
             {
               fields: {
                 Title: uniqueKey,
-                Project: form.Project,
+                Project: projectValue,
                 year: form.year,
                 Month: form.Month,
                 Monthid: form.Monthid
@@ -201,12 +214,20 @@ const KPIInputWrapper: React.FC<{ title: string; fields: FieldDef[] }> = ({ titl
       <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
         <h2 className="text-2xl font-semibold mb-4 text-white/80">{title}</h2>
 
-        {projects.length > 0 && (
-          <ProjectCarousel
-            projects={projects}
-            selectedProject={form.Project}
-            onProjectSelect={(projectId) => setForm((prev) => ({ ...prev, Project: projectId }))}
-          />
+        {/* Show Project as read-only if fixed, else allow picker */}
+        {fixedProject ? (
+          <div className="mb-4">
+            <label className="block font-semibold mb-1 text-white">Project</label>
+            <div className="p-2 border rounded text-black bg-gray-100">{fixedProject}</div>
+          </div>
+        ) : (
+          projects.length > 0 && (
+            <ProjectCarousel
+              projects={projects}
+              selectedProject={form.Project}
+              onProjectSelect={(projectId) => setForm((prev) => ({ ...prev, Project: projectId }))}
+            />
+          )
         )}
 
         <div className="flex space-x-4 mt-6">
