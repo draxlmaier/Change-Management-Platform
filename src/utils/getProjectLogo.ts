@@ -11,8 +11,8 @@ export function getProjectLogo(id: string | undefined | null): string {
 
   // Known alias mappings
   const aliasMap: Record<string, string> = {
-    'mercedes': 'mercedes-benz',
-    'merc': 'mercedes-benz',
+    'mercedes': 'mercedes',
+    'merc': 'mercedes',
     'vw': 'volkswagen',
   };
 
