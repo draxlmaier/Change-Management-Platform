@@ -38,6 +38,27 @@ const parseDecimal = (val: string): number => {
   return parseFloat(val.replace(",", "."));
 };
 
+const now = new Date();
+const defaultYear = String(now.getFullYear());
+const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
+
+const defaultForm: MonthlyForm = {
+  Project: "",
+  year: defaultYear,
+  Month: defaultMonth,
+  Monthid: String(now.getMonth() + 1),
+  uniqueKey: "",
+  DRXIdeasubmittedIdea: 0,
+  DRXIdeasubmittedIdeaGoal: 0,
+  productionminutes: 0,
+  downtimec: 0,
+  rateofdowntime: 0,
+  Targetdowntime: 0,
+  seuildinterventiondowntime: 0,
+  Budgetdepartment: 0,
+  Budgetdepartmentplanified: 0,
+};
+
 const MonthlyKPIInput: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<IProject[]>([]);
@@ -46,26 +67,7 @@ const MonthlyKPIInput: React.FC = () => {
   const [itemId, setItemId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const now = new Date();
-  const defaultYear = String(now.getFullYear());
-  const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
-
-  const [form, setForm] = useState<MonthlyForm>({
-    Project: "",
-    year: defaultYear,
-    Month: defaultMonth,
-    Monthid: String(now.getMonth() + 1),
-    uniqueKey: "",
-    DRXIdeasubmittedIdea: 0,
-    DRXIdeasubmittedIdeaGoal: 0,
-    productionminutes: 0,
-    downtimec: 0,
-    rateofdowntime: 0,
-    Targetdowntime: 0,
-    seuildinterventiondowntime: 0,
-    Budgetdepartment: 0,
-    Budgetdepartmentplanified: 0,
-  });
+  const [form, setForm] = useState<MonthlyForm>(defaultForm);
 
   const formatter = new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 3,
@@ -98,6 +100,7 @@ const MonthlyKPIInput: React.FC = () => {
       setForm((prev) => ({ ...prev, uniqueKey }));
       checkOrCreateItem(uniqueKey);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.Project, form.Month, form.year, siteId, monthlyListId]);
 
   const checkOrCreateItem = async (uniqueKey: string) => {
@@ -143,8 +146,9 @@ const MonthlyKPIInput: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setForm((prev) => ({ ...prev, ...updates }));
       setMsg("✅ Section saved.");
+      setForm(defaultForm);
+      setItemId(null); // Force new item for next entry
     } catch (err: any) {
       console.error("Save failed:", err);
       setMsg("❌ Save failed: " + (err.response?.data?.error?.message || err.message));

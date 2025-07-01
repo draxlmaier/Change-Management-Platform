@@ -39,7 +39,6 @@ const BudgetInputWrapper: React.FC = () => {
   const [projects, setProjects] = useState<IProject[]>([]);
   const [budgetsListId, setBudgetsListId] = useState<string | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
-  const [itemId, setItemId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -47,14 +46,16 @@ const BudgetInputWrapper: React.FC = () => {
   const defaultYear = String(now.getFullYear());
   const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
 
-  const [form, setForm] = useState<BudgetForm>({
+  const defaultForm: BudgetForm = {
     Project: "",
     year: defaultYear,
     Month: defaultMonth,
     Category: "",
     Budgetdepartment: 0,
     Budgetdepartmentplanified: 0,
-  });
+  };
+
+  const [form, setForm] = useState<BudgetForm>(defaultForm);
 
   useEffect(() => {
     const raw = localStorage.getItem(LISTS_CONFIG_KEY);
@@ -105,7 +106,8 @@ const BudgetInputWrapper: React.FC = () => {
       );
 
       setMsg("✅ Budget KPI entry saved.");
-      setForm((prev) => ({ ...prev, Budgetdepartment: 0, Budgetdepartmentplanified: 0 }));
+      // FULL form reset (including Project, year, Month, Category)
+      setForm(defaultForm);
     } catch (err: any) {
       setMsg("❌ Save failed: " + (err.response?.data?.error?.message || err.message));
       console.error("Save failed:", err);

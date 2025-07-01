@@ -29,7 +29,7 @@ export default function DetailsImplementation() {
       { label: "Phase 8 Working Days", key: "WorkingDaysPAVPhase8" },
       // Additional
       { label: "Change packages", key: "Changepackages" },
-      { label: " Scrap in € ", key: "Scrap" },
+      { label: " Scrap in € ", key: "Actualscrap" },
       { label: "Actual cost in € ", key: "Actualcost" },
       { label: "Actual downtime in minutes ", key: "Actualdowntime" },
       { label: "Change date", key: "Changedate" },

@@ -393,8 +393,8 @@ const areaColors: Record<string, string> = {
               <span className="font-semibold overflow-hidden whitespace-nowrap text-ellipsis">
                 {risk1 || ""}
               </span>
-       <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${ph8 ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
-  {ph82 ? "Closed" : "Open"}
+       <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold`}>
+  {ph82}
 </span>     
 <span className={`justify-self-center px-2 py-1 rounded-full text-sm font-semibold ${ph8 ? "bg-green-400 text-white" : "bg-red-400 text-white"}`}>
   {ph8 ? "Closed" : "Open"}

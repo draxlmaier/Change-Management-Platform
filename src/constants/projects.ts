@@ -28,6 +28,7 @@ export const AVAILABLE_PROJECTS = [
   { id: 'landrover', displayName: 'Land Rover', logo: landroverLogo },
   { id: 'lucid', displayName: 'Lucid', logo: lucidLogo },
   { id: 'mercedes', displayName: 'Mercedes-Benz', logo: mercedesBenzLogo },
+  { id: 'mercedes-benz', displayName: 'Mercedes-Benz', logo: mercedesBenzLogo },
   { id: 'mini', displayName: 'Mini', logo: miniLogo },
   { id: 'porsche', displayName: 'Porsche', logo: porscheLogo },
   { id: 'rivian', displayName: 'Rivian', logo: rivianLogo },

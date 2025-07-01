@@ -38,7 +38,12 @@ const columnMapping = {
   "changedate": "changedate",
   "StartdatePhase8": "StartdatePhase8",
   "EnddatePhase8": "EnddatePhase8",
-  "NameChangepackagesPhase8": "Changepackages"
+  "NameChangepackagesPhase8": "Changepackages",
+  "ProductsafetyrelevantProcessinformation": "ProductSafetyRelevant",
+"EnddateLogisticPhase4": "EndDateLogisticPhase4",
+"EnddateQSPhase4": "EndDateQSPhase4",
+"EnddatePSCRPhase4": "EndDatePSCRPhase4",
+
 };
 
 const cleanHeader = (header: string): string => {
@@ -163,14 +168,25 @@ const cleanedColumns = rawHeaders.map((header) => cleanHeader(header));
         const sheetNameValues = getSheetName(row["Constructedspace"]);
         const base = { ...row };
 
-        if (base.StartdateProcessinfo && base.EnddateProcessinfo)
-          base.WorkingDaysProcess = calculateWorkingDays(base.StartdateProcessinfo, base.EnddateProcessinfo);
-        if (base.StartdatePhase4 && base.EnddatePhase4)
-          base.WorkingDaysPhase4 = calculateWorkingDays(base.StartdatePhase4, base.EnddatePhase4);
-        if (base.StartdatePAVPhase4 && base.EnddatePAVPhase4)
-          base.WorkingDaysPAVPhase4 = calculateWorkingDays(base.StartdatePAVPhase4, base.EnddatePAVPhase4);
-        if (base.StartdatePhase8 && base.EnddatePhase8)
-          base.WorkingDaysPAVPhase8 = calculateWorkingDays(base.StartdatePhase8, base.EnddatePhase8);
+       base.WorkingDaysProcess =
+  base.StartdateProcessinfo && base.EnddateProcessinfo
+    ? calculateWorkingDays(base.StartdateProcessinfo, base.EnddateProcessinfo)
+    : "";
+
+base.WorkingDaysPhase4 =
+  base.StartdatePhase4 && base.EnddatePhase4
+    ? calculateWorkingDays(base.StartdatePhase4, base.EnddatePhase4)
+    : "";
+
+base.WorkingDaysPAVPhase4 =
+  base.StartdatePAVPhase4 && base.EnddatePAVPhase4
+    ? calculateWorkingDays(base.StartdatePAVPhase4, base.EnddatePAVPhase4)
+    : "";
+
+base.WorkingDaysPAVPhase8 =
+  base.StartdatePhase8 && base.EnddatePhase8
+    ? calculateWorkingDays(base.StartdatePhase8, base.EnddatePhase8)
+    : "";
 
         if (Array.isArray(sheetNameValues)) {
           for (const name of sheetNameValues) expandedData.push({ ...base, SheetName: name });

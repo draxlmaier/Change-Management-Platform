@@ -1,12 +1,24 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
 
-interface FollowCostItem {
+export interface FollowCostItem {
+  ID: string;                  // SharePoint item id
   Project: string;
   Area: string;
-  Followupcost_x002f_BudgetPA: number;
-  Date: string; // Format: YYYY-MM-DD
+  Carline: string;
+  FollowupcostBudgetPA: number;
+  InitiationReasons: string;
+  BucketID: string;
+  Date: string;                // Format: YYYY-MM-DD
+  Statut: string;
+  Quantity: number;
+  NettValue: number;
+  TotalNettValue: number;
+  Currency: string;
+  BucketResponsible: string;
+  PostnameID: string;
 }
+
 
 interface Props {
   data: FollowCostItem[];
@@ -113,7 +125,7 @@ export const FollowupCostByAreaChart: React.FC<Props> = ({
         label = `${area} - ${date.toLocaleDateString()}`;
     }
 
-    grouped[label] = (grouped[label] || 0) + (item.Followupcost_x002f_BudgetPA || 0);
+    grouped[label] = (grouped[label] || 0) + (item.TotalNettValue || 0);
   });
 
   const labels = Object.keys(grouped).sort();
@@ -130,7 +142,7 @@ export const FollowupCostByAreaChart: React.FC<Props> = ({
 
   const option = {
     title: {
-      text: "Coût suivi / Budget PA (€) par Zone et Projet",
+      text: "Total Nett Value (€) par Zone et Projet",
       left: "center",
       textStyle: { fontWeight: "bold", fontSize: 18 },
     },
@@ -141,7 +153,7 @@ export const FollowupCostByAreaChart: React.FC<Props> = ({
     },
     legend: {
       top: 30,
-      data: ["Coût suivi / Budget PA (€)"],
+      data: ["Total Nett Value (€)"],
     },
     xAxis: {
       type: "category",
@@ -154,7 +166,7 @@ export const FollowupCostByAreaChart: React.FC<Props> = ({
     },
     series: [
       {
-        name: "Coût suivi / Budget PA (€)",
+        name: "Total Nett Value (€)",
         type: "bar",
         data: values.map((v, i) => ({
           value: v,

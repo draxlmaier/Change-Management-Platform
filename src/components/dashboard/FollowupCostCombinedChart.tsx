@@ -4,9 +4,10 @@ import EChartsReact from "echarts-for-react";
 interface FollowCostItem {
   Area: string;
   InitiationReasons: string;
-  Followupcost_x002f_BudgetPA: number;
+  TotalNettValue: number;
   Date: string;
   Project: string;
+  // all other fields from your schema can be added if needed
 }
 
 interface Props {
@@ -32,10 +33,12 @@ export const FollowupCostCombinedChart: React.FC<Props> = ({
   selectedQuarter,
   selectedProject,
 }) => {
+  // --- Filtering logic
   const filtered = data.filter((item) => {
-    if (selectedProject !== "draxlmaeir" && item.Project?.toLowerCase() !== selectedProject.toLowerCase()) {
+    if (selectedProject.toLowerCase() !== "draxlmaeir" && item.Project?.toLowerCase() !== selectedProject.toLowerCase()) {
       return false;
     }
+    if (!item.Date) return false;
     const date = new Date(item.Date);
     const y = String(date.getFullYear());
     const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -67,6 +70,7 @@ export const FollowupCostCombinedChart: React.FC<Props> = ({
     }
   });
 
+  // --- Grouping: by Reason (x) and Area (stack/series), sum TotalNettValue
   const grouped: Record<string, Record<string, number>> = {};
   const allAreasSet = new Set<string>();
 
@@ -75,7 +79,7 @@ export const FollowupCostCombinedChart: React.FC<Props> = ({
     const area = item.Area || "Sans zone";
     allAreasSet.add(area);
     if (!grouped[reason]) grouped[reason] = {};
-    grouped[reason][area] = (grouped[reason][area] || 0) + (item.Followupcost_x002f_BudgetPA || 0);
+    grouped[reason][area] = (grouped[reason][area] || 0) + (item.TotalNettValue || 0);
   });
 
   const allReasons = Object.keys(grouped);
@@ -118,7 +122,7 @@ export const FollowupCostCombinedChart: React.FC<Props> = ({
       color: "#f0f0f0",
     },
     title: {
-      text: "Coût suivi / Budget PA (€) par Raison de l’initiation et Zone",
+      text: "Total Nett Value (€) par Raison de l’initiation et Zone",
       left: "center",
       textStyle: {
         color: "#fff",
@@ -176,7 +180,6 @@ export const FollowupCostCombinedChart: React.FC<Props> = ({
   };
 
   return (
-    
-      <EChartsReact option={option} style={{ height: 400 }} />
+    <EChartsReact option={option} style={{ height: 400 }} />
   )
 };

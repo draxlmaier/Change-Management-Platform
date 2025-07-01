@@ -13,6 +13,19 @@ import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/conf
 import TopMenu from "../components/TopMenu";
 import { getProjectLogo } from "../utils/getProjectLogo";
 import AreaImageUploadComponent from "../components/AreaImageUploadComponent";
+
+function canonicalProjectId(input: string): string {
+  let normalized = input.trim().toLowerCase().replace(/[\s_]+/g, '-');
+  const aliasMap: Record<string, string> = {
+    'mercedes': 'mercedes-benz',
+    'merc': 'mercedes-benz',
+    'mercedes-benz': 'mercedes-benz',
+    'mercedesbenz': 'mercedes-benz',
+    'vw': 'volkswagen'
+  };
+  return aliasMap[normalized] ?? normalized;
+}
+
 const ConfigPage: React.FC = () => {
   const navigate = useNavigate();
   const [siteName, setSiteName] = useState("");
@@ -26,6 +39,8 @@ const ConfigPage: React.FC = () => {
   const [questionsListId, setQuestionsListId] = useState("");
   const [monthlyListId, setMonthlyListId] = useState("");
   const [followCostListId, setFollowCostListId] = useState("");
+  const [budgetsListId, setBudgetsListId] = useState("");
+
   // Projects
   const [projects, setProjects] = useState<IProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -117,6 +132,8 @@ const handleSaveCarName = async () => {
     const autoQuestionsId = findListIdByName("question");
     const autoMonthlyId = findListIdByName("monthly");
     const autoFollowId = findListIdByName("follow");
+    const autoBudgetsId = findListIdByName("budget");
+setBudgetsListId(autoBudgetsId);
 
     // Set state to auto-fill the selects
     setQuestionsListId(autoQuestionsId);
@@ -124,46 +141,58 @@ const handleSaveCarName = async () => {
     setFollowCostListId(autoFollowId);
 
     // Extract projects from naming convention
-    const regex = /^changes_([a-zA-Z0-9]+)_phase(4|8)(extra)?$/i;
-    const newProjectsMap: { [key: string]: IProject } = {};
+    // Regex for list extraction (allow dashes!)
+const regex = /^changes_([a-zA-Z0-9-]+)_phase(4|8)(extra)?$/i;
+const newProjectsMap: { [key: string]: IProject } = {};
 
-    fetchedLists.forEach((list: any) => {
-      const match = regex.exec(list.displayName);
-      if (!match) return;
-      const [, rawProjectName, phase, isExtra] = match;
-      const projectId = rawProjectName.toLowerCase();
-      const existing = newProjectsMap[projectId] || projects.find(p => p.id === projectId);
-
-      const updatedProject: IProject = existing
-        ? { ...existing }
-        : {
-            id: projectId,
-            displayName: rawProjectName,
-            logo: getProjectLogo(projectId),
-            mapping: {
-              implementation: "",
-              feasibilityExtra: "",
-              implementationExtra: "",
-              changeQuestionStatusListId: ""
-            },
-          };
-
-      if (phase === "4" && isExtra) updatedProject.mapping.feasibilityExtra = list.id;
-      else if (phase === "8" && isExtra) updatedProject.mapping.implementationExtra = list.id;
-      else if (phase === "8") updatedProject.mapping.implementation = list.id;
-
-      newProjectsMap[projectId] = updatedProject;
-    });
-    // ➕ Include ChangeQuestionStatus lists by project name
 fetchedLists.forEach((list: any) => {
-  const cqsMatch = /^ChangeQuestionStatus_([a-zA-Z0-9]+)$/i.exec(list.displayName);
+  const match = regex.exec(list.displayName);
+  if (!match) return;
+  const [, rawProjectName, phase, isExtra] = match;
+  const projectId = canonicalProjectId(rawProjectName);
+  const existing = newProjectsMap[projectId] || projects.find(p => canonicalProjectId(p.id) === projectId);
+
+  const updatedProject: IProject = existing
+    ? { ...existing }
+    : {
+        id: projectId,
+        displayName: rawProjectName,
+        logo: getProjectLogo(projectId),
+        mapping: {
+          implementation: "",
+          feasibilityExtra: "",
+          implementationExtra: "",
+          changeQuestionStatusListId: ""
+        },
+      };
+
+  if (phase === "4" && isExtra) updatedProject.mapping.feasibilityExtra = list.id;
+  else if (phase === "8" && isExtra) updatedProject.mapping.implementationExtra = list.id;
+  else if (phase === "8") updatedProject.mapping.implementation = list.id;
+
+  newProjectsMap[projectId] = updatedProject;
+});
+
+// Also fix ChangeQuestionStatus regex to allow dashes and canonicalize
+fetchedLists.forEach((list: any) => {
+  const cqsMatch = /^ChangeQuestionStatus_([a-zA-Z0-9-]+)$/i.exec(list.displayName);
   if (!cqsMatch) return;
   const [, rawProjectName] = cqsMatch;
-  const projectId = rawProjectName.toLowerCase();
+  const projectId = canonicalProjectId(rawProjectName);
 
   if (!newProjectsMap[projectId]) return;
 
   newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
+});
+    // ➕ Include ChangeQuestionStatus lists by project name
+fetchedLists.forEach((list: any) => {
+  const cqsMatch = /^ChangeQuestionStatus_([a-zA-Z0-9-]+)$/i.exec(list.displayName);
+  if (!cqsMatch) return;
+  const [, rawProjectName] = cqsMatch;
+  const projectId = canonicalProjectId(rawProjectName);
+if (!newProjectsMap[projectId]) return;
+newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
+
 });
 
     const finalProjects = Object.values(newProjectsMap);
@@ -171,14 +200,15 @@ fetchedLists.forEach((list: any) => {
 
     // ✅ Save everything to localStorage
     const newConfig: cmConfigLists = {
-      siteId: siteResp.data.id,
-      questionsListId: autoQuestionsId,
-      monthlyListId: autoMonthlyId,
-      followCostListId: autoFollowId,
-      projects: finalProjects,
-      assignedRoles,
-      frequentSites: [...new Set([...frequentSites, siteName])],
-    };
+  siteId: siteResp.data.id,
+  questionsListId: autoQuestionsId,
+  monthlyListId: autoMonthlyId,
+  followCostListId: autoFollowId,
+  budgetsListId: autoBudgetsId, 
+  projects: finalProjects,
+  assignedRoles,
+  frequentSites: [...new Set([...frequentSites, siteName])],
+};
     saveConfig(newConfig);
 
     if (!frequentSites.includes(siteName)) {
@@ -214,35 +244,45 @@ fetchedLists.forEach((list: any) => {
   };
   // 4) Projects
   const addProjectFromDropdown = () => {
-    if (!selectedProjectId) {
-      setMessage("Please select a project from the dropdown.");
-      return;
-    }
-    const existing = projects.find((p) => p.id === selectedProjectId.toLowerCase());
-    if (existing) {
-      setMessage(`Project '${existing.displayName}' is already added.`);
-      return;
-    }
-    const chosen = AVAILABLE_PROJECTS.find((p) => p.id === selectedProjectId.toLowerCase());
-    if (!chosen) {
-      setMessage("Selected project not found in AVAILABLE_PROJECTS.");
-      return;
-    }
-    const newProject: IProject = {
-      id: chosen.id,
-      displayName: chosen.displayName,
-      logo: chosen.logo,
-      mapping: {
-        implementation: "",
-        feasibilityExtra: "",
-        implementationExtra: "",
-        changeQuestionStatusListId: ""
-      },
-    };
-    setProjects((prev) => [...prev, newProject]);
-    setSelectedProjectId("");
-    setMessage(null);
+  if (!selectedProjectId) {
+    setMessage("Please select a project from the dropdown.");
+    return;
+  }
+  // Normalize the selected project ID
+  const canonicalId = canonicalProjectId(selectedProjectId);
+
+  // Check if the project already exists (use canonical ID on both sides)
+  const existing = projects.find((p) => canonicalProjectId(p.id) === canonicalId);
+  if (existing) {
+    setMessage(`Project '${existing.displayName}' is already added.`);
+    return;
+  }
+
+  // Find the project in AVAILABLE_PROJECTS by canonical ID
+  const chosen = AVAILABLE_PROJECTS.find((p) => canonicalProjectId(p.id) === canonicalId);
+  if (!chosen) {
+    setMessage("Selected project not found in AVAILABLE_PROJECTS.");
+    return;
+  }
+
+  // Use the canonical ID for the new project
+  const newProject: IProject = {
+    id: chosen.id, // chosen.id should already be canonical
+    displayName: chosen.displayName,
+    logo: chosen.logo,
+    mapping: {
+      implementation: "",
+      feasibilityExtra: "",
+      implementationExtra: "",
+      changeQuestionStatusListId: ""
+    },
   };
+
+  setProjects((prev) => [...prev, newProject]);
+  setSelectedProjectId("");
+  setMessage(null);
+};
+
   const removeProject = (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
   };
@@ -265,10 +305,11 @@ fetchedLists.forEach((list: any) => {
 
   // 5) Save entire config to localStorage
   const handleSave = () => {
-  if (!questionsListId || !monthlyListId || !followCostListId) {
-    setMessage("Please select all KPI lists.");
-    return;
-  }
+  if (!questionsListId || !monthlyListId || !followCostListId || !budgetsListId) {
+  setMessage("Please select all lists ");
+  return;
+}
+
 
   for (const proj of projects) {
     const hasImplementation = proj.mapping.implementation || proj.mapping.implementationExtra;
@@ -279,15 +320,15 @@ fetchedLists.forEach((list: any) => {
   }
 
   const newConfig: cmConfigLists = {
-    siteId: siteId || "",
-    questionsListId,
-    monthlyListId,
-    followCostListId,
-    projects,
-    assignedRoles,
-    frequentSites,
-  };
-
+  siteId: siteId || "",
+  questionsListId,
+  monthlyListId,
+  followCostListId,
+  budgetsListId, 
+  projects,
+  assignedRoles,
+  frequentSites,
+};
   saveConfig(newConfig);
   setMessage("Configuration saved successfully!");
 };
@@ -407,6 +448,24 @@ fetchedLists.forEach((list: any) => {
                       </select>
                     </label>
                   </div>
+                  <div>
+  <label className="block">
+    Budgets List
+    <select
+      value={budgetsListId}
+      onChange={(e) => setBudgetsListId(e.target.value)}
+      className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
+    >
+      <option value="">-- Select --</option>
+      {lists.map((l) => (
+        <option key={l.id} value={l.id}>
+          {l.displayName}
+        </option>
+      ))}
+    </select>
+  </label>
+</div>
+
 
                   <div>
                     <label className="block">

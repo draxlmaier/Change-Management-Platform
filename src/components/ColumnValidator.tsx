@@ -34,7 +34,11 @@ const expectedHeadersRaw = [
   "Risk level actual - PAV - Phase4",
   "Start date - Phase8",
   "End date - Phase8",
-  "Name - Change packages - Phase8"
+  "Name - Change packages - Phase8",
+   "Product safety relevant - Process information",
+  "End date - Logistic - Phase4",
+  "End date - QS - Phase4",
+  "End date - PSCR - Phase4"
 ];
 
 const normalizeHeader = (header: string): string => {

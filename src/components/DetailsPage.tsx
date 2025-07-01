@@ -1,5 +1,3 @@
-// File: src/components/DetailsPage.tsx
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -47,6 +45,47 @@ interface DetailsPageProps {
   fieldsConfig: FieldsConfig;
 }
 
+// --- Helpers for status, working days etc ---
+const getSectionGlassClass = (closed: boolean) =>
+  closed
+    ? "bg-green-400/20 border-green-300/30"
+    : "bg-red-400/20 border-red-300/30";
+
+function getSectionStatus(endDateValue?: string) {
+  return endDateValue && /\d/.test(endDateValue) ? "Closed" : "Open";
+}
+
+// --- Robust ISO date normalization helper ---
+function toISODate(str?: string | null): string | null {
+  if (!str) return null;
+  // Already ISO format?
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const d = new Date(str);
+  if (isNaN(d as any)) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+// --- Robust working days calculation ---
+const calculateWorkingDays = (start: string, end: string): number | string => {
+  try {
+    const sISO = toISODate(start);
+    const eISO = toISODate(end);
+    if (!sISO || !eISO) return "";
+    const s = new Date(sISO);
+    const e = new Date(eISO);
+    if (isNaN(s as any) || isNaN(e as any)) return "";
+    let count = 0;
+    for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) count++;
+    }
+    return count;
+  } catch {
+    return "";
+  }
+};
+
+// --- Main Component ---
 const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   const { projectKey, itemId } = useParams<{ projectKey: string; itemId: string }>();
   const navigate = useNavigate();
@@ -104,9 +143,49 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   }, [projectKey, itemId]);
 
   const f = item?.fields || {};
+
+  // --- Auto-calculate working days ---
+  useEffect(() => {
+    if (!item || !project || !config) return;
+
+    const dateGroups = [
+      {
+        start: "StartdateProcessinfo",
+        end: "EnddateProcessinfo",
+        working: "WorkingDaysProcess",
+      },
+      {
+        start: "StartdatePhase8",
+        end: "EnddatePhase8",
+        working: "WorkingDaysPAVPhase8",
+      },
+    ];
+
+    dateGroups.forEach(({ start, end, working }) => {
+      const startVal = f[start];
+      const endVal = f[end];
+
+      if (startVal && endVal) {
+        const calculated = calculateWorkingDays(startVal, endVal);
+        if (
+          calculated !== "" &&
+          String(f[working] || "") !== String(calculated)
+        ) {
+          handleSave(working, String(calculated));
+        }
+      }
+    });
+    // eslint-disable-next-line
+  }, [
+    f.StartdateProcessinfo, f.EnddateProcessinfo,
+    f.StartdatePhase8, f.EnddatePhase8,
+    item, project, config
+  ]);
+
   if (error) return <div className="p-8 text-red-600">{error}</div>;
   if (!item || !project || !config) return null;
 
+  // Field input type logic
   const getInputType = (key: string) => {
     const k = key.toLowerCase();
     if (k.includes("date")) return "date";
@@ -149,16 +228,16 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
     }
   };
 
-  const renderEditable = (field: FieldEntry) => {
-    const currentValue = f[field.key] ?? "";
-
+  // --- Unified editable field rendering ---
+  const renderField = (field: FieldEntry, editable = true) => {
+    const value = f[field.key] ?? "";
     return (
-      <div key={field.key} className="mb-4">
-        <p className="text-sm text-yellow-400 mb-1">{field.label}</p>
-        {editingField === field.key ? (
+      <div key={field.key} className="mb-5">
+        <label className="block font-semibold mb-1 text-white">{field.label}</label>
+        {editingField === field.key && editable ? (
           <input
             ref={inputRef}
-            className="p-2 rounded text-black w-full"
+            className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-blue-400"
             type={getInputType(field.key)}
             value={editedValue}
             onChange={(e) => setEditedValue(e.target.value)}
@@ -169,42 +248,104 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
           />
         ) : (
           <div
-            className="bg-white/10 p-2 rounded cursor-pointer hover:bg-white/20"
-            onClick={() => handleEditStart(field.key, currentValue)}
+            className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm"
+            onClick={
+              editable ? () => handleEditStart(field.key, value) : undefined
+            }
+            style={editable ? { cursor: "pointer" } : undefined}
           >
-            {currentValue || "—"}
+            {value || "—"}
           </div>
         )}
       </div>
     );
   };
 
-  const groupFields = (keys: string[]) => fieldsConfig.editableFields.filter(f => keys.includes(f.key));
-
-  const section = (title: string, dateKeys: string[], contentKeys: string[]) => (
-    <div className="mb-12">
-      <div className="flex justify-between items-start">
-        <h3 className="text-2xl font-bold mb-4">{title}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-right">
-          {groupFields(dateKeys).map(renderEditable)}
+  // --- Date/Working Days row, always aligned ---
+  const renderSectionDates = (
+    startKey: string,
+    endKey: string,
+    workingDaysKey: string
+  ) => {
+    return (
+      <div className="flex gap-4 items-end min-w-[320px]">
+        {/* Start Date */}
+        <div className="flex flex-col w-32">
+          <label className="block font-semibold mb-1 text-white">Start date</label>
+          {editingField === startKey ? (
+            <input
+              ref={inputRef}
+              className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-blue-400"
+              type="date"
+              value={editedValue}
+              onChange={(e) => setEditedValue(e.target.value)}
+              onBlur={() => handleSave(startKey, editedValue)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave(startKey, editedValue);
+              }}
+            />
+          ) : (
+            <div
+              className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm cursor-pointer text-center"
+              onClick={() => handleEditStart(startKey, f[startKey] ?? "")}
+            >
+              {f[startKey] || "—"}
+            </div>
+          )}
+        </div>
+        {/* End Date */}
+        <div className="flex flex-col w-32">
+          <label className="block font-semibold mb-1 text-white">End date</label>
+          {editingField === endKey ? (
+            <input
+              ref={inputRef}
+              className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-blue-400"
+              type="date"
+              value={editedValue}
+              onChange={(e) => setEditedValue(e.target.value)}
+              onBlur={() => handleSave(endKey, editedValue)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave(endKey, editedValue);
+              }}
+            />
+          ) : (
+            <div
+              className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm cursor-pointer text-center"
+              onClick={() => handleEditStart(endKey, f[endKey] ?? "")}
+            >
+              {f[endKey] || "—"}
+            </div>
+          )}
+        </div>
+        {/* Working Days */}
+        <div className="flex flex-col w-24">
+          <label className="block font-semibold mb-1 text-white">Working Days</label>
+          <div className="w-full">
+            <div className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm text-center">
+              {f[workingDaysKey] || "—"}
+            </div>
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {groupFields(contentKeys).map(renderEditable)}
-      </div>
-    </div>
-  );
+    );
+  };
+
+  // Status for highlighting
+  const processClosed = getSectionStatus(f.EnddateProcessinfo) === "Closed";
+  const phase8Closed = getSectionStatus(f.EnddatePhase8) === "Closed";
+
+  // Editable keys for process info
+  const processInfoEditableKeys = [
+    "DeadlineTBT", "Modelyear", "Realizationplanned", "Approxrealizationdate", "OEMChangenumber"
+  ];
 
   return (
-    <div className="relative w-full min-h-screen bg-cover bg-center" style={{ backgroundImage: `url(${harnessBg})` }}>
+    <div
+      className="relative w-full min-h-screen bg-cover bg-center text-white"
+      style={{ backgroundImage: `url(${harnessBg})` }}
+    >
       <ToastContainer />
       <TopMenu />
-      <button
-  onClick={() => navigate(`/send-email/${projectKey}/implementation/${itemId}`)}
-  className="absolute top-4 right-4 z-20 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md transition"
->
-  📧 Send Email
-</button>
       <button
         onClick={() => navigate(`/changes/${projectKey}/implementation`)}
         className="absolute top-4 left-4 z-20 flex items-center space-x-2 px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-sm transition"
@@ -212,39 +353,70 @@ const DetailsPage: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
         ← Back
       </button>
 
-      <div className="relative z-20 max-w-6xl mx-auto p-4 text-white">
-        <div className="text-center mb-6">
-          {project?.logo && <img src={project.logo} alt="logo" className="w-32 h-auto mx-auto mb-4" />}
-          <h1 className="text-3xl font-bold">Change Details</h1>
+      <div className="max-w-6xl mx-auto min-h-[600px]">
+        <div className="relative z-20 w-full p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl max-w-full">
+          {/* HEADER */}
+          <div className="text-center mb-8">
+            {project?.logo && (
+              <img
+                src={project.logo}
+                alt="logo"
+                className="w-32 h-auto mx-auto mb-4"
+                style={{ maxHeight: 120 }}
+              />
+            )}
+            <h1 className="text-3xl font-bold text-white/90">Change Details</h1>
+          </div>
+
+          {/* --- Process Information --- */}
+          <div className={`border backdrop-blur-md rounded-xl shadow-lg p-6 mb-8 ${getSectionGlassClass(processClosed)}`}>
+            <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
+              <div>
+                <h3 className="text-2xl font-semibold text-white/80 mb-1">Process Information</h3>
+                <span className="text-lg text-blue-200 font-semibold mt-1">
+                  {f.Status || "Unknown"}
+                </span>
+              </div>
+              {renderSectionDates(
+                "StartdateProcessinfo",
+                "EnddateProcessinfo",
+                "WorkingDaysProcess"
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {fieldsConfig.generalFields
+                .filter(field =>
+                  !["StartdateProcessinfo", "EnddateProcessinfo", "WorkingDaysProcess"].includes(field.key)
+                )
+                .map(field =>
+                  renderField(field, processInfoEditableKeys.includes(field.key))
+                )
+              }
+            </div>
+          </div>
+
+          {/* --- Phase 8 --- */}
+          <div className={`border backdrop-blur-md rounded-xl shadow-lg p-6 mb-8 ${getSectionGlassClass(phase8Closed)}`}>
+            <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
+              <div>
+                <h3 className="text-2xl font-semibold text-white/80 mb-1">Phase 8</h3>
+                <span className="text-lg text-blue-200 font-semibold mt-1">
+                  {getSectionStatus(f.EnddatePhase8)}
+                </span>
+              </div>
+              {renderSectionDates(
+                "StartdatePhase8",
+                "EnddatePhase8",
+                "WorkingDaysPAVPhase8"
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {fieldsConfig.editableFields.map(field =>
+                renderField(field, true)
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* PROCESS INFORMATION */}
-        {section("Process Information",
-          ["StartdateProcessinfo", "EnddateProcessinfo", "WorkingDaysProcess"],
-          fieldsConfig.generalFields.map(f => f.key)
-        )}
-
-        {/* PHASE 4 */}
-        {section("Phase 4",
-          ["StartdatePhase4", "EnddatePhase4", "WorkingDaysPhase4"],
-          []
-        )}
-
-        {/* PAV SUBSECTION */}
-        {section("PAV Subsection",
-          ["StartdatePAVPhase4", "EnddatePAVPhase4", "WorkingDaysPAVPhase4"],
-          [
-            "EstimatedcostsPAVPhase4", "ToolsutilitiesavailablePAVPhase4", "ProcessFMEAPAVPhase4",
-            "PLPRelevantPAVPhase4", "RisklevelactualPAVPhase4",
-            "Estimatedscrap", "Estimatedcost", "Estimateddowntime", "estimatedchangedate"
-          ]
-        )}
-
-        {/* PHASE 8 */}
-        {section("Phase 8",
-          ["StartdatePhase8", "EnddatePhase8", "WorkingDaysPAVPhase8"],
-          ["Changepackages", "Scrap", "Actualcost", "Actualdowntime", "Changedate"]
-        )}
       </div>
     </div>
   );

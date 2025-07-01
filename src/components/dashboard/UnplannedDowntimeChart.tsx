@@ -3,19 +3,25 @@ import ReactECharts from "echarts-for-react";
 
 interface DowntimeRecord {
   year: string;
-  Monthid: string; // New: numeric month from SharePoint
+  Monthid: string; // numeric month (1-12)
   downtime?: number | string;
   rateofdowntime?: number | string;
   Targetdowntime?: number | string;
   seuildinterventiondowntime?: number | string;
+  Project?: string; // <-- Add this if not already present in your data!
 }
 
 interface Props {
   data: DowntimeRecord[];
   isQuarterly?: boolean;
+  selectedProject: string;
 }
 
-export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) => {
+export const UnplannedDowntimeChart: React.FC<Props> = ({
+  data,
+  isQuarterly,
+  selectedProject,
+}) => {
   const monthsOrder = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -26,7 +32,16 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({ data, isQuarterly }) =
     return monthsOrder[index] || "Unknown";
   };
 
-  const sortedData = [...data].sort((a, b) => {
+  // --- FILTER BY PROJECT ---
+  const filteredData =
+    selectedProject.toLowerCase() === "draxlmaeir"
+      ? data
+      : data.filter(
+          (rec) =>
+            rec.Project?.toLowerCase() === selectedProject.toLowerCase()
+        );
+
+  const sortedData = [...filteredData].sort((a, b) => {
     const yearDiff = parseInt(a.year) - parseInt(b.year);
     if (yearDiff !== 0) return yearDiff;
     return parseInt(a.Monthid) - parseInt(b.Monthid);

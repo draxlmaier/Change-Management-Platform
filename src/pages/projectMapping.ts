@@ -9,16 +9,21 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
   const updatedProjectsMap: { [key: string]: IProject } = {};
   const existingProjectsMap = new Map(projects.map(p => [p.id, p]));
 
+  // Regex to match ONLY SharePoint Team Sites (not personal/OneDrive or invalid)
+  const teamSitePattern = /^https:\/\/[a-zA-Z0-9-]+\.sharepoint\.com\/sites\/[a-zA-Z0-9-_]+/i;
+
   for (const siteUrl of frequentSites) {
     try {
-      let hostname = '';
-      let path = '';
+      // Filter: Skip non-team site URLs
+      if (!teamSitePattern.test(siteUrl)) {
+        console.warn('Skipping unsupported or invalid SharePoint site:', siteUrl);
+        continue;
+      }
 
-      if (siteUrl.startsWith("https://")) {
-        const url = new URL(siteUrl);
-        hostname = url.hostname;
-        path = url.pathname.replace(/^\/sites\//, "");
-      } 
+      const url = new URL(siteUrl);
+      const hostname = url.hostname;
+      const path = url.pathname.replace(/^\/sites\//, "");
+
       const graphSiteUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/sites/${path}`;
       const siteResp = await axios.get(graphSiteUrl, {
         headers: { Authorization: `Bearer ${token}` },
@@ -93,10 +98,12 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
       });
 
     } catch (err) {
-      console.error('Failed to fetch or parse site:', siteUrl, err);
+      // Only log real fetch or parsing errors
+      console.error('Failed to fetch or parse SharePoint team site:', siteUrl, err);
     }
   }
 
+  // Merge new project mappings with any old entries not overwritten
   const merged = Object.values(updatedProjectsMap);
   const newProjects = Array.from(
     new Map([...projects, ...merged].map(p => [p.id, { ...p }])).values()

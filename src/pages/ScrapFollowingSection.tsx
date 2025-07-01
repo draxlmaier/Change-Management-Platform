@@ -246,8 +246,8 @@ const ScrapFollowingSection: React.FC = () => {
                     <th className="p-2 border">Processnumber</th>
                     <th className="p-2 border">SheetName</th>
                     <th className="p-2 border">OEM Offer Change number</th>
-                    <th className="p-2 border">Scrap </th>
                     <th className="p-2 border">Scrap Value in € </th>
+                    <th className="p-2 border">Scrap </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -265,8 +265,8 @@ const ScrapFollowingSection: React.FC = () => {
                         <td className="p-2 border">{item.fields.Processnumber}</td>
                         <td className="p-2 border">{item.fields.SheetName}</td>
                         <td className="p-2 border">{item.fields.OEMOfferChangenumber}</td>
-                        <td className="p-2 border">{item.fields.Scrap || ""}</td>
                         <td className="p-2 border">{item.fields.Actualscrap}</td>
+                        <td className="p-2 border">{item.fields.Scrap || ""}</td>
                       </tr>
                     );
                   })}

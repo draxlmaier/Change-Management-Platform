@@ -44,7 +44,7 @@ interface SharePointItem {
 interface KPIInputWrapperProps {
   title: string;
   fields: FieldDef[];
-  fixedProject?: string; // <-- Added prop
+  fixedProject?: string;
 }
 
 const formatter = new Intl.NumberFormat(undefined, {
@@ -52,6 +52,27 @@ const formatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 3,
   useGrouping: false,
 });
+
+const now = new Date();
+const defaultYear = String(now.getFullYear());
+const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
+
+const defaultForm: MonthlyForm = {
+  Project: "",
+  year: defaultYear,
+  Month: defaultMonth,
+  Monthid: String(now.getMonth() + 1),
+  uniqueKey: "",
+  DRXIdeasubmittedIdea: 0,
+  DRXIdeasubmittedIdeaGoal: 0,
+  productionminutes: 0,
+  downtime: 0,
+  rateofdowntime: 0,
+  Targetdowntime: 0,
+  seuildinterventiondowntime: 0,
+  Budgetdepartment: 0,
+  Budgetdepartmentplanified: 0,
+};
 
 const KPIInputWrapper: React.FC<KPIInputWrapperProps> = ({ title, fields, fixedProject }) => {
   const [projects, setProjects] = useState<IProject[]>([]);
@@ -62,25 +83,9 @@ const KPIInputWrapper: React.FC<KPIInputWrapperProps> = ({ title, fields, fixedP
   const [loading, setLoading] = useState(false);
   const [, setCachedItems] = useState<SharePointItem[]>([]);
 
-  const now = new Date();
-  const defaultYear = String(now.getFullYear());
-  const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
-
   const [form, setForm] = useState<MonthlyForm>({
+    ...defaultForm,
     Project: fixedProject || "",
-    year: defaultYear,
-    Month: defaultMonth,
-    Monthid: String(now.getMonth() + 1),
-    uniqueKey: "",
-    DRXIdeasubmittedIdea: 0,
-    DRXIdeasubmittedIdeaGoal: 0,
-    productionminutes: 0,
-    downtime: 0,
-    rateofdowntime: 0,
-    Targetdowntime: 0,
-    seuildinterventiondowntime: 0,
-    Budgetdepartment: 0,
-    Budgetdepartmentplanified: 0,
   });
 
   // Update form.Project if fixedProject changes (or on mount)
@@ -146,9 +151,7 @@ const KPIInputWrapper: React.FC<KPIInputWrapperProps> = ({ title, fields, fixedP
       if (!siteId || !monthlyListId) throw new Error("Missing site or list config.");
       const token = await getAccessToken(msalInstance, ["https://graph.microsoft.com/Sites.Manage.All"]);
 
-      // Ensure Project is set (either via picker or fixedProject)
       const projectValue = fixedProject || form.Project;
-
       const uniqueKey = `${projectValue}_${form.Monthid}_${form.year}`;
       setForm((prev) => ({ ...prev, uniqueKey, Project: projectValue }));
 
@@ -198,6 +201,12 @@ const KPIInputWrapper: React.FC<KPIInputWrapperProps> = ({ title, fields, fixedP
       );
 
       setMsg("✅ Section saved.");
+      // Full reset for next entry!
+      setForm({
+        ...defaultForm,
+        Project: fixedProject || "",
+      });
+      setItemId(null);
     } catch (err: any) {
       console.error("Save failed:", err);
       setMsg("❌ Save failed: " + (err.response?.data?.error?.message || err.message));
@@ -214,7 +223,6 @@ const KPIInputWrapper: React.FC<KPIInputWrapperProps> = ({ title, fields, fixedP
       <div className="relative z-20 max-w-4xl mx-auto mt-6 p-6 bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-xl">
         <h2 className="text-2xl font-semibold mb-4 text-white/80">{title}</h2>
 
-        {/* Show Project as read-only if fixed, else allow picker */}
         {fixedProject ? (
           <div className="mb-4">
             <label className="block font-semibold mb-1 text-white">Project</label>

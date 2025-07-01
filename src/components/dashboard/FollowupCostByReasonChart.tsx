@@ -1,11 +1,22 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
 
+// Full interface for consistency (only a subset is used here)
 interface FollowCostItem {
   Project: string;
-  Followupcost_x002f_BudgetPA: number;
-  Date: string; // Format: YYYY-MM-DD
+  Area: string;
+  Carline: string;
+  FollowupcostBudgetPA: number;
   InitiationReasons: string;
+  BucketID: string;
+  Date: string;
+  Statut: string;
+  Quantity: number;
+  NettValue: number;
+  TotalNettValue: number;
+  Currency: string;
+  BucketResponsible: string;
+  PostnameID: string;
 }
 
 interface Props {
@@ -31,13 +42,18 @@ export const FollowupCostByReasonChart: React.FC<Props> = ({
   selectedWeekOfMonth,
   selectedWeekOfYear,
 }) => {
+  // --- Filtering logic
   const filtered = data.filter((item) => {
+    if (!item.Date) return false;
     const date = new Date(item.Date);
     const y = String(date.getFullYear());
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
 
-    if (selectedProject.toLowerCase() !== "draxlmaeir" && item.Project?.toLowerCase() !== selectedProject.toLowerCase()) {
+    if (
+      selectedProject.toLowerCase() !== "draxlmaeir" &&
+      item.Project?.toLowerCase() !== selectedProject.toLowerCase()
+    ) {
       return false;
     }
 
@@ -70,18 +86,16 @@ export const FollowupCostByReasonChart: React.FC<Props> = ({
     }
   });
 
+  // --- Group by InitiationReasons and sum TotalNettValue
   const grouped: Record<string, number> = {};
-
   filtered.forEach((item) => {
     const reason = item.InitiationReasons || "Inconnu";
-    if (!isNaN(item.Followupcost_x002f_BudgetPA)) {
+    if (!isNaN(item.TotalNettValue)) {
       if (selectedProject.toLowerCase() === "draxlmaeir") {
-        // Sum cost by reason across projects
-        grouped[reason] = (grouped[reason] || 0) + item.Followupcost_x002f_BudgetPA;
+        grouped[reason] = (grouped[reason] || 0) + item.TotalNettValue;
       } else {
-        // Group by reason within project
         const key = `${reason} - ${item.Project || "unknown"}`;
-        grouped[key] = (grouped[key] || 0) + item.Followupcost_x002f_BudgetPA;
+        grouped[key] = (grouped[key] || 0) + item.TotalNettValue;
       }
     }
   });
@@ -101,7 +115,7 @@ export const FollowupCostByReasonChart: React.FC<Props> = ({
 
   const option = {
     title: {
-      text: "Coûts suivis / Budget PA par Raison de l’initiation",
+      text: "Total Nett Value par Raison de l’initiation",
       left: "center",
     },
     tooltip: {
@@ -120,7 +134,7 @@ export const FollowupCostByReasonChart: React.FC<Props> = ({
     },
     series: [
       {
-        name: "Coûts suivis / Budget PA (€)",
+        name: "Total Nett Value (€)",
         type: "bar",
         data: values.map((v, i) => ({
           value: v,

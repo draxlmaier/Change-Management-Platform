@@ -1,5 +1,3 @@
-// src/pages/EditQuestionPage.tsx
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
@@ -57,8 +55,10 @@ export default function EditQuestionPage() {
   const [responsibleRole, setResponsibleRole] = useState("");
   const [sendIntervalValue, setSendIntervalValue] = useState<number>(3);
   const [sendIntervalUnit, setSendIntervalUnit] = useState("Days");
-  const [emailsubject, setEmailsubject] = useState("");
-  const [emailbody, setEmailbody] = useState("");
+
+  // Email subject/body: generated + personalized
+  const [customSubjectPart, setCustomSubjectPart] = useState("");
+  const [customBodyPart, setCustomBodyPart] = useState("");
 
   // change/item context & user
   const [processNumber, setProcessNumber] = useState("");
@@ -136,8 +136,34 @@ export default function EditQuestionPage() {
           setResponsibleRole(loaded.responsibleRole);
           setSendIntervalValue(loaded.sendIntervalValue);
           setSendIntervalUnit(loaded.sendIntervalUnit);
-          setEmailsubject(loaded.emailsubject || "");
-          setEmailbody(loaded.emailbody || "");
+
+          // If previously saved, split subject/body into generated and personalized parts
+          if (loaded.emailsubject) {
+            const generated = getGeneratedSubject(
+              loaded.changeNumber,
+              carline,
+              processNumber
+            );
+            if (
+              loaded.emailsubject.startsWith(generated) &&
+              loaded.emailsubject.length > generated.length
+            ) {
+              setCustomSubjectPart(
+                loaded.emailsubject.slice(generated.length).trim()
+              );
+            }
+          }
+          if (loaded.emailbody) {
+            const generated = getGeneratedBody(loaded.description);
+            if (
+              loaded.emailbody.startsWith(generated) &&
+              loaded.emailbody.length > generated.length
+            ) {
+              setCustomBodyPart(
+                loaded.emailbody.slice(generated.length).trim()
+              );
+            }
+          }
         }
 
         // 5️⃣ Fetch user profile (for default email signature)
@@ -159,16 +185,37 @@ export default function EditQuestionPage() {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line
   }, [projectKey, itemId, questionId]);
 
-  if (!question) return <div className="p-4">Loading question…</div>;
+  // Utility: generated subject/body
+  function getGeneratedSubject(changeNumber: string, carline: string, processNumber: string) {
+    return `q1${processNumber ? " " + processNumber : ""}${carline ? " " + carline : ""}${changeNumber ? " " + changeNumber : ""} -`;
+  }
+  function getGeneratedBody(desc: string) {
+    return desc || "Vérification le besoin de création ou modification des WI et procéder à actualiser";
+  }
 
-  // Defaults for email previews
-  const defaultSubject = `Update – ${processNumber}`;
-  const defaultBody = `Hello,\n\n${description}\nCarline: ${carline}\n\nRegards,\n${userEmail}`;
+  if (!question)
+    return (
+      <div className="flex justify-center items-center h-screen text-lg text-white">
+        Loading question…
+      </div>
+    );
 
-  // 🔧 Save back to the CQS list AND sync to QuestionTemplates
-  // …
+  // These values update in real-time as you type/edit
+  const generatedSubject = getGeneratedSubject(
+    question.changeNumber,
+    carline,
+    processNumber
+  );
+  const generatedBody = getGeneratedBody(description);
+
+  // Final subject/body that will be saved
+  const finalSubject = `${generatedSubject} ${customSubjectPart}`.trim();
+  const finalBody = `${generatedBody}\n\n${customBodyPart}`.trim();
+
+  // Save handler
   const handleSave = async () => {
     try {
       const raw = localStorage.getItem("cmConfigLists");
@@ -195,8 +242,8 @@ export default function EditQuestionPage() {
         Responsiblerole:   responsibleRole,
         SendIntervalValue: sendIntervalValue,
         SendIntervalUnit:  sendIntervalUnit,
-        emailsubject,
-        emailbody,
+        emailsubject:      finalSubject,
+        emailbody:         finalBody,
       };
       await axios.patch(
         `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
@@ -231,8 +278,8 @@ export default function EditQuestionPage() {
             TriggerOn:         triggerOn,
             SendIntervalValue: sendIntervalValue,
             SendIntervalUnit:  sendIntervalUnit,
-            emailsubject,
-            emailbody,
+            emailsubject:      finalSubject,
+            emailbody:         finalBody,
           };
           await axios.patch(
             `https://graph.microsoft.com/v1.0/sites/${config.siteId}` +
@@ -253,119 +300,163 @@ export default function EditQuestionPage() {
 
   return (
     <div
-      className="relative w-full min-h-screen bg-cover bg-center"
+      className="relative w-full min-h-screen bg-cover bg-center text-white"
       style={{ backgroundImage: `url(${harnessBg})` }}
     >
-      <div className="absolute inset-0 z-10 pointer-events-none" />
-      <div className="relative z-20 w-full p-8 space-y-6 text-white max-w-3xl mx-auto">
-        <TopMenu />
+      <TopMenu />
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white/90 mb-2">Edit Question</h1>
+          <div className="text-md text-blue-200">
+            Process: <span className="font-bold">{processNumber}</span>
+            {carline && <> | Carline: <span className="font-bold">{carline}</span></>}
+            {area && <> | Area: <span className="font-bold">{area}</span></>}
+          </div>
+        </div>
+        {/* Glassy Card */}
+        <div className="bg-white/10 border border-white/20 backdrop-blur-md rounded-xl shadow-lg p-8">
+          <div className="space-y-6">
+            {/* Question */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">Question</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            {/* Action */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">Action</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                value={action}
+                onChange={(e) => setAction(e.target.value)}
+              />
+            </div>
+            {/* Trigger On */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">Trigger On</label>
+              <select
+                className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                value={triggerOn}
+                onChange={(e) => setTriggerOn(e.target.value)}
+              >
+                <option>Oui</option>
+                <option>Non</option>
+              </select>
+            </div>
+            {/* Responsible Email */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">
+                Responsible Email <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                value={responsibleEmail}
+                onChange={(e) => setResponsibleEmail(e.target.value)}
+              />
+            </div>
+            {/* Responsible's Role */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">
+                Responsible's Role
+              </label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                value={responsibleRole}
+                onChange={(e) => setResponsibleRole(e.target.value)}
+              />
+            </div>
+            {/* Two-column grid for interval fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block font-semibold mb-1 text-white">
+                  Send Interval Value
+                </label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                  value={sendIntervalValue}
+                  onChange={(e) =>
+                    setSendIntervalValue(parseInt(e.target.value, 10) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1 text-white">
+                  Send Interval Unit
+                </label>
+                <select
+                  className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                  value={sendIntervalUnit}
+                  onChange={(e) => setSendIntervalUnit(e.target.value)}
+                >
+                  <option>Seconds</option>
+                  <option>Minutes</option>
+                  <option>Days</option>
+                </select>
+              </div>
+            </div>
+            <hr className="border-gray-400" />
+
+            {/* Email Subject */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">Email Subject</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 bg-white/60 text-black rounded-xl shadow-sm"
+                  value={generatedSubject}
+                  disabled
+                  readOnly
+                />
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                  placeholder="Personalized subject part"
+                  value={customSubjectPart}
+                  onChange={e => setCustomSubjectPart(e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Email Body */}
+            <div>
+              <label className="block font-semibold mb-1 text-white">Email Body</label>
+              <textarea
+                className="w-full px-4 py-2 mb-3 bg-white/60 text-black rounded-xl shadow-sm"
+                value={generatedBody}
+                disabled
+                readOnly
+                rows={3}
+              />
+              <textarea
+                className="w-full px-4 py-2 bg-white/80 text-black rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
+                placeholder="Personalized message (optional)"
+                value={customBodyPart}
+                onChange={e => setCustomBodyPart(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <button
+              onClick={handleSave}
+              className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xl shadow-lg mt-8 transition"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
         <button
           onClick={() => navigate(-1)}
-          className="px-3 py-1 bg-gray-300 rounded text-black hover:bg-gray-400"
+          className="mt-8 flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-2xl shadow-md text-white text-base transition mx-auto"
         >
           ← Back
         </button>
-        <h2 className="text-2xl font-bold text-center">Edit Question</h2>
-
-        <div className="space-y-4">
-          <label className="block font-semibold">Question</label>
-          <input
-            type="text"
-            className="w-full p-2 rounded-lg text-black bg-white"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-
-          <label className="block font-semibold">Action</label>
-          <input
-            type="text"
-            className="w-full p-2 rounded-lg text-black bg-white"
-            value={action}
-            onChange={(e) => setAction(e.target.value)}
-          />
-
-          <label className="block font-semibold">Trigger On</label>
-          <select
-            className="w-full p-2 rounded-lg text-black bg-white"
-            value={triggerOn}
-            onChange={(e) => setTriggerOn(e.target.value)}
-          >
-            <option>Oui</option>
-            <option>Non</option>
-          </select>
-
-          <label className="block font-semibold">Responsible Email</label>
-          <input
-            type="email"
-            className="w-full p-2 rounded-lg text-black bg-white"
-            value={responsibleEmail}
-            onChange={(e) => setResponsibleEmail(e.target.value)}
-          />
-
-          <label className="block font-semibold">Responsible's Role</label>
-          <input
-            type="text"
-            className="w-full p-2 rounded-lg text-black bg-white"
-            value={responsibleRole}
-            onChange={(e) => setResponsibleRole(e.target.value)}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold">Interval Value</label>
-              <input
-                type="number"
-                className="w-full p-2 rounded-lg text-black bg-white"
-                value={sendIntervalValue}
-                onChange={(e) =>
-                  setSendIntervalValue(parseInt(e.target.value, 10) || 0)
-                }
-              />
-            </div>
-            <div>
-              <label className="block font-semibold">Interval Unit</label>
-              <select
-                className="w-full p-2 rounded-lg text-black bg-white"
-                value={sendIntervalUnit}
-                onChange={(e) => setSendIntervalUnit(e.target.value)}
-              >
-                <option>Seconds</option>
-                <option>Minutes</option>
-                <option>Days</option>
-              </select>
-            </div>
-          </div>
-
-          <hr className="border-gray-400" />
-
-          <label className="block font-semibold">Email Subject</label>
-          <input
-            type="text"
-            className="w-full p-2 rounded-lg text-black bg-white"
-            value={emailsubject}
-            onChange={(e) => setEmailsubject(e.target.value)}
-            placeholder="Custom subject"
-          />
-          <p className="text-sm text-white">Default: {defaultSubject}</p>
-
-          <label className="block font-semibold">Email Body</label>
-          <textarea
-            className="w-full h-40 p-2 rounded-lg text-black bg-white"
-            value={emailbody}
-            onChange={(e) => setEmailbody(e.target.value)}
-            placeholder="Custom body"
-          />
-          <p className="text-sm text-white whitespace-pre-line">
-            Default: {defaultBody}
-          </p>
-
-          <button
-            onClick={handleSave}
-            className="w-full py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-          >
-            Save Changes
-          </button>
-        </div>
       </div>
     </div>
   );

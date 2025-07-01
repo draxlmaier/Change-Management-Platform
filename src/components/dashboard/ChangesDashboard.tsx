@@ -18,6 +18,7 @@ import { FollowupCostCombinedChart } from "./FollowupCostCombinedChart";
 import { db } from "../../pages/db";
 import { AreaImage } from "../../pages/types";
 
+import tragetIcon from "../../assets/images/target.png";
 import drxIcon from "../../assets/images/drx.png";
 import downtimeIcon from "../../assets/images/downtime.png";
 import budgetIcon from "../../assets/images/budget.png";
@@ -25,6 +26,7 @@ import followupIcon from "../../assets/images/costs.png";
 import scrapIcon from "../../assets/images/scrap.png";
 import changesIcon from "../../assets/images/changes.png";
 import closurePhase4Icon from "../../assets/images/phase4closure.png";
+import ClosurePhase4Table from "./ClosurePhase4Table";
 
 const apiTabs = [
   { key: "changes", label: "Changes", icon: changesIcon },
@@ -34,6 +36,7 @@ const apiTabs = [
   { key: "budget", label: "Budget", icon: budgetIcon },
   { key: "scrap", label: "Scrap", icon: scrapIcon },
   { key: "closurePhase4", label: "Closure Phase 4", icon: closurePhase4Icon },
+  { key: "traget", label: "Traget", icon: tragetIcon },
 ];
 
 // Filter modes as an array for horizontal button group
@@ -89,17 +92,24 @@ interface MonthlyKPIItem {
   Budgetdepartment?: number;
   Budgetdepartmentplanified?: number;
 }
-interface FollowCostKPIItem {
-  ID: string;
+export interface FollowCostItem {
+  ID: string;                  // SharePoint item id
   Project: string;
   Area: string;
-  Followupcost_x002f_BudgetPA: number;
+  Carline: string;
+  FollowupcostBudgetPA: number;
   InitiationReasons: string;
   BucketID: string;
-  Date: string;
+  Date: string;                // Format: YYYY-MM-DD
+  Statut: string;
+  Quantity: number;
+  NettValue: number;
+  TotalNettValue: number;
+  Currency: string;
   BucketResponsible: string;
-  Postname_x002f_ID: string;
+  PostnameID: string;
 }
+
 
 type FilterMode =
   | "year"
@@ -114,7 +124,7 @@ export const ChangesDashboard: React.FC = () => {
 
   // API Source button state
   const [selectedApi, setSelectedApi] = useState<
-    "changes" | "unplannedDowntime" | "costPA" | "drxIdea" | "budget" | "scrap" | "closurePhase4"
+    "changes" | "unplannedDowntime" | "costPA" | "drxIdea" | "budget" | "scrap" | "closurePhase4" | "target" 
   >("changes");
 
   // Items & error/loading states
@@ -154,7 +164,7 @@ export const ChangesDashboard: React.FC = () => {
   const [toYear, setToYear] = useState(defaultYear);
 
   const [areaImages, setAreaImages] = useState<AreaImage[]>([]);
-  const [followCostItems, setFollowCostItems] = useState<FollowCostKPIItem[]>([]);
+  const [followCostItems, setFollowCostItems] = useState<FollowCostItem[]>([]);
 
   useEffect(() => {
     if (!project) return;
@@ -276,7 +286,7 @@ export const ChangesDashboard: React.FC = () => {
 
           // 3) Fetch FollowCost data
           if (config.followCostListId) {
-            const followCostAccumulated: FollowCostKPIItem[] = [];
+            const followCostAccumulated: FollowCostItem[] = [];
             const fetchFollowCostKPIs = async (listId: string) => {
               let nextLink = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$top=2000`;
               while (nextLink) {
@@ -287,12 +297,9 @@ export const ChangesDashboard: React.FC = () => {
                   ID: it.id,
                   Project: it.fields.Project,
                   Area: it.fields.Area,
-                  Followupcost_x002f_BudgetPA: it.fields.Followupcost_x002f_BudgetPA,
-                  InitiationReasons: it.fields.InitiationReasons,
-                  BucketID: it.fields.BucketID,
+                  TotalNettValue: it.fields.TotalNettValue ?? it.fields.Followupcost_x002f_BudgetPA ?? 0, // use new schema if available, fallback if needed
                   Date: it.fields.Date,
-                  BucketResponsible: it.fields.BucketResponsible,
-                  Postname_x002f_ID: it.fields.Postname_x002f_ID,
+                  InitiationReasons: it.fields.InitiationReasons,
                 }));
                 followCostAccumulated.push(...pageItems);
                 nextLink = resp.data["@odata.nextLink"] || "";
@@ -640,19 +647,41 @@ export const ChangesDashboard: React.FC = () => {
 
           {/* --- CLOSURE PHASE 4 --- */}
           {selectedApi === "closurePhase4" && (
-            <div className="bg-white rounded-lg shadow-md p-6 col-span-2 flex flex-col items-center justify-center">
-              <h2 className="text-xl font-semibold mb-2">Closure Phase 4</h2>
-              <div className="text-gray-600 italic">
-                No visual available yet.
+  <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
+    <h2 className="text-xl font-semibold mb-2">Closure Phase 4</h2>
+    <ClosurePhase4Table
+      items={allItems} // or filtered project/list if needed
+      filterMode={filterMode}
+      selectedYear={selectedYear}
+      selectedMonth={selectedMonth}
+      selectedDay={selectedDay}
+      selectedQuarter={selectedQuarter}
+      selectedWeekOfMonth={selectedWeekOfMonth}
+      selectedWeekOfYear={selectedWeekOfYear}
+      fromDay={fromDay}
+      fromMonth={fromMonth}
+      fromYear={fromYear}
+      toDay={toDay}
+      toMonth={toMonth}
+      toYear={toYear}
+    />
+  </div>
+)}
+          {/* --- TRAGET Visuals --- */}
+            {selectedApi === "target" && (
+              <div className="bg-white rounded-lg shadow-md p-6 col-span-2 flex flex-col items-center justify-center">
+                <h2 className="text-xl font-semibold mb-2">Traget</h2>
+                <div className="text-gray-600 italic">
+                  No visual available yet.
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* --- UNPLANNED DOWNTIME --- */}
           {selectedApi === "unplannedDowntime" && (
             <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
               <h2 className="text-xl font-semibold mb-2">Unplanned Downtime</h2>
-              <UnplannedDowntimeChart data={filteredMonthlyKPIs} />
+              <UnplannedDowntimeChart data={filteredMonthlyKPIs} selectedProject={project?.toLowerCase() || ""}/>
             </div>
           )}
 

@@ -28,23 +28,29 @@ const ProjectCarousel: React.FC<ProjectCarouselProps> = ({
 
   return (
     <Carousel responsive={responsive}>
-      {projects.map((proj) => (
-        <div
-          key={proj.id}
-          onClick={() => onProjectSelect(proj.id)}
-          className={`cursor-pointer flex flex-col items-center space-y-4 p-6 bg-white/20 backdrop-blur-sm rounded-2xl shadow-md hover:bg-white/30 transition ${selectedProject === proj.id ? 'border-2 border-blue-500' : ''}`}
-        >
-          <img
-            src={getProjectLogo(proj.id)}
-            alt={`${proj.displayName} logo`}
-            className="h-24 w-auto"
-          />
-          <h2 className="text-xl font-semibold text-white">
-            {proj.displayName}
-          </h2>
-        </div>
-      ))}
-    </Carousel>
+  {projects.map((proj) => (
+    <div
+      key={proj.id}
+      onClick={() => onProjectSelect(proj.id)}
+      className={`cursor-pointer flex flex-col items-center space-y-4 p-6 
+        rounded-2xl shadow-md transition 
+        ${selectedProject === proj.id 
+          ? 'bg-yellow-400 bg-opacity-70 border-2 border-yellow-500' 
+          : 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
+        }`}
+    >
+      <img
+        src={getProjectLogo(proj.id)}
+        alt={`${proj.displayName} logo`}
+        className="h-24 w-auto"
+      />
+      <h2 className="text-xl font-semibold text-white">
+        {proj.displayName}
+      </h2>
+    </div>
+  ))}
+</Carousel>
+
   );
 };
 
