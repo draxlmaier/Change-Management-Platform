@@ -7,10 +7,31 @@ import { getProjectLogo } from "../utils/getProjectLogo";
 import { getAccessToken } from "../auth/getToken";
 import { msalInstance } from "../auth/msalInstance";
 import TopMenu from "../components/TopMenu";
+import { db } from "./db"; // if you have a local DB with carImages
+import { CarImage } from "./types"; // adjust path if needed
+import Carousel from "react-multi-carousel";
+
+
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const ProjectSelection: React.FC = () => {
+  
+  const [cars, setCars] = useState<CarImage[]>([]);
+
+useEffect(() => {
+  (async () => {
+    const carImages = await db.carImages.toArray();
+    setCars(carImages);
+  })();
+}, []);
+  const responsive = {
+  superLargeDesktop: { breakpoint: { max: 4000, min: 3000 }, items: 5 },
+  desktop: { breakpoint: { max: 3000, min: 1024 }, items: 3 },
+  tablet: { breakpoint: { max: 1024, min: 464 }, items: 2 },
+  mobile: { breakpoint: { max: 464, min: 0 }, items: 1 },
+};
+
   const navigate = useNavigate();
   const [projects, setProjects] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +135,41 @@ const ProjectSelection: React.FC = () => {
           )}
         </div>
       </div>
+      <Carousel responsive={responsive} infinite autoPlay autoPlaySpeed={3000}>
+  {cars.map((car) => {
+    const associatedProject = projects.find((p) => p.id === car.projectId);
+    return (
+      <div key={car.id} className="p-4 flex flex-col items-center">
+        {/* Car name */}
+        <div className="text-white font-bold text-2xl text-center mb-4 drop-shadow-lg">
+          {car.name}
+        </div>
+        {/* Car image */}
+        <img
+          src={car.data}
+          alt={car.name}
+          style={{ width: "100%", height: "330px", objectFit: "contain" }}
+        />
+        {/* Logo + carline */}
+        <div className="mt-4 flex items-center gap-3 justify-center">
+          {associatedProject?.logo && (
+            <img
+              src={associatedProject.logo}
+              alt={associatedProject.displayName}
+              className="w-28 h-28 object-contain drop-shadow"
+            />
+          )}
+          {car.carline && (
+            <span className="text-white text-lg font-medium drop-shadow">
+              {car.carline}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  })}
+</Carousel>
+
     </div>
   );
 };

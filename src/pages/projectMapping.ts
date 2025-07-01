@@ -2,19 +2,24 @@ import axios from 'axios';
 import { getConfig, saveConfig, cmConfigLists, IProject } from "../services/configService";
 import { getProjectLogo } from '../utils/getProjectLogo';
 
+// Normalization function defined here
+function normalizeProjectId(raw: string): string {
+  return raw.trim().toLowerCase().replace(/[\s_]+/g, '-');
+}
+
 export async function updateProjectMappingsFromSites(token: string): Promise<IProject[]> {
   const config = getConfig();
   const { frequentSites = [], projects = [] } = config;
 
+  // Use normalized ID as the map key
   const updatedProjectsMap: { [key: string]: IProject } = {};
-  const existingProjectsMap = new Map(projects.map(p => [p.id, p]));
+  const existingProjectsMap = new Map(projects.map(p => [normalizeProjectId(p.id), p]));
 
   // Regex to match ONLY SharePoint Team Sites (not personal/OneDrive or invalid)
   const teamSitePattern = /^https:\/\/[a-zA-Z0-9-]+\.sharepoint\.com\/sites\/[a-zA-Z0-9-_]+/i;
 
   for (const siteUrl of frequentSites) {
     try {
-      // Filter: Skip non-team site URLs
       if (!teamSitePattern.test(siteUrl)) {
         console.warn('Skipping unsupported or invalid SharePoint site:', siteUrl);
         continue;
@@ -42,7 +47,7 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
         if (!match) return;
 
         const [, rawProjectName, phase, isExtra] = match;
-        const projectId = rawProjectName.toLowerCase();
+        const projectId = normalizeProjectId(rawProjectName);
 
         const base = existingProjectsMap.get(projectId) || {
           id: projectId,
@@ -72,7 +77,7 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
         if (!match) return;
 
         const rawProjectName = match[1];
-        const projectId = rawProjectName.toLowerCase();
+        const projectId = normalizeProjectId(rawProjectName);
 
         const base = updatedProjectsMap[projectId] || existingProjectsMap.get(projectId) || {
           id: projectId,
@@ -98,7 +103,6 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
       });
 
     } catch (err) {
-      // Only log real fetch or parsing errors
       console.error('Failed to fetch or parse SharePoint team site:', siteUrl, err);
     }
   }
@@ -106,7 +110,7 @@ export async function updateProjectMappingsFromSites(token: string): Promise<IPr
   // Merge new project mappings with any old entries not overwritten
   const merged = Object.values(updatedProjectsMap);
   const newProjects = Array.from(
-    new Map([...projects, ...merged].map(p => [p.id, { ...p }])).values()
+    new Map([...projects, ...merged].map(p => [normalizeProjectId(p.id), { ...p }])).values()
   );
 
   const updatedConfig: cmConfigLists = {
