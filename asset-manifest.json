@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.8b1c0582.css",
-    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.d1b35d99.js",
+    "main.css": "/Change-Management-Platform-Web-Portal/static/css/main.54a6b81e.css",
+    "main.js": "/Change-Management-Platform-Web-Portal/static/js/main.5a453b59.js",
     "static/media/drx.png": "/Change-Management-Platform-Web-Portal/static/media/drx.32e9970f40d00570a233.png",
     "static/media/harness-bg.png": "/Change-Management-Platform-Web-Portal/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "/Change-Management-Platform-Web-Portal/static/media/harness.7c82532dfe02a78cb694.png",
@@ -39,11 +39,11 @@
     "static/media/Porsche.png": "/Change-Management-Platform-Web-Portal/static/media/Porsche.0c67baebd1b6381fdf51.png",
     "static/media/revicons.woff": "/Change-Management-Platform-Web-Portal/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "/Change-Management-Platform-Web-Portal/index.html",
-    "main.8b1c0582.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.8b1c0582.css.map",
-    "main.d1b35d99.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.d1b35d99.js.map"
+    "main.54a6b81e.css.map": "/Change-Management-Platform-Web-Portal/static/css/main.54a6b81e.css.map",
+    "main.5a453b59.js.map": "/Change-Management-Platform-Web-Portal/static/js/main.5a453b59.js.map"
   },
   "entrypoints": [
-    "static/css/main.8b1c0582.css",
-    "static/js/main.d1b35d99.js"
+    "static/css/main.54a6b81e.css",
+    "static/js/main.5a453b59.js"
   ]
 }
