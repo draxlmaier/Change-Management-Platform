@@ -1,80 +1,73 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import harnessBg from "../assets/images/harness-bg.png";
-import { updateProjectMappingsFromSites } from "./projectMapping";
 import { IProject } from "../services/configService";
 import { getProjectLogo } from "../utils/getProjectLogo";
-import { getAccessToken } from "../auth/getToken";
-import { msalInstance } from "../auth/msalInstance";
 import TopMenu from "../components/TopMenu";
-import { db } from "./db"; // if you have a local DB with carImages
-import { CarImage } from "./types"; // adjust path if needed
+import { db } from "./db";
+import { CarImage } from "./types";
 import Carousel from "react-multi-carousel";
-
-
+import { lookupSiteAndLists } from "../services/siteLookupService"; // <-- NEW IMPORT
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 
 const ProjectSelection: React.FC = () => {
-  
   const [cars, setCars] = useState<CarImage[]>([]);
-
-useEffect(() => {
-  (async () => {
-    const carImages = await db.carImages.toArray();
-    setCars(carImages);
-  })();
-}, []);
-  const responsive = {
-  superLargeDesktop: { breakpoint: { max: 4000, min: 3000 }, items: 5 },
-  desktop: { breakpoint: { max: 3000, min: 1024 }, items: 3 },
-  tablet: { breakpoint: { max: 1024, min: 464 }, items: 2 },
-  mobile: { breakpoint: { max: 464, min: 0 }, items: 1 },
-};
-
-  const navigate = useNavigate();
   const [projects, setProjects] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const navigate = useNavigate();
+
+  // Load car images
   useEffect(() => {
-    const refreshAndLoadProjects = async () => {
+    (async () => {
+      const carImages = await db.carImages.toArray();
+      setCars(carImages);
+    })();
+  }, []);
+
+  // Auto site lookup & load projects
+  useEffect(() => {
+    const autoLookup = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        // 1. Get Microsoft Graph API token
-        const token = await getAccessToken(msalInstance, [
-          "https://graph.microsoft.com/Sites.Read.All",
-        ]);
-        if (!token) {
-          console.warn("Access token unavailable — user not authenticated?");
-          return;
-        }
+        const savedSite = localStorage.getItem("sharepointSite");
+        if (savedSite) {
+          // Optionally: load frequentSites from localStorage or config
+          const frequentSites: string[] = []; // Or retrieve your actual frequent sites
+          const projectsFromStorage: IProject[] = []; // Optionally pre-load old projects
 
-        // 2. Update project mappings using the token
-        await updateProjectMappingsFromSites(token);
+          const { projects: loadedProjects } = await lookupSiteAndLists(savedSite, projectsFromStorage, frequentSites);
 
-        // 3. Load updated config from localStorage
-        const raw = localStorage.getItem(LISTS_CONFIG_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.projects)) {
-            setProjects(parsed.projects);
-          } else {
-            setProjects([]);
-            console.warn("No valid projects found in config.");
-          }
+          setProjects(loadedProjects || []);
         } else {
           setProjects([]);
-          console.warn("No config found in localStorage.");
+          setError("No SharePoint site found. Please add one in the Config Page first!");
         }
-      } catch (err) {
+      } catch (err: any) {
         setProjects([]);
-        console.error("Error loading projects:", err);
+        setError(
+          err?.message ||
+            "Automatic site lookup failed. Please check your connection and authentication."
+        );
+        console.error("Automatic site lookup failed:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    refreshAndLoadProjects();
+    autoLookup();
   }, []);
+
+  const responsive = {
+    superLargeDesktop: { breakpoint: { max: 4000, min: 3000 }, items: 5 },
+    desktop: { breakpoint: { max: 3000, min: 1024 }, items: 3 },
+    tablet: { breakpoint: { max: 1024, min: 464 }, items: 2 },
+    mobile: { breakpoint: { max: 464, min: 0 }, items: 1 },
+  };
 
   if (loading) {
     return (
@@ -107,6 +100,12 @@ useEffect(() => {
           Select a Project
         </h1>
 
+        {error && (
+          <p className="col-span-full text-center text-red-200 mt-4">
+            {error}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
           {projects.map((proj) => (
             <div
@@ -128,48 +127,48 @@ useEffect(() => {
             </div>
           ))}
 
-          {projects.length === 0 && (
+          {!error && projects.length === 0 && (
             <p className="col-span-full text-center text-gray-300 mt-6">
               No projects found. Please add some in the Config Page first!
             </p>
           )}
         </div>
       </div>
-      <Carousel responsive={responsive} infinite autoPlay autoPlaySpeed={3000}>
-  {cars.map((car) => {
-    const associatedProject = projects.find((p) => p.id === car.projectId);
-    return (
-      <div key={car.id} className="p-4 flex flex-col items-center">
-        {/* Car name */}
-        <div className="text-white font-bold text-2xl text-center mb-4 drop-shadow-lg">
-          {car.name}
-        </div>
-        {/* Car image */}
-        <img
-          src={car.data}
-          alt={car.name}
-          style={{ width: "100%", height: "330px", objectFit: "contain" }}
-        />
-        {/* Logo + carline */}
-        <div className="mt-4 flex items-center gap-3 justify-center">
-          {associatedProject?.logo && (
-            <img
-              src={associatedProject.logo}
-              alt={associatedProject.displayName}
-              className="w-28 h-28 object-contain drop-shadow"
-            />
-          )}
-          {car.carline && (
-            <span className="text-white text-lg font-medium drop-shadow">
-              {car.carline}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  })}
-</Carousel>
 
+      <Carousel responsive={responsive} infinite autoPlay autoPlaySpeed={3000}>
+        {cars.map((car) => {
+          const associatedProject = projects.find((p) => p.id === car.projectId);
+          return (
+            <div key={car.id} className="p-4 flex flex-col items-center">
+              {/* Car name */}
+              <div className="text-white font-bold text-2xl text-center mb-4 drop-shadow-lg">
+                {car.name}
+              </div>
+              {/* Car image */}
+              <img
+                src={car.data}
+                alt={car.name}
+                style={{ width: "100%", height: "330px", objectFit: "contain" }}
+              />
+              {/* Logo + carline */}
+              <div className="mt-4 flex items-center gap-3 justify-center">
+                {associatedProject?.logo && (
+                  <img
+                    src={associatedProject.logo}
+                    alt={associatedProject.displayName}
+                    className="w-28 h-28 object-contain drop-shadow"
+                  />
+                )}
+                {car.carline && (
+                  <span className="text-white text-lg font-medium drop-shadow">
+                    {car.carline}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </Carousel>
     </div>
   );
 };

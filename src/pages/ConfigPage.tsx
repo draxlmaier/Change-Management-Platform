@@ -40,6 +40,7 @@ const ConfigPage: React.FC = () => {
   const [monthlyListId, setMonthlyListId] = useState("");
   const [followCostListId, setFollowCostListId] = useState("");
   const [budgetsListId, setBudgetsListId] = useState("");
+const [phase4TargetsListId, setPhase4TargetsListId] = useState("");
 
   // Projects
   const [projects, setProjects] = useState<IProject[]>([]);
@@ -86,6 +87,7 @@ const handleSaveCarName = async () => {
     setProjects((cfg.projects || []).map(p => ({ ...p, logo: p.logo || getProjectLogo(p.id) })));
     setAssignedRoles(cfg.assignedRoles || []);
     setFrequentSites(cfg.frequentSites || []);
+    setPhase4TargetsListId(cfg.phase4TargetsListId || "");
   } catch (err) {
     console.error("Failed to load config:", err);
   }
@@ -133,8 +135,9 @@ const handleSaveCarName = async () => {
     const autoMonthlyId = findListIdByName("monthly");
     const autoFollowId = findListIdByName("follow");
     const autoBudgetsId = findListIdByName("budget");
+    const autoTargetsId = findListIdByName("target");
 setBudgetsListId(autoBudgetsId);
-
+setPhase4TargetsListId(autoTargetsId);
     // Set state to auto-fill the selects
     setQuestionsListId(autoQuestionsId);
     setMonthlyListId(autoMonthlyId);
@@ -325,6 +328,7 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
   monthlyListId,
   followCostListId,
   budgetsListId, 
+  phase4TargetsListId,
   projects,
   assignedRoles,
   frequentSites,
@@ -454,6 +458,23 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
     <select
       value={budgetsListId}
       onChange={(e) => setBudgetsListId(e.target.value)}
+      className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
+    >
+      <option value="">-- Select --</option>
+      {lists.map((l) => (
+        <option key={l.id} value={l.id}>
+          {l.displayName}
+        </option>
+      ))}
+    </select>
+  </label>
+</div>
+<div>
+  <label className="block">
+    Phase 4 Targets List
+    <select
+      value={phase4TargetsListId}
+      onChange={(e) => setPhase4TargetsListId(e.target.value)}
       className="w-full mt-1 p-2 rounded bg-white/80 text-gray-900"
     >
       <option value="">-- Select --</option>

@@ -22,10 +22,12 @@ export interface cmConfigLists {
   usersListId?: string;
   budgetsListId?: string;
   changeQuestionStatusListId?: string;
+  phase4TargetsListId?: string; // <-- Add this line
   projects: IProject[];
   assignedRoles?: { email: string; role: string }[];
   frequentSites?: string[];
 }
+
 
 export function getConfig(): cmConfigLists {
   const raw = localStorage.getItem(LISTS_CONFIG_KEY);

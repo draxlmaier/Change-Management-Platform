@@ -26,7 +26,9 @@ import followupIcon from "../../assets/images/costs.png";
 import scrapIcon from "../../assets/images/scrap.png";
 import changesIcon from "../../assets/images/changes.png";
 import closurePhase4Icon from "../../assets/images/phase4closure.png";
-import ClosurePhase4Table from "./ClosurePhase4Table";
+import Phase4ClosureDashboard from "./Phase4ClosureDashboard";
+import { getConfig } from "../../services/configService";
+import ProjectPhase4DaysTable from "./ProjectPhase4DaysTable";
 
 const apiTabs = [
   { key: "changes", label: "Changes", icon: changesIcon },
@@ -121,6 +123,7 @@ type FilterMode =
   | "customRange";
 export const ChangesDashboard: React.FC = () => {
   const { project } = useParams<{ project: string }>();
+const [projects, setProjects] = useState<IProject[]>([]);
 
   // API Source button state
   const [selectedApi, setSelectedApi] = useState<
@@ -135,6 +138,7 @@ export const ChangesDashboard: React.FC = () => {
 
   const [allMonthlyKPIs, setAllMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
   const [filteredMonthlyKPIs, setFilteredMonthlyKPIs] = useState<MonthlyKPIItem[]>([]);
+const config = getConfig();
 
   // Filter mode state
   const [filterMode, setFilterMode] = useState<FilterMode>("month");
@@ -187,6 +191,8 @@ export const ChangesDashboard: React.FC = () => {
         let config: cmConfigLists;
         try {
           config = JSON.parse(rawConfig);
+          setProjects(config.projects || []);
+
         } catch {
           throw new Error("Failed to parse cmConfigLists from localStorage.");
         }
@@ -649,21 +655,27 @@ export const ChangesDashboard: React.FC = () => {
           {selectedApi === "closurePhase4" && (
   <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
     <h2 className="text-xl font-semibold mb-2">Closure Phase 4</h2>
-    <ClosurePhase4Table
-      items={allItems} // or filtered project/list if needed
-      filterMode={filterMode}
-      selectedYear={selectedYear}
-      selectedMonth={selectedMonth}
-      selectedDay={selectedDay}
-      selectedQuarter={selectedQuarter}
-      selectedWeekOfMonth={selectedWeekOfMonth}
-      selectedWeekOfYear={selectedWeekOfYear}
-      fromDay={fromDay}
-      fromMonth={fromMonth}
-      fromYear={fromYear}
-      toDay={toDay}
-      toMonth={toMonth}
-      toYear={toYear}
+     <Phase4ClosureDashboard
+  projects={projects}
+  changeItems={allItems}
+  phase4TargetsListId={config.phase4TargetsListId}
+  siteId={config.siteId}
+  getToken={async () => {
+    const tok = await getAccessToken(msalInstance, ["User.Read"]);
+    if (!tok) throw new Error("No token");
+    return tok;
+  }}
+/>
+ <ProjectPhase4DaysTable
+      projects={projects}
+      changeItems={allItems}
+      phase4TargetsListId={config.phase4TargetsListId}
+      siteId={config.siteId}
+      getToken={async () => {
+        const tok = await getAccessToken(msalInstance, ["User.Read"]);
+        if (!tok) throw new Error("No token");
+        return tok;
+      }}
     />
   </div>
 )}

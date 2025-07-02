@@ -80,6 +80,15 @@ const REQUIRED_LISTS = [
       { name: "permissions", type: "Text" },
     ],
   },
+  // New required list for phase 4 targets
+  {
+    name: "Phase4Targets",
+    fields: [
+      { name: "Project", type: "Text" },
+      { name: "Department", type: "Text" }, // e.g., PaV, QS, PSCR, Logistic
+      { name: "Target", type: "Number" },
+    ],
+  },
 ];
 
 const EnsureSharePointLists: React.FC<Props> = ({ siteId, onLog }) => {
@@ -90,7 +99,7 @@ const EnsureSharePointLists: React.FC<Props> = ({ siteId, onLog }) => {
       setIsCreating(true);
       const token = await getAccessToken(msalInstance, ["Sites.Manage.All"]);
       const existingLists = await axios.get(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists?$select=displayName`,
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists?$select=displayName,id`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const existingNames = existingLists.data.value.map((list: { displayName: string }) => list.displayName);
@@ -99,73 +108,79 @@ const EnsureSharePointLists: React.FC<Props> = ({ siteId, onLog }) => {
       const updatedConfig = { ...currentConfig };
 
       for (const list of REQUIRED_LISTS) {
-  if (!existingNames.includes(list.name)) {
-    const createdList = await axios.post(
-      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`,
-      {
-        displayName: list.name,
-        columns: list.fields.map((f) => ({
-          name: f.name,
-          text: f.type === "Text" ? {} : undefined,
-          number: f.type === "Number" ? {} : undefined,
-        })),
-        list: { template: "genericList" },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+        if (!existingNames.includes(list.name)) {
+          const createdList = await axios.post(
+            `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`,
+            {
+              displayName: list.name,
+              columns: list.fields.map((f) => ({
+                name: f.name,
+                text: f.type === "Text" ? {} : undefined,
+                number: f.type === "Number" ? {} : undefined,
+              })),
+              list: { template: "genericList" },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-    const listId = createdList.data.id;
-    switch (list.name) {
-      case "MonthlyKPIs":
-        updatedConfig.monthlyListId = listId;
-        break;
-      case "Budgets":
-        updatedConfig.budgetsListId = listId;
-        break;
-      case "QuestionTemplates":
-        updatedConfig.questionsListId = listId;
-        break;
-      case "FollowCostKPI":
-        updatedConfig.followCostListId = listId;
-        break;
-      case "users":
-        updatedConfig.usersListId = listId;
-        break;
-    }
+          const listId = createdList.data.id;
+          switch (list.name) {
+            case "MonthlyKPIs":
+              updatedConfig.monthlyListId = listId;
+              break;
+            case "Budgets":
+              updatedConfig.budgetsListId = listId;
+              break;
+            case "QuestionTemplates":
+              updatedConfig.questionsListId = listId;
+              break;
+            case "FollowCostKPI":
+              updatedConfig.followCostListId = listId;
+              break;
+            case "users":
+              updatedConfig.usersListId = listId;
+              break;
+            case "Phase4Targets":
+              updatedConfig.phase4TargetsListId = listId;
+              break;
+          }
 
-    onLog(`✅ Created list '${list.name}'`);
-  } else {
-    onLog(`ℹ️ List '${list.name}' already exists.`);
-    // Add this to patch config if missing:
-    const existingListInfo = existingLists.data.value.find(
-      (l: { displayName: string; id: string }) => l.displayName === list.name
-    );
-    if (existingListInfo && existingListInfo.id) {
-      switch (list.name) {
-        case "MonthlyKPIs":
-          updatedConfig.monthlyListId = existingListInfo.id;
-          break;
-        case "Budgets":
-          updatedConfig.budgetsListId = existingListInfo.id;
-          break;
-        case "QuestionTemplates":
-          updatedConfig.questionsListId = existingListInfo.id;
-          break;
-        case "FollowCostKPI":
-          updatedConfig.followCostListId = existingListInfo.id;
-          break;
-        case "users":
-          updatedConfig.usersListId = existingListInfo.id;
-          break;
+          onLog(`✅ Created list '${list.name}'`);
+        } else {
+          onLog(`ℹ️ List '${list.name}' already exists.`);
+          // Add this to patch config if missing:
+          const existingListInfo = existingLists.data.value.find(
+            (l: { displayName: string; id: string }) => l.displayName === list.name
+          );
+          if (existingListInfo && existingListInfo.id) {
+            switch (list.name) {
+              case "MonthlyKPIs":
+                updatedConfig.monthlyListId = existingListInfo.id;
+                break;
+              case "Budgets":
+                updatedConfig.budgetsListId = existingListInfo.id;
+                break;
+              case "QuestionTemplates":
+                updatedConfig.questionsListId = existingListInfo.id;
+                break;
+              case "FollowCostKPI":
+                updatedConfig.followCostListId = existingListInfo.id;
+                break;
+              case "users":
+                updatedConfig.usersListId = existingListInfo.id;
+                break;
+              case "Phase4Targets":
+                updatedConfig.phase4TargetsListId = existingListInfo.id;
+                break;
+            }
+          }
+        }
       }
-    }
-  }
-}
       updatedConfig.siteId = siteId;
       saveConfig(updatedConfig);
       onLog("✅ Configuration saved to localStorage.");
