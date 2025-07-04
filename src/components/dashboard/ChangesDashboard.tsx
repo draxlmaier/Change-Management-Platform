@@ -30,6 +30,7 @@ import { BudgetDepartmentChart } from "./budget/BudgetDepartmentChart";
 import { BudgetEntriesChart } from "./budget/BudgetEntriesChart";
 import DraxlOverview from "./changes/DraxlOverview";
 import { ChangeStatusSemiPieChart } from "./phase 4 closure/ChangeStatusSemiPieChart";
+import { ScrapEntriesChart } from "./scrap/ScrapEntriesChart";
 
 const apiTabs = [
   { key: "changes", label: "Changes", icon: changesIcon },
@@ -81,6 +82,8 @@ interface ChangeItem {
   processyear?: string;
   processmonth?: string;
   processday?: string;
+  Actualscrap?: number;
+  Estimatedscrap?: number;
   OEM?: string;
 }
 interface MonthlyKPIItem {
@@ -466,7 +469,10 @@ const config = getConfig();
     const area = item.SheetName || "Unknown";
     changesByArea[area] = (changesByArea[area] || 0) + 1;
   });
-
+const scrapFilterMode: "month" | "quarter" | "year" =
+   filterMode === "month" || filterMode === "quarter" || filterMode === "year"
+     ? filterMode
+     : "month";
   return (
     <div className="bg-gray-100 min-h-screen p-6">
       <div className="p-6 space-y-6 bg-white rounded-lg shadow-md">
@@ -646,6 +652,8 @@ const config = getConfig();
             <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
               <ScrapPieChart items={filteredItems} groupBy="year" />
             </div>
+           
+    
           )}
 
           {/* --- CLOSURE PHASE 4 --- */}
