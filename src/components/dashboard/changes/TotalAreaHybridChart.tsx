@@ -195,7 +195,7 @@ const TotalAreaHybridChart: React.FC<Props> = ({
       : "Year";
 
   const option: EChartsOption = {
-    title: { text: "All Areas", left: "center" },
+    title: { text: "All", left: "center" },
     legend: { orient: "horizontal", bottom: "5%", left: "center" },
     tooltip: { trigger: "axis", showContent: false },
     dataset: { source },
