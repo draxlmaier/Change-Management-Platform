@@ -66,7 +66,8 @@ const AreaImageUploadComponent: React.FC<Props> = ({ projects }) => {
                   area,
                   imageData: reader.result as string,
                   createdAt: new Date().toISOString(),
-                  name: areaNames[area] || "", // store name if you want
+                  name: areaNames[area] || "",
+                  image: ""
                 });
                 resolve();
               } catch (err) {

@@ -37,6 +37,7 @@ import FollowUpKPIInput from "./components/dashboard/FollowUpKPIInput";
 import DRXKPIEditor from "./pages/DRXKPIEditor";
 import DowntimeKPIEditor from "./pages/DowntimeKPIEditor";
 import BudgetKPIEditor from "./pages/BudgetKPIEditor";
+import Phase4KPIInput from "./components/Phase4KPIInput";
 
 const App: React.FC = () => (
   <Routes>
@@ -76,6 +77,7 @@ const App: React.FC = () => (
   <Route path="budget" element={<BudgetKPIInput />} />
   <Route path="followup" element={<FollowUpKPIInput />} />
   <Route path="scrap" element={<ScrapFollowingSection />} />
+  <Route path="phase4" element={<Phase4KPIInput />} />
 </Route>
 
 <Route path="/kpi-editor/drx" element={<DRXKPIEditor />} />

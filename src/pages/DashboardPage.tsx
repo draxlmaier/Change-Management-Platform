@@ -1,8 +1,8 @@
 // File: src/pages/DashboardPage.tsx
 
 import React from "react";
-import { ChangesDashboard } from "../components/dashboard/ChangesDashboard"; 
 import TopMenu from "../components/TopMenu";
+import ChangesDashboard from "../components/dashboard/ChangesDashboard";
 // ^ Make sure the import path is correct
 
 export default function DashboardPage() {

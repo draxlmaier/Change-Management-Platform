@@ -1,24 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import StatsCards from "./StatsCards";
-import { OpenClosedPieChart } from "./OpenClosedPieChart";
-import { ScrapPieChart } from "./ScrapPieChart";
-import { SubAreaPieChart } from "./SubAreaPieChart";
+
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
-import { UnplannedDowntimeChart } from "./UnplannedDowntimeChart";
-import { DRXIdeaProgressChart } from "./DRXIdeaProgressChart";
-import { BudgetDepartmentChart } from "./BudgetDepartmentChart";
-import { BudgetEntriesChart } from "./BudgetEntriesChart";
-import { DRXEntriesChart } from "./DRXEntriesChart";
-import { FollowupCostByAreaChart } from "./FollowupCostByAreaChart";
-import { FollowupCostByReasonChart } from "./FollowupCostByReasonChart";
-import { FollowupCostCombinedChart } from "./FollowupCostCombinedChart";
+
 import { db } from "../../pages/db";
 import { AreaImage } from "../../pages/types";
 
-import tragetIcon from "../../assets/images/target.png";
 import drxIcon from "../../assets/images/drx.png";
 import downtimeIcon from "../../assets/images/downtime.png";
 import budgetIcon from "../../assets/images/budget.png";
@@ -26,9 +15,21 @@ import followupIcon from "../../assets/images/costs.png";
 import scrapIcon from "../../assets/images/scrap.png";
 import changesIcon from "../../assets/images/changes.png";
 import closurePhase4Icon from "../../assets/images/phase4closure.png";
-import Phase4ClosureDashboard from "./Phase4ClosureDashboard";
 import { getConfig } from "../../services/configService";
 import ProjectPhase4DaysTable from "./ProjectPhase4DaysTable";
+import StatsCards from "./changes/StatsCards";
+import { OpenClosedPieChart } from "./phase 4 closure/OpenClosedPieChart";
+import { ScrapPieChart } from "./scrap/ScrapPieChart";
+import { UnplannedDowntimeChart } from "./downtime/UnplannedDowntimeChart";
+import { FollowupCostByAreaChart } from "./followupcost/FollowupCostByAreaChart";
+import { FollowupCostCombinedChart } from "./followupcost/FollowupCostCombinedChart";
+import { FollowupCostByReasonChart } from "./followupcost/FollowupCostByReasonChart";
+import { DRXEntriesChart } from "./drx/DRXEntriesChart";
+import { DRXIdeaProgressChart } from "./drx/DRXIdeaProgressChart";
+import { BudgetDepartmentChart } from "./budget/BudgetDepartmentChart";
+import { BudgetEntriesChart } from "./budget/BudgetEntriesChart";
+import DraxlOverview from "./changes/DraxlOverview";
+import { ChangeStatusSemiPieChart } from "./phase 4 closure/ChangeStatusSemiPieChart";
 
 const apiTabs = [
   { key: "changes", label: "Changes", icon: changesIcon },
@@ -38,7 +39,7 @@ const apiTabs = [
   { key: "budget", label: "Budget", icon: budgetIcon },
   { key: "scrap", label: "Scrap", icon: scrapIcon },
   { key: "closurePhase4", label: "Closure Phase 4", icon: closurePhase4Icon },
-  { key: "traget", label: "Traget", icon: tragetIcon },
+
 ];
 
 // Filter modes as an array for horizontal button group
@@ -76,9 +77,11 @@ interface ChangeItem {
   EnddatePhase4?: string;
   EnddatePAVPhase4?: string;
   EnddatePhase8?: string;
+  EnddateProcessinfo?:string;
   processyear?: string;
   processmonth?: string;
   processday?: string;
+  OEM?: string;
 }
 interface MonthlyKPIItem {
   ID: string;
@@ -122,12 +125,13 @@ type FilterMode =
   | "weekOfYear"
   | "customRange";
 export const ChangesDashboard: React.FC = () => {
+  
   const { project } = useParams<{ project: string }>();
 const [projects, setProjects] = useState<IProject[]>([]);
 
   // API Source button state
   const [selectedApi, setSelectedApi] = useState<
-    "changes" | "unplannedDowntime" | "costPA" | "drxIdea" | "budget" | "scrap" | "closurePhase4" | "target" 
+    "changes" | "unplannedDowntime" | "costPA" | "drxIdea" | "budget" | "scrap" | "closurePhase4" 
   >("changes");
 
   // Items & error/loading states
@@ -218,9 +222,12 @@ const config = getConfig();
               EnddatePhase4: it.fields.EnddatePhase4,
               EnddatePAVPhase4: it.fields.EnddatePAVPhase4,
               EnddatePhase8: it.fields.EnddatePhase8,
+              EnddateProcessinfo:it.fields.EnddateProcessinfo,
               processyear: it.fields.processyear,
               processmonth: it.fields.processmonth,
               processday: it.fields.processday,
+              OEM: it.fields.OEM, 
+              Scrap:it.fields.Scrap,
             })) as ChangeItem[];
             accumulated.push(...pageItems);
             nextLink = resp.data["@odata.nextLink"] || "";
@@ -489,8 +496,7 @@ const config = getConfig();
             filterMode === "month" ||
             filterMode === "day" ||
             filterMode === "weekOfMonth" ||
-            filterMode === "weekOfYear" ||
-            filterMode === "customRange") && (
+            filterMode === "weekOfYear") && (
             <select
               value={selectedYear}
               onChange={e => setSelectedYear(e.target.value)}
@@ -518,9 +524,7 @@ const config = getConfig();
           {/* Month */}
           {(filterMode === "month" ||
             filterMode === "day" ||
-            filterMode === "weekOfMonth" ||
-            filterMode === "weekOfYear" ||
-            filterMode === "customRange") && (
+            filterMode === "weekOfMonth" ) && (
             <select
               value={selectedMonth}
               onChange={e => setSelectedMonth(e.target.value)}
@@ -538,7 +542,7 @@ const config = getConfig();
           )}
 
           {/* Day */}
-          {(filterMode === "day" || filterMode === "customRange") && (
+          {(filterMode === "day") && (
             <select
               value={selectedDay}
               onChange={e => setSelectedDay(e.target.value)}
@@ -608,7 +612,7 @@ const config = getConfig();
                 shadow
                 ${selectedApi === tab.key
                   ? "bg-yellow-400 text-black shadow-lg"
-                  : "bg-white/20 text-white hover:bg-white/30"
+                  : "bg-white text-black hover:bg-yellow-200"
                 }`}
               style={{ minHeight: "120px" }}
             >
@@ -622,24 +626,17 @@ const config = getConfig();
           {/* --- CHANGES Visuals --- */}
           {selectedApi === "changes" && (
             <>
-              <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
                 <StatsCards
                   totalChanges={totalChanges}
                   changesByArea={changesByArea}
                   areaImages={areaImages}
                 />
-              </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <SubAreaPieChart items={filteredItems} />
-              </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <OpenClosedPieChart items={filteredItems} type="phase4" />
-              </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <OpenClosedPieChart items={filteredItems} type="pav" />
-              </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <OpenClosedPieChart items={filteredItems} type="phase8" />
+                {project?.toLowerCase() === "draxlmaeir" && (
+     <div className="bg-white rounded-lg shadow-md p-6 col-span-2 min-h-[400px]">
+       <DraxlOverview items={filteredItems}/>
+     </div>
+   )}
               </div>
             </>
           )}
@@ -653,19 +650,20 @@ const config = getConfig();
 
           {/* --- CLOSURE PHASE 4 --- */}
           {selectedApi === "closurePhase4" && (
+            <>
+            <div className="bg-white rounded-lg shadow-md p-6">
+           <ChangeStatusSemiPieChart items={filteredItems} />
+         </div>
+         <div className="bg-white rounded-lg shadow-md p-6">
+                <OpenClosedPieChart items={filteredItems} type="phase4" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <OpenClosedPieChart items={filteredItems} type="pav" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <OpenClosedPieChart items={filteredItems} type="phase8" />
+              </div>
   <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
-    <h2 className="text-xl font-semibold mb-2">Closure Phase 4</h2>
-     <Phase4ClosureDashboard
-  projects={projects}
-  changeItems={allItems}
-  phase4TargetsListId={config.phase4TargetsListId}
-  siteId={config.siteId}
-  getToken={async () => {
-    const tok = await getAccessToken(msalInstance, ["User.Read"]);
-    if (!tok) throw new Error("No token");
-    return tok;
-  }}
-/>
  <ProjectPhase4DaysTable
       projects={projects}
       changeItems={allItems}
@@ -678,16 +676,8 @@ const config = getConfig();
       }}
     />
   </div>
+  </>
 )}
-          {/* --- TRAGET Visuals --- */}
-            {selectedApi === "target" && (
-              <div className="bg-white rounded-lg shadow-md p-6 col-span-2 flex flex-col items-center justify-center">
-                <h2 className="text-xl font-semibold mb-2">Traget</h2>
-                <div className="text-gray-600 italic">
-                  No visual available yet.
-                </div>
-              </div>
-            )}
 
           {/* --- UNPLANNED DOWNTIME --- */}
           {selectedApi === "unplannedDowntime" && (

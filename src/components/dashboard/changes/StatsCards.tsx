@@ -1,5 +1,5 @@
 import React from "react";
-import { AreaImage } from "../../pages/types";
+import { AreaImage } from "../../../pages/types";
 
 export interface StatsCardsProps {
   totalChanges: number;
