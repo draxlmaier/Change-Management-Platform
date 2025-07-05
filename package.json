@@ -37,6 +37,7 @@
     "react-datepicker": "^8.3.0",
     "react-dom": "^18.2.0",
     "react-flickity-component": "^4.0.7",
+    "react-ga4": "^2.1.0",
     "react-multi-carousel": "^2.8.6",
     "react-router-dom": "^7.6.0",
     "react-scripts": "^5.0.1",

@@ -9,13 +9,22 @@ import App from "./App";
 import { msalConfig } from "./authConfig";
 import "./index.css";
 
+// GA4 imports
+import { initGA } from "./analytics/ga4";
+import { RouterTracker } from "./analytics/RouterTracker";
+import { reportWebVitals } from "./analytics/vitals";
+
 const msalInstance = new PublicClientApplication(msalConfig);
 
 const RootRouter: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
+    // initialize GA as early as possible
+    initGA();
+
     msalInstance
-    .initialize() // Explicitly initialize the instance
+      .initialize()
       .then(() => msalInstance.handleRedirectPromise())
       .then((resp) => {
         if (resp?.account) {
@@ -24,7 +33,7 @@ const RootRouter: React.FC = () => {
       })
       .catch((e) => console.error("MSAL redirect error:", e))
       .finally(() => setLoaded(true));
-  }, [/* remove navigate from deps */]);
+  }, []);
 
   if (!loaded) {
     return <div>Loading authentication...</div>;
@@ -34,15 +43,19 @@ const RootRouter: React.FC = () => {
 };
 
 const Root: React.FC = () => (
-    <HashRouter>
+  <HashRouter>
+    {/* Tracker will send a page_view on every hash change */}
+    <RouterTracker />
     <MsalProvider instance={msalInstance}>
-    <RootRouter />
+      <RootRouter />
     </MsalProvider>
   </HashRouter>
-
 );
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
 root.render(<Root />);
+
+// after the app is up, start collecting Web Vitals
+reportWebVitals();

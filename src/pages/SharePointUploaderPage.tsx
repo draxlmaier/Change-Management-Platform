@@ -16,6 +16,9 @@ import { msalInstance } from "../auth/msalInstance";
 import { getConfig } from "../services/configService";
 import axios from "axios";
 
+import { trackEvent } from '../analytics/ga4';
+
+
 const SharePointUploaderPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -43,7 +46,7 @@ const SharePointUploaderPage: React.FC = () => {
     setSiteId(id);
     setSiteUrl(resolvedUrl);
     log(`✅ Using SharePoint Site ID: ${id}`);
-
+     trackEvent('Site Resolved', { siteId: id });
     try {
       const token = await getAccessToken(msalInstance, ["Sites.Read.All"]);
       const config = getConfig();
@@ -155,6 +158,7 @@ const SharePointUploaderPage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-10 mt-10">
                   <button
                     onClick={() => navigate("/project-selection")}
+                    
                     className="w-72 h-72 bg-white/20 backdrop-blur-md rounded-2xl shadow-lg hover:bg-white/30 hover:scale-105 transition transform duration-300 ease-in-out flex flex-col items-center justify-center text-white"
                   >
                     <img src={projectsIcon} alt="Projects" className="h-48 w-38 mb-6 object-contain" />
