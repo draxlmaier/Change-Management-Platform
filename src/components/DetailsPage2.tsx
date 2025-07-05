@@ -82,21 +82,32 @@ const DetailsPage2: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   function getSectionStatus(endDateValue?: string) {
     return endDateValue && /\d/.test(endDateValue) ? "Closed" : "Open";
   }
-
-  const calculateWorkingDays = (start: string, end: string): number | string => {
-    try {
-      const s = new Date(start);
-      const e = new Date(end);
-      let count = 0;
-      for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-        const day = d.getDay();
-        if (day !== 0 && day !== 6) count++;
-      }
-      return count;
-    } catch {
-      return "";
+function toISODate(str?: string | null): string | null {
+  if (!str) return null;
+  // Already ISO format?
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const d = new Date(str);
+  if (isNaN(d as any)) return null;
+  return d.toISOString().slice(0, 10);
+}
+ const calculateWorkingDays = (start: string, end: string): number | string => {
+  try {
+    const sISO = toISODate(start);
+    const eISO = toISODate(end);
+    if (!sISO || !eISO) return "";
+    const s = new Date(sISO);
+    const e = new Date(eISO);
+    if (isNaN(s as any) || isNaN(e as any)) return "";
+    let count = 0;
+    for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) count++;
     }
-  };
+    return count;
+  } catch {
+    return "";
+  }
+};
 
   useEffect(() => {
     if (editingField && inputRef.current) {
