@@ -46,9 +46,6 @@ const [phase4TargetsListId, setPhase4TargetsListId] = useState("");
   const [projects, setProjects] = useState<IProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   // Roles
-  const [userEmail, setUserEmail] = useState("");
-  const [userRole, setUserRole] = useState("");
-  const [assignedRoles, setAssignedRoles] = useState<{ email: string; role: string }[]>([]);
   // Dexie-based car images
   const [carList, setCarList] = useState<CarImage[]>([]);
   // Track which tab is active: "lists", "cars", or "roles"
@@ -85,7 +82,6 @@ const handleSaveCarName = async () => {
     setMonthlyListId(cfg.monthlyListId || "");
     setFollowCostListId(cfg.followCostListId || "");
     setProjects((cfg.projects || []).map(p => ({ ...p, logo: p.logo || getProjectLogo(p.id) })));
-    setAssignedRoles(cfg.assignedRoles || []);
     setFrequentSites(cfg.frequentSites || []);
     setPhase4TargetsListId(cfg.phase4TargetsListId || "");
   } catch (err) {
@@ -209,7 +205,6 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
   followCostListId: autoFollowId,
   budgetsListId: autoBudgetsId, 
   projects: finalProjects,
-  assignedRoles,
   frequentSites: [...new Set([...frequentSites, siteName])],
 };
     saveConfig(newConfig);
@@ -226,25 +221,7 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
     setLoadingLists(false);
   }
 };
-  // 3) Roles
-  const handleRoleAssignment = (e: FormEvent) => {
-    e.preventDefault();
-    if (!userEmail || !userRole) return;
-
-    const existingRole = assignedRoles.find((r) => r.email === userEmail);
-    if (existingRole) {
-      setMessage(`User ${userEmail} already has a role assigned.`);
-      return;
-    }
-    const newRole = { email: userEmail, role: userRole };
-    setAssignedRoles((prev) => [...prev, newRole]);
-    setUserEmail("");
-    setUserRole("");
-    setMessage(`Role '${userRole}' assigned to ${userEmail} successfully!`);
-  };
-  const removeRole = (email: string) => {
-    setAssignedRoles((prev) => prev.filter((r) => r.email !== email));
-  };
+  
   // 4) Projects
   const addProjectFromDropdown = () => {
   if (!selectedProjectId) {
@@ -330,7 +307,6 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
   budgetsListId, 
   phase4TargetsListId,
   projects,
-  assignedRoles,
   frequentSites,
 };
   saveConfig(newConfig);
@@ -369,14 +345,6 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
             }`}
           >
             Configure Cars
-          </button>
-          <button
-            onClick={() => setActiveTab("roles")}
-            className={`w-full py-3 rounded-xl text-center font-medium transition ${
-              activeTab === "roles" ? "bg-[#1cb3d2] text-white" : "text-white hover:bg-white/30"
-            }`}
-          >
-            Configure User Roles
           </button>
           <button
             onClick={() => setActiveTab("areaImages")}
@@ -745,70 +713,6 @@ newProjectsMap[projectId].mapping.changeQuestionStatusListId = list.id;
     </div>
   </>
 )}
-          {/* TAB: roles */}
-          {activeTab === "roles" && (
-            <>
-              <h2 className="text-2xl font-semibold">User Roles Configuration</h2>
-              <button
-                onClick={() => navigate("/admin/users")}
-                className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-              >
-                Go to Admin User Manager
-              </button>
-              <form onSubmit={handleRoleAssignment} className="space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <input
-                    type="email"
-                    placeholder="User Email"
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    className="p-2 rounded bg-white/80 text-gray-900"
-                    required
-                  />
-                  <select
-                    value={userRole}
-                    onChange={(e) => setUserRole(e.target.value)}
-                    className="p-2 rounded bg-white/80 text-gray-900"
-                    required
-                  >
-                    <option value="">Select Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="editor">Editor</option>
-                    <option value="viewer">Viewer</option>
-                  </select>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                  >
-                    Assign Role
-                  </button>
-                </div>
-              </form>
-
-              <div className="mt-4">
-                <h3 className="text-xl font-medium">Assigned Roles</h3>
-                <ul className="space-y-2">
-                  {assignedRoles.map((role) => (
-                    <li
-                      key={role.email}
-                      className="flex justify-between items-center bg-white/20 p-2 rounded"
-                    >
-                      <span>
-                        {role.email} - {role.role}
-                      </span>
-                      <button
-                        onClick={() => removeRole(role.email)}
-                        className="px-2 py-1 text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          )}
-
           {activeTab === "areaImages" && (
   <AreaImageUploadComponent projects={projects} />
 )}

@@ -14,7 +14,6 @@ import SendEmailPage             from "./pages/SendEmailPage";
 import NotFoundPage              from "./pages/NotFoundPage";
 import KPIInputPage              from "./pages/KPIInputPage";
 
-import DashboardHome   from "./pages/DashboardHome";
 import DashboardPage   from "./pages/DashboardPage";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 
@@ -28,7 +27,6 @@ import FollowCostKPIEditor from "./pages/FollowCostKPIEditor";
 import ToolSelectionPage from "./pages/ToolSelectionPage";
 import SharePointUploaderPage from "./pages/SharePointUploaderPage"; // assuming this exists
 
-import AdminUserManager from "./pages/AdminUserManager";
 import DRXKPIInput from "./components/dashboard/DRXKPIInput";
 import DowntimeKPIInput from "./components/dashboard/DowntimeKPIInput";
 import BudgetKPIInput from "./components/dashboard/BudgetKPIInput";
@@ -38,6 +36,7 @@ import DRXKPIEditor from "./pages/DRXKPIEditor";
 import DowntimeKPIEditor from "./pages/DowntimeKPIEditor";
 import BudgetKPIEditor from "./pages/BudgetKPIEditor";
 import Phase4KPIInput from "./components/Phase4KPIInput";
+import DashboardHome from "./pages/DashboardHome";
 
 const App: React.FC = () => (
   <Routes>
@@ -47,7 +46,6 @@ const App: React.FC = () => (
     <Route path="/data-extraction" element={<SharePointUploaderPage />} />
     {/* Configuration */}
     <Route path="/config" element={<ConfigPage />} />
-     <Route path="/admin/users" element={<AdminUserManager />} />
 
     {/* Change management flow */}
     <Route path="/project-selection" element={<ProjectSelection />} />
