@@ -62,12 +62,12 @@ const SendEmailPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [questions, setQuestions] = useState<QuestionState[]>([]);
-  const [processnumber, setProcessNumber] = useState("");
+  const [, setProcessNumber] = useState("");
   const [carline, setCarline] = useState("");
-  const [area, setArea] = useState("");
+  const [, setArea] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [projectName, setProjectName] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 

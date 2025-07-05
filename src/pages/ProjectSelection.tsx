@@ -9,8 +9,6 @@ import { CarImage } from "./types";
 import Carousel from "react-multi-carousel";
 import { lookupSiteAndLists } from "../services/siteLookupService"; // <-- NEW IMPORT
 
-const LISTS_CONFIG_KEY = "cmConfigLists";
-
 const ProjectSelection: React.FC = () => {
   const [cars, setCars] = useState<CarImage[]>([]);
   const [projects, setProjects] = useState<IProject[]>([]);

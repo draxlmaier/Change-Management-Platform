@@ -64,7 +64,7 @@ export default function EditQuestionPage() {
   const [processNumber, setProcessNumber] = useState("");
   const [carline, setCarline] = useState("");
   const [area, setArea] = useState("");
-  const [userEmail, setUserEmail] = useState("");
+  const [, setUserEmail] = useState("");
 
   const [, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
