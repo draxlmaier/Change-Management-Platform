@@ -24,11 +24,6 @@ interface IProject {
   logo?: string;
 }
 
-interface SharePointItem {
-  id: string;
-  [key: string]: any;
-}
-
 const formatter = new Intl.NumberFormat(undefined, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,

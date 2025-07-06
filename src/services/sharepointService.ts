@@ -3,7 +3,6 @@ import { IPublicClientApplication } from "@azure/msal-browser";
 import axios from "axios";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
-/** Split an array into chunks of up to `size` */
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
@@ -166,24 +165,26 @@ interface BatchReq {
 async function uploadBatch(batch: BatchReq[], token: string) {
   const maxTries = 5;
   let attempt = 0;
+
   while (attempt++ < maxTries) {
     try {
-      await axios.post(
-        `${GRAPH_BASE}/$batch`,
-        { requests: batch },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post(`${GRAPH_BASE}/$batch`, { requests: batch }, { headers: { Authorization: `Bearer ${token}` } });
       return;
     } catch (e: any) {
       const status = e.response?.status;
       if ([429, 503, 500].includes(status)) {
         const retryAfter = parseInt(e.response?.headers["retry-after"] || "5", 10);
-        await new Promise(r => setTimeout(r, retryAfter * 1000 * attempt));
+        // ← capture here
+        const currentAttempt = attempt;
+        await new Promise(resolve =>
+          setTimeout(resolve, retryAfter * 1000 * currentAttempt)
+        );
         continue;
       }
       throw e;
     }
   }
+
   throw new Error("Batch permanently failed after retries");
 }
 

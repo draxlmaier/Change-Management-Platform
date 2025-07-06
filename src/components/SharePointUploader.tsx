@@ -12,7 +12,7 @@ import {
   insertItem,
 } from "../services/sharepointService";
 import { msalInstance } from "../auth/msalInstance";
-import { upsertProjectMapping, getConfig } from "../services/configService";
+import { getConfig } from "../services/configService";
 import uploadIcon from "../assets/images/uploadIcon.png";
 import axios from "axios";
 

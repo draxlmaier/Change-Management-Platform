@@ -45,20 +45,6 @@ interface ChangeItem {
 interface DetailsPageProps {
   fieldsConfig: FieldsConfig;
 }
-const dateFieldKeys = [
-  "DeadlineTBT",
-  "Modelyear",
-  "Realizationplanned",
-  "Approxrealizationdate"
-];
-
-const getInputType = (key: string) => {
-  if (dateFieldKeys.includes(key)) return "date";
-  const k = key.toLowerCase();
-  if (k.includes("date")) return "date";
-  if (k.includes("cost") || k.includes("downtime") || k.includes("workingdays") || k.includes("scrap")) return "number";
-  return "text";
-};
 const DetailsPage2: React.FC<DetailsPageProps> = ({ fieldsConfig }) => {
   const { projectKey, itemId } = useParams<{ projectKey: string; itemId: string }>();
   const navigate = useNavigate();

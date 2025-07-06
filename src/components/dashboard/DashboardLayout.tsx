@@ -54,7 +54,7 @@ export default function DashboardLayout(): React.ReactElement {
         console.error("Error parsing config:", err);
       }
     }
-  }, []);
+  }, [draxLogo]);
 
   const linkClass = (isActive: boolean) =>
     `flex items-center mb-2 px-3 py-2 rounded ${
