@@ -2,7 +2,6 @@
   "name": "change-management-platform",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://draxlmaier.github.io/Change-Management-Platform/",
   "main": "main.js",
   "dependencies": {
     "@azure/msal-browser": "^2.38.4",
@@ -32,15 +31,14 @@
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5"
   },
-  "scripts": {
+    "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    
-    "build:gh":  "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ REACT_APP_REDIRECT_URI=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",
 
+    "build:gh":  "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ REACT_APP_REDIRECT_URI=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",    
     "deploy:gh": "npm run build:gh && gh-pages -d build",
-    
-     "build:cf": "cross-env PUBLIC_URL=. REACT_APP_REDIRECT_URI=https://change-management-platform.pages.dev/ react-scripts build"
+
+    "build:cf":  "cross-env PUBLIC_URL=. REACT_APP_REDIRECT_URI=https://change-management-platform.pages.dev/ react-scripts build"
   },
   "eslintConfig": {
     "extends": [
