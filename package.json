@@ -1,8 +1,8 @@
 {
-  "name": "change-management-portal",
+  "name": "change-management-platform",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://touatiach.github.io/Change-Management-Platform-Web-Portal/",
+  "homepage": "https://draxlmaier.github.io/Change-Management-Platform/",
   "main": "main.js",
   "dependencies": {
     "@azure/msal-browser": "^2.38.4",
@@ -35,8 +35,11 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    
+    "build:gh":  "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",
+    "deploy:gh": "npm run build:gh && gh-pages -d build",
+    
+    "build:cf": "cross-env PUBLIC_URL=. react-scripts build"
   },
   "eslintConfig": {
     "extends": [
@@ -58,6 +61,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "cross-env": "^7.0.3",
     "eslint-config-react-app": "^7.0.1",
     "gh-pages": "^6.3.0",
     "typescript": "^4.9.5"
