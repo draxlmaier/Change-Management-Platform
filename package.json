@@ -36,10 +36,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     
-    "build:gh":  "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",
+    "build:gh":  "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ REACT_APP_REDIRECT_URI=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",
+
     "deploy:gh": "npm run build:gh && gh-pages -d build",
     
-    "build:cf": "cross-env PUBLIC_URL=. react-scripts build"
+     "build:cf": "cross-env PUBLIC_URL=. REACT_APP_REDIRECT_URI=https://change-management-platform.pages.dev/ react-scripts build"
   },
   "eslintConfig": {
     "extends": [
