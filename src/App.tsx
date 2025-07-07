@@ -10,7 +10,7 @@ import ChangeItemsImplementation from "./pages/ChangeItemsImplementation";
 import ChangeItemsFeasibility    from "./pages/ChangeItemsFeasibility";
 import DetailsImplementation     from "./pages/DetailsImplementation";
 import DetailsFeasibility        from "./pages/DetailsFeasibility";
-import SendEmailPage             from "./pages/SendEmailPage";
+//import SendEmailPage             from "./pages/SendEmailPage22";
 import NotFoundPage              from "./pages/NotFoundPage";
 import KPIInputPage              from "./pages/KPIInputPage";
 
@@ -20,7 +20,6 @@ import DashboardLayout from "./components/dashboard/DashboardLayout";
 import ChangeItemsFeasibilityExtra from "./pages/ChangeItemsFeasibilityExtra";
 import ChangeItemsImplementationExtra from "./pages/ChangeItemsImplementationExtra";
 import AddQuestionPage from "./pages/AddQuestionPage";
-import EditQuestionPage from "./pages/EditQuestionPage";
 import ScrapFollowingSection from "./pages/ScrapFollowingSection";
 import FollowCostKPIEditor from "./pages/FollowCostKPIEditor";
 
@@ -37,6 +36,8 @@ import DowntimeKPIEditor from "./pages/DowntimeKPIEditor";
 import BudgetKPIEditor from "./pages/BudgetKPIEditor";
 import Phase4KPIInput from "./components/Phase4KPIInput";
 import DashboardHome from "./pages/DashboardHome";
+import QuestionsListPage from "./pages/QuestionsListPage";
+import SendEmailPage     from "./pages/SendEmailPage";
 
 const App: React.FC = () => (
   <Routes>
@@ -54,10 +55,10 @@ const App: React.FC = () => (
     <Route path="/details/:projectKey/implementation/:itemId" element={<DetailsImplementation />} />
     <Route path="/changes/:projectKey/feasibility" element={<ChangeItemsFeasibility />} />
     <Route path="/details/:projectKey/feasibility/:itemId" element={<DetailsFeasibility />} />
-    <Route path="/send-email/:projectKey/:phase/:itemId" element={<SendEmailPage />} />
 
-    <Route path="/send-email/:projectKey/:phase/:itemId/add-question" element={<AddQuestionPage />} />
-    <Route path="/send-email/:projectKey/:phase/:itemId/edit-question/:questionId" element={<EditQuestionPage />} />
+    <Route path="/send-email/:projectKey/:phase/:itemId" element={<QuestionsListPage />} />
+    <Route path="/send-email/:projectKey/:phase/:itemId/add-question" element={<AddQuestionPage />}/>
+    <Route path="/send-email/:projectKey/:phase/:itemId/:questionId" element={<SendEmailPage />} />
     {/* NEW routes for extra phases */}
     <Route path="/changes/:projectKey/feasibility-extra" element={<ChangeItemsFeasibilityExtra />} />
     <Route path="/changes/:projectKey/implementation-extra" element={<ChangeItemsImplementationExtra />} />
