@@ -26,18 +26,18 @@ import FollowCostKPIEditor from "./pages/FollowCostKPIEditor";
 import ToolSelectionPage from "./pages/ToolSelectionPage";
 import SharePointUploaderPage from "./pages/SharePointUploaderPage"; // assuming this exists
 
-import DRXKPIInput from "./components/dashboard/DRXKPIInput";
-import DowntimeKPIInput from "./components/dashboard/DowntimeKPIInput";
-import BudgetKPIInput from "./components/dashboard/BudgetKPIInput";
-import FollowUpKPIInput from "./components/dashboard/FollowUpKPIInput";
-
 import DRXKPIEditor from "./pages/DRXKPIEditor";
 import DowntimeKPIEditor from "./pages/DowntimeKPIEditor";
 import BudgetKPIEditor from "./pages/BudgetKPIEditor";
-import Phase4KPIInput from "./components/Phase4KPIInput";
 import DashboardHome from "./pages/DashboardHome";
 import QuestionsListPage from "./pages/QuestionsListPage";
 import SendEmailPage     from "./pages/SendEmailPage";
+import ResponsePage from "./pages/ResponsePage";
+import Phase4KPIInput from "./components/kpiEntry/Phase4KPIInput";
+import DRXKPIInput from "./components/kpiEntry/DRXKPIInput";
+import DowntimeKPIInput from "./components/kpiEntry/DowntimeKPIInput";
+import FollowUpKPIInput from "./components/kpiEntry/FollowUpKPIInput";
+import BudgetKPIInput from "./components/kpiEntry/BudgetKPIInput";
 
 const App: React.FC = () => (
   <Routes>
@@ -59,6 +59,7 @@ const App: React.FC = () => (
     <Route path="/send-email/:projectKey/:phase/:itemId" element={<QuestionsListPage />} />
     <Route path="/send-email/:projectKey/:phase/:itemId/add-question" element={<AddQuestionPage />}/>
     <Route path="/send-email/:projectKey/:phase/:itemId/:questionId" element={<SendEmailPage />} />
+    <Route path="/response/:projectKey/:phase/:itemId/:questionId"element={<ResponsePage />}/>
     {/* NEW routes for extra phases */}
     <Route path="/changes/:projectKey/feasibility-extra" element={<ChangeItemsFeasibilityExtra />} />
     <Route path="/changes/:projectKey/implementation-extra" element={<ChangeItemsImplementationExtra />} />

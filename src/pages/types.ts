@@ -109,6 +109,10 @@ export interface QuestionState {
   conversationId?: string;
   internetMessageId?: string;
   lastChecked?: string;
+  latestResponsePreview?: string;
+  replySubject?: string;
+  replyBody?: string;
+  replyReceivedDate?: string;
 }
 
 export interface IProject {

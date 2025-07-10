@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import BudgetInputWrapper from "../BudgetInputWrapper";
+import BudgetInputWrapper from "./BudgetInputWrapper";
 
 const BudgetKPIInput: React.FC = () => {
   const navigate = useNavigate();

@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { getAccessToken } from "../auth/getToken";
-import { msalInstance } from "../auth/msalInstance";
-import ProjectCarousel from "./ProjectCarousel";
+import { getAccessToken } from "../../auth/getToken";
+import { msalInstance } from "../../auth/msalInstance";
+import ProjectCarousel from "../ProjectCarousel";
 import InputFormatted from "./InputFormatted";
+
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 

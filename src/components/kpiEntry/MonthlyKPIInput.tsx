@@ -6,7 +6,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/getToken";
 import { msalInstance } from "../../auth/msalInstance";
-import InputFormatted from "../InputFormatted";
+import InputFormatted from "./InputFormatted";
 
 const LISTS_CONFIG_KEY = "cmConfigLists";
 

@@ -28,17 +28,16 @@
     "react-router-dom": "^7.6.0",
     "react-scripts": "^5.0.1",
     "react-toastify": "^11.0.5",
+    "react-window": "^1.8.11",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5"
   },
-    "scripts": {
+  "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-
-    "build:gh":  "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ REACT_APP_REDIRECT_URI=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",    
+    "build:gh": "cross-env PUBLIC_URL=https://draxlmaier.github.io/Change-Management-Platform/ REACT_APP_REDIRECT_URI=https://draxlmaier.github.io/Change-Management-Platform/ react-scripts build",
     "deploy:gh": "npm run build:gh && gh-pages -d build",
-
-    "build:cf":  "cross-env PUBLIC_URL=. REACT_APP_REDIRECT_URI=https://change-management-platform.pages.dev/ react-scripts build"
+    "build:cf": "cross-env PUBLIC_URL=. REACT_APP_REDIRECT_URI=https://change-management-platform.pages.dev/ react-scripts build"
   },
   "eslintConfig": {
     "extends": [
@@ -60,6 +59,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/react-window": "^1.8.8",
     "cross-env": "^7.0.3",
     "eslint-config-react-app": "^7.0.1",
     "gh-pages": "^6.3.0",

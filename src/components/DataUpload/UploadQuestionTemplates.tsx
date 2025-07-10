@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
-import { getAccessToken } from "../auth/getToken";
-import { msalInstance } from "../auth/msalInstance";
-import { getConfig } from "../services/configService";
-import { deleteAllItems } from "../services/sharepointService";
+import { getAccessToken } from "../../auth/getToken";
+import { msalInstance } from "../../auth/msalInstance";
+import { getConfig } from "../../services/configService";
+import { deleteAllItems } from "../../services/sharepointService";
+
 
 interface Props {
   siteId: string;

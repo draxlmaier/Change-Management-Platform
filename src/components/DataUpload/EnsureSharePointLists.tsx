@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { getAccessToken } from "../auth/getToken";
-import { msalInstance } from "../auth/msalInstance";
-import { getConfig, saveConfig } from "../services/configService";
+import { getAccessToken } from "../../auth/getToken";
+import { msalInstance } from "../../auth/msalInstance";
+import { getConfig, saveConfig } from "../../services/configService";
 
 interface Props {
   siteId: string;
@@ -58,7 +58,6 @@ const REQUIRED_LISTS = [
       { name: "Project", type: "Text" },
       { name: "Area", type: "Text" },
       { name: "Carline", type: "Text" },
-      { name: "FollowupcostBudgetPA", type: "Number" },
       { name: "InitiationReasons", type: "Text" },
       { name: "BucketID", type: "Text" },
       { name: "Date", type: "Text" },
@@ -69,6 +68,7 @@ const REQUIRED_LISTS = [
       { name: "Currency", type: "Text" },
       { name: "BucketResponsible", type: "Text" },
       { name: "PostnameID", type: "Text" },
+      { name: "Topic", type: "Text" },
     ],
   },
   {

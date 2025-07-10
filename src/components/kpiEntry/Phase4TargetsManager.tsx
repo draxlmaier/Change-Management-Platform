@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { msalInstance } from "../auth/msalInstance";
-import { getAccessToken } from "../auth/getToken";
-import ProjectCarousel from "./ProjectCarousel"; // as provided by you
+import { getAccessToken } from "../../auth/getToken";
+import { msalInstance } from "../../auth/msalInstance";
+import ProjectCarousel from "../ProjectCarousel";
+
 
 // Departments to configure targets for
 const DEPARTMENTS = ["PaV", "QS", "PSCR", "Logistic"];

@@ -1,9 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { msalInstance } from "../auth/msalInstance";
-import { getAccessToken } from "../auth/getToken";
-import { getConfig } from "../services/configService";
-import Phase4ClosureDashboard from "./dashboard/phase 4 closure/Phase4ClosureDashboard";
+import { getConfig } from "../../services/configService";
+import Phase4ClosureDashboard from "../dashboard/phase 4 closure/Phase4ClosureDashboard";
+import { getAccessToken } from "../../auth/getToken";
+import { msalInstance } from "../../auth/msalInstance";
+
 
 const Phase4KPIInput: React.FC = () => {
   const navigate = useNavigate();

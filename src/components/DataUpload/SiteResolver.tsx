@@ -1,9 +1,10 @@
 // File: src/components/SiteResolver.tsx
 
 import React, { useState } from "react";
-import { getAccessToken } from "../auth/getToken";
-import { msalInstance } from "../auth/msalInstance";
-import { resolveSiteIdFromUrl } from "../services/sharepointService";
+import { getAccessToken } from "../../auth/getToken";
+import { msalInstance } from "../../auth/msalInstance";
+import { resolveSiteIdFromUrl } from "../../services/sharepointService";
+
 
 interface Props {
   onResolved: (siteId: string, siteUrl: string) => void;

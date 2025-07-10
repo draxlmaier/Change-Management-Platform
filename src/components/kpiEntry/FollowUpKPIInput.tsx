@@ -139,119 +139,12 @@ const FollowUpCostInput: React.FC = () => {
 
         <div className="mb-6 flex space-x-4 justify-center">
           <button
-            onClick={() => setTab("manual")}
-            className={`px-4 py-2 rounded-xl transition ${tab === "manual" ? "bg-blue-500 text-white" : "bg-white/20 text-white"}`}
-          >
-            Manual Input
-          </button>
-          <button
             onClick={() => setTab("excel")}
             className={`px-4 py-2 rounded-xl transition ${tab === "excel" ? "bg-blue-500 text-white" : "bg-white/20 text-white"}`}
           >
             Excel Upload
           </button>
         </div>
-
-        {tab === "manual" && (
-          <div className="space-y-4">
-            {projects.length > 0 ? (
-              <ProjectCarousel
-                projects={projects}
-                selectedProject={form.project}
-                onProjectSelect={(projectId) => setForm((prev) => ({ ...prev, project: projectId }))}
-              />
-            ) : (
-              <p className="text-center text-gray-300">No projects found. Please add them in the Config Page first!</p>
-            )}
-
-            {msg && <div className="mt-4 text-sm text-green-300 font-semibold">{msg}</div>}
-
-            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1 text-white">Zone</label>
-                  <select
-                    value={form.area}
-                    onChange={(e) => setForm((prev) => ({ ...prev, area: e.target.value }))}
-                    className="w-full p-2 border rounded text-black"
-                  >
-                    <option>Innenraum</option>
-                    <option>Autarke</option>
-                    <option>Cockpit</option>
-                    <option>Motorblick</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block font-semibold mb-1 text-white">Coût suivi / Budget PA (€)</label>
-                <input
-                  type="number"
-                  value={form.followUpCost}
-                  onChange={(e) => setForm((prev) => ({ ...prev, followUpCost: +e.target.value }))}
-                  required
-                  className="w-full p-2 border rounded text-black"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold mb-1 text-white">Raison de l’initiation</label>
-                <select
-                  value={form.initiationReason}
-                  onChange={(e) => setForm((prev) => ({ ...prev, initiationReason: e.target.value }))}
-                  className="w-full p-2 border rounded text-black"
-                >
-                  <option>demande suite à un changement technique (aeb)</option>
-                  <option>demande suite une optimisation</option>
-                  <option>demande suite mail/réunion d'analyse de réclamation</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1 text-white">Identifiant Panier</label>
-                  <input
-                    type="text"
-                    value={form.bucketId}
-                    onChange={(e) => setForm((prev) => ({ ...prev, bucketId: e.target.value }))}
-                    required
-                    className="w-full p-2 border rounded text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1 text-white">Date</label>
-                  <input
-                    type="date"
-                    value={form.entryDate}
-                    onChange={(e) => setForm((prev) => ({ ...prev, entryDate: e.target.value }))}
-                    required
-                    className="w-full p-2 border rounded text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1 text-white">Responsable du Panier</label>
-                  <input
-                    type="text"
-                    value={form.bucketResponsible}
-                    onChange={(e) => setForm((prev) => ({ ...prev, bucketResponsible: e.target.value }))}
-                    required
-                    className="w-full p-2 border rounded text-black"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block font-semibold mb-1 text-white">Poste / Identifiant</label>
-                <input
-                  type="text"
-                  value={form.postName}
-                  onChange={(e) => setForm((prev) => ({ ...prev, postName: e.target.value }))}
-                  required
-                  className="w-full p-2 border rounded text-black"
-                />
-              </div>
-              <button type="submit" className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded shadow">
-                Enregistrer
-              </button>
-            </form>
-          </div>
-        )}
 
         {tab === "excel" && (
           <FollowUpExcelUploader
