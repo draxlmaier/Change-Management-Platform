@@ -2,7 +2,7 @@
 
 export const msalConfig = {
   auth: {
-    //app registration for draxlameir
+    //******app registration for draxlameir
     clientId: "0681f782-b93e-4816-abc1-04db7c272689",
    authority: "https://login.microsoftonline.com/492ac175-0fcd-4d6c-8fde-e15c70d1986b", 
 //app registration for uit
