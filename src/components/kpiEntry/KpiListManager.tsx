@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import type { ListConfig, IProject } from "../../services/configService";
 import ProjectCarousel from "../ProjectCarousel";
@@ -50,7 +50,7 @@ export default function KpiListManager({
     }
     return true;
   }, [newRow, listConfig]);
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -78,11 +78,11 @@ export default function KpiListManager({
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, siteId, listConfig.listId]);
 
   useEffect(() => {
     fetchItems();
-  }, [listConfig.listId]);
+  }, [fetchItems]);
 
   const yearsList = useMemo(() => Array.from({ length: 151 }, (_, i) => (2000 + i).toString()), []);
   const monthsList = useMemo(() => Array.from({ length: 12 }, (_, i) => (i + 1).toString()), []);

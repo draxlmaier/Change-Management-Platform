@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ReactECharts from "echarts-for-react";
 import axios from "axios";
 
@@ -101,15 +101,18 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({
 
     return () => { cancelled = true; };
   }, []);
+  
   // Month names
-  const monthsOrder = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December",
-  ];
-  const getMonthName = (m: string) => {
-    const idx = parseInt(m, 10) - 1;
-    return monthsOrder[idx] || "Unknown";
-  };
+  const monthsOrder = useMemo(() => [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+], []);
+
+  const getMonthName = useCallback((m: string) => {
+  const idx = parseInt(m, 10) - 1;
+  return monthsOrder[idx] || "Unknown";
+}, [monthsOrder]);
+
 
   // Build all “Month YYYY” between two dates
   function getMonthRangeLabels(start: Date, end: Date): string[] {
@@ -210,7 +213,7 @@ export const UnplannedDowntimeChart: React.FC<Props> = ({
       }
     }),
     yAxisIndex: 0,
-  }), [filtered, monthLabels, isAggregate, selectedProject, filterMode]);
+  }), [getMonthName,filtered, monthLabels, isAggregate, selectedProject, filterMode]);
 
   // Helper to build the three KPI line‐series
   function makeLineSeries(

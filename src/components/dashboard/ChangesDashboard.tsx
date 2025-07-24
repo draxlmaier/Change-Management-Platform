@@ -29,7 +29,7 @@ import { FollowupCostMonthlyChart } from "./followupcost/FollowupCostMonthlyChar
 import { FollowupCostByReasonMonthlyChart } from "./followupcost/FollowupCostByReasonMonthlyChart";
 import { MonthlyTargetTableContainer } from "./followupcost/MonthlyTargetTableContainer";
 import { ProjectCostChart } from "./followupcost/ProjectCostChart";
-import { CombinedTargetChart } from "./followupcost/CombinedTargetChart";
+import { DraxlmaeirCostChart } from "./followupcost/DraxlmaeirCostChart";
 const apiTabs = [
   { key: "changes", label: "Changes", icon: changesIcon },
   { key: "unplannedDowntime", label: "Unplanned Downtime", icon: downtimeIcon },
@@ -706,16 +706,12 @@ ALL_PROJECTS.forEach(proj => {
     {/* ── COMBINED line-only chart ─────────────────── */}
     {project?.toLowerCase() === "draxlmaeir" && (
         <div className="bg-white rounded-lg shadow-md p-6 col-span-2">
-          <CombinedTargetChart
-            siteId={config.siteId}
-            followListId={
-              config.lists.find(l => l.name === "FollowCostKPI")!.listId
-            }
-            targetListId={
-              config.lists.find(l => l.name === "MonthlyTargets")!.listId
-            }
-            year={Number(selectedYear)}
-          />
+          <DraxlmaeirCostChart
+          siteId={config.siteId}
+          followListId={ config.lists.find(l => l.name === "FollowCostKPI")!.listId}
+          targetListId={config.lists.find(l => l.name === "MonthlyTargets")!.listId}
+          year={Number(selectedYear)}
+        />
         </div>
       )}
               {/* —————————————————————————————— */}
