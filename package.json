@@ -27,6 +27,7 @@
     "react-multi-carousel": "^2.8.6",
     "react-router-dom": "^7.6.0",
     "react-scripts": "^5.0.1",
+    "react-select": "^5.10.2",
     "react-toastify": "^11.0.5",
     "react-window": "^1.8.11",
     "web-vitals": "^2.1.4",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/react-select": "^5.0.1",
     "@types/react-window": "^1.8.8",
     "cross-env": "^7.0.3",
     "eslint-config-react-app": "^7.0.1",

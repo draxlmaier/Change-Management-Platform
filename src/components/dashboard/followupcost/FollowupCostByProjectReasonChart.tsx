@@ -4,8 +4,12 @@ import React from "react";
 import ReactECharts from "echarts-for-react";
 import { FilterMode, FollowCostItem } from "../../../pages/types";
 
-/** Parses "DD.MM.YYYY HH:mm:ss" or "DD.MM.YYYY" */
+/** Parse "DD.MM.YYYY HH:mm:ss" or "DD.MM.YYYY" */
 function parseEuropeanDate(dateStr: string): Date {
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d;
+  }
   const [datePart, timePart = "00:00:00"] = dateStr.split(" ");
   const [day, month, year]               = datePart.split(".").map(Number);
   const [h, m, s]                        = timePart.split(":").map(Number);
@@ -45,7 +49,7 @@ export const FollowupCostByProjectReasonChart: React.FC<Props> = ({
   toMonth,
   toDay,
 }) => {
-  // 1) Filter by date (no project filter here)
+  // 1) Filter by date (exactly your existing logic)
   const filtered = data.filter(item => {
     if (!item.Date) return false;
     const dt = parseEuropeanDate(item.Date);
@@ -91,35 +95,40 @@ export const FollowupCostByProjectReasonChart: React.FC<Props> = ({
     }
   });
 
-  // 2) Build lists of all projects & reasons
+  // 2) Unique projects & reasons
   const projects = Array.from(new Set(filtered.map(i => i.Project))).sort();
   const reasons  = Array.from(
     new Set(filtered.map(i => i.InitiationReasons || "Unknown"))
   ).sort();
 
-  // 3) Summation matrix[project][reason]
+  // 3) Summation matrix — **always numbers**, never strings**
   const matrix: Record<string, Record<string, number>> = {};
   projects.forEach(p => {
     matrix[p] = {};
-    reasons.forEach(r => (matrix[p][r] = 0));
+    reasons.forEach(r => {
+      matrix[p][r] = 0;
+    });
   });
+
   filtered.forEach(item => {
     const p = item.Project;
     const r = item.InitiationReasons || "Unknown";
-    matrix[p][r] += item.TotalNettValue;
+    // **Cast to Number** and guard NAN
+    const amt = Number(item.TotalNettValue) || 0;
+    matrix[p][r] += amt;
   });
 
-  // 4) pick a color palette
+  // 4) Palette
   const palette = ["#5470C6", "#91CC75", "#FAC858", "#EE6666", "#73C0DE"];
 
-  // 5) Build one series per project, with a colored “balloon” label
+  // 5) Series — **round each bar’s value** to 0 decimals
   const series = projects.map((p, idx) => {
     const color = palette[idx % palette.length];
     return {
-      name:  p,
-      type:  "bar",
+      name:     p,
+      type:     "bar",
       barWidth: 30,
-      data:  reasons.map(r => matrix[p][r]),
+      data:     reasons.map(r => +matrix[p][r].toFixed(0)),
       itemStyle: { color },
       label: {
         show:            true,
@@ -134,9 +143,54 @@ export const FollowupCostByProjectReasonChart: React.FC<Props> = ({
     };
   });
 
-  // 6) The ECharts “option”:
+  const TITLE_MAP: Record<FilterMode, string> = {
+    year:        "Total Nett Value per Project",
+    quarter:     "Total Nett Value per Project",
+    month:       "Total Nett Value per Project",
+    day:         "Total Nett Value per Project",
+    weekOfMonth: "Total Nett Value per Project",
+    weekOfYear:  "Total Nett Value per Project",
+    customRange: "Total Nett Value per Project",
+    semester:    "Total Nett Value per Project",
+  };
+
+  // 6) Build the subtitle exactly your way
+  const mainTitle = TITLE_MAP[filterMode];
+  let subTitle = "";
+  switch (filterMode) {
+    case "year":
+      subTitle = `Year ${selectedYear}`;
+      break;
+    case "quarter":
+      subTitle = `Q${selectedQuarter} ${selectedYear}`;
+      break;
+    case "month":
+      subTitle = `${selectedMonth}/${selectedYear}`;
+      break;
+    case "day":
+      subTitle = `${selectedDay}/${selectedMonth}/${selectedYear}`;
+      break;
+    case "weekOfMonth":
+      subTitle = `W${selectedWeekOfMonth} of ${selectedMonth}/${selectedYear}`;
+      break;
+    case "customRange":
+      subTitle = `From ${fromDay}/${fromMonth}/${fromYear} to ${toDay}/${toMonth}/${toDay}`;
+      break;
+    // you can add semester here if you like
+  }
+  const fullTitle = subTitle ? `${mainTitle} — ${subTitle}` : mainTitle;
+
+  // 7) Your exact ECharts options, unchanged:
   const option = {
     color:    palette,
+    title: [
+      {
+        text:      fullTitle,
+        left:      "center",
+        top:       16,
+        textStyle: { fontSize: 18 }
+      }
+    ],
     toolbox:  { show: true, feature: { saveAsImage: { title: "Save as Image" } } },
     legend:   {
       orient:    "horizontal",
@@ -149,7 +203,7 @@ export const FollowupCostByProjectReasonChart: React.FC<Props> = ({
     grid:     {
       left:         "3%",
       right:        "4%",
-      top:          "15%",
+      top:          "22%",
       bottom:       "20%",
       containLabel: true
     },
@@ -170,13 +224,19 @@ export const FollowupCostByProjectReasonChart: React.FC<Props> = ({
         }
       }
     },
-    yAxis:    {
+    yAxis: {
       type:          "value",
       name:          "€",
       nameTextStyle: { fontSize: 16, padding: [0, 0, 8, 0] },
       axisLabel:     { fontSize: 14 }
     },
-    series
+     series: series.map(s => ({
+     ...s,
+     label: {
+       ...s.label,
+       distance: 8                // ↑ lift labels a bit further
+     }
+   }))
   };
 
   return (
