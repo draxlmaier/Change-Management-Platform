@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "https://draxlmaier.github.io/Change-Management-Platform/static/css/main.2555d307.css",
-    "main.js": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.c78e2993.js",
+    "main.css": "https://draxlmaier.github.io/Change-Management-Platform/static/css/main.66954b2d.css",
+    "main.js": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.831bf724.js",
     "static/media/harness-bg.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/harness.7c82532dfe02a78cb694.png",
     "static/media/downtime.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/downtime.cbe6395a510e7467d73f.png",
@@ -39,11 +39,11 @@
     "static/media/Porsche.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/Porsche.0c67baebd1b6381fdf51.png",
     "static/media/revicons.woff": "https://draxlmaier.github.io/Change-Management-Platform/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "https://draxlmaier.github.io/Change-Management-Platform/index.html",
-    "main.2555d307.css.map": "https://draxlmaier.github.io/Change-Management-Platform/static/css/main.2555d307.css.map",
-    "main.c78e2993.js.map": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.c78e2993.js.map"
+    "main.66954b2d.css.map": "https://draxlmaier.github.io/Change-Management-Platform/static/css/main.66954b2d.css.map",
+    "main.831bf724.js.map": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.831bf724.js.map"
   },
   "entrypoints": [
-    "static/css/main.2555d307.css",
-    "static/js/main.c78e2993.js"
+    "static/css/main.66954b2d.css",
+    "static/js/main.831bf724.js"
   ]
 }
