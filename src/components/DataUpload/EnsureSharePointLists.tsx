@@ -24,6 +24,17 @@ interface Props {
  */
 const REQUIRED_LISTS: Array<{ name: string; fields: FieldDef[] }> = [
   {
+    name: "UserAccessMap",
+    fields: [
+      { name: "Email", type: "Text" },
+      { name: "Country", type: "Text" },
+      { name: "Plant", type: "Text" },
+      { name: "Role", type: "Text" },
+      { name: "Status", type: "Text" },
+      { name: "RequestedDate", type: "Text" }
+    ],
+  },
+  {
     name: "QuestionTemplates",
     fields: [
       { name: "Questionid",        type: "Text"   },
@@ -120,6 +131,7 @@ const REQUIRED_LISTS: Array<{ name: string; fields: FieldDef[] }> = [
 ];
 
 const UNIQUE_KEYS: Record<string, string[]> = {
+  UserAccessMap:    ["Email"],
   QuestionTemplates: ["Questionid"],
   users:             ["email"],
   downtime:          ["Project","year","Month"],
