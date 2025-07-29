@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "https://draxlmaier.github.io/Change-Management-Platform/static/css/main.f19b3dcf.css",
-    "main.js": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.1b32af32.js",
+    "main.js": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.d619b758.js",
     "static/media/harness-bg.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/harness-bg.031f1e8a484a19cd3ba0.png",
     "static/media/harness.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/harness.7c82532dfe02a78cb694.png",
     "static/media/downtime.png": "https://draxlmaier.github.io/Change-Management-Platform/static/media/downtime.cbe6395a510e7467d73f.png",
@@ -40,10 +40,10 @@
     "static/media/revicons.woff": "https://draxlmaier.github.io/Change-Management-Platform/static/media/revicons.e8746a624ed098489406.woff",
     "index.html": "https://draxlmaier.github.io/Change-Management-Platform/index.html",
     "main.f19b3dcf.css.map": "https://draxlmaier.github.io/Change-Management-Platform/static/css/main.f19b3dcf.css.map",
-    "main.1b32af32.js.map": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.1b32af32.js.map"
+    "main.d619b758.js.map": "https://draxlmaier.github.io/Change-Management-Platform/static/js/main.d619b758.js.map"
   },
   "entrypoints": [
     "static/css/main.f19b3dcf.css",
-    "static/js/main.1b32af32.js"
+    "static/js/main.d619b758.js"
   ]
 }
