@@ -64,7 +64,7 @@ export default function DashboardLayout(): React.ReactElement {
     } catch (e) {
       console.error("Parsing cmConfigLists failed:", e);
     }
-  }, []);
+  }, [draxLogo]); 
 
   return (
     <div className="flex h-screen">
