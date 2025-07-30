@@ -232,7 +232,7 @@ export const ProjectCostChart: React.FC<Props> = ({
   return (
     <ReactECharts
       option={{
-        backgroundColor: "inherit",
+        backgroundColor: "white",
         title: {
           text: `${title} – Cumulative Project Costs vs. Target`,
           left: "center",
@@ -268,7 +268,8 @@ export const ProjectCostChart: React.FC<Props> = ({
           targetSeries,
         ],
       }}
-      style={{ height: 500, width: "100%" }}
+      style={{ height: 500, width: "100%" , 
+     backgroundColor: "white" }}
       notMerge
       lazyUpdate
     />
