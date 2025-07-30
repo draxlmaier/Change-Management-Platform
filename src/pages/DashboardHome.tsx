@@ -6,7 +6,6 @@ import { msalInstance } from '../auth/msalInstance';
 import harnessBg from '../assets/images/harness.png';
 import cmp3dLogo from '../assets/images/change_management_platform_full2.png';
 import draxlLogo from '../assets/images/draxlmaier-group.png';
-import TopMenu from '../components/TopMenu';
 import Footer from '../components/Footer';
 
 const DashboardHome: React.FC = () => {
